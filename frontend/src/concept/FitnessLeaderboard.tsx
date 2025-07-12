@@ -295,7 +295,7 @@ const FitnessLeaderboard = () => {
             
             // Get today as a local string: 'YYYY-MM-DD'
             const today = new Date();
-            const todayStr = today.toLocaleDateString('en-CA');
+            // const todayStr = today.toLocaleDateString('en-CA');
             
             let streak = 0;
             for (let i = 0; i < activityDateStrings.length; i++) {

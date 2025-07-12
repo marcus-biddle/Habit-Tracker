@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Eye, EyeOff, Mail, Lock, User, ArrowRight } from 'lucide-react';
 import { supabase } from '../client/client';
 
@@ -23,8 +23,9 @@ export default function LoginModal() {
     confirmPassword: ''
   });
   const [isLoading, setIsLoading] = useState(false);
+  console.log(showLoginModal)
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: any) => {
     e.preventDefault();
     setIsLoading(true);
   
@@ -64,7 +65,7 @@ export default function LoginModal() {
   };
   
 
-  const handleSocialLogin = async (provider) => {
+  const handleSocialLogin = async (provider: string) => {
     console.log(`Login with ${provider}`);
     if (provider === 'Google') {
       const { data, error } = await supabase.auth.signInWithOAuth({
