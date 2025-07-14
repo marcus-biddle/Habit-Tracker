@@ -15,6 +15,7 @@ import {
   } from 'date-fns';
 import { Show } from '../helpers';
 import LoginModal, { isLoggedIn } from '../components/LoginModal';
+import UserProfileModal from '../components/UserProfileModal';
 
 interface Action {
 created_at: string; // ISODateString
@@ -637,88 +638,88 @@ const FitnessLeaderboard = () => {
       )}
 
       {/* User Profile Modal */}
-      {showUserProfile && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-gray-900 rounded-2xl p-6 w-full max-w-2xl border border-white/10">
-            {(() => {
-              const user = getUserProfile(showUserProfile);
-              if (!user) return null;
+      {showUserProfile && ( <UserProfileModal />
+        // <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        //   <div className="bg-gray-900 rounded-2xl p-6 w-full max-w-2xl border border-white/10">
+        //     {(() => {
+        //       const user = getUserProfile(showUserProfile);
+        //       if (!user) return null;
               
-              return (
-                <>
-                  <div className="flex items-center gap-4 mb-6">
-                    <div className="text-4xl">{user.avatar_url}</div>
-                    <div>
-                      <h3 className="text-2xl font-bold text-white">{user.name}</h3>
-                      <p className="text-gray-300">Current Score: {user.total_score_in_range} {getScoreUnit(activeCategory)}</p>
-                    </div>
-                  </div>
+        //       return (
+        //         <>
+        //           <div className="flex items-center gap-4 mb-6">
+        //             <div className="text-4xl">{user.avatar_url}</div>
+        //             <div>
+        //               <h3 className="text-2xl font-bold text-white">{user.name}</h3>
+        //               <p className="text-gray-300">Current Score: {user.total_score_in_range} {getScoreUnit(activeCategory)}</p>
+        //             </div>
+        //           </div>
                   
-                  <div className="mb-6">
-                    <div className='flex flex-row justify-between items-baseline px-5'>
-                        <h4 className="text-lg font-semibold text-white mb-4">Progress {timePeriods.find(p => p.key === timePeriod)?.label}</h4>
-                        <div className="flex items-center gap-2">
-                            <Filter className="w-5 h-5 text-gray-400" />
-                            <select
-                            value={timePeriod}
-                            onChange={(e: any) => setTimePeriod(e.target.value)}
-                            className="bg-black/20 backdrop-blur-sm p-2 border border-white/10 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 text-white focus:outline-none "
-                            >
-                            {timePeriods.map((period) => (
-                                <option key={period.key} value={period.key} className="bg-gray-800 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ">
-                                {period.label}
-                                </option>
-                            ))}
-                            </select>
-                        </div>
-                    </div>
+        //           <div className="mb-6">
+        //             <div className='flex flex-row justify-between items-baseline px-5'>
+        //                 <h4 className="text-lg font-semibold text-white mb-4">Progress {timePeriods.find(p => p.key === timePeriod)?.label}</h4>
+        //                 <div className="flex items-center gap-2">
+        //                     <Filter className="w-5 h-5 text-gray-400" />
+        //                     <select
+        //                     value={timePeriod}
+        //                     onChange={(e: any) => setTimePeriod(e.target.value)}
+        //                     className="bg-black/20 backdrop-blur-sm p-2 border border-white/10 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 text-white focus:outline-none "
+        //                     >
+        //                     {timePeriods.map((period) => (
+        //                         <option key={period.key} value={period.key} className="bg-gray-800 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ">
+        //                         {period.label}
+        //                         </option>
+        //                     ))}
+        //                     </select>
+        //                 </div>
+        //             </div>
                     
-                    <ResponsiveContainer width="100%" height={250}>
-                      <LineChart data={getTrendData()}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                        <XAxis dataKey="day" stroke="#9CA3AF" />
-                        <YAxis stroke="#9CA3AF" />
-                        <Tooltip 
-                          contentStyle={{ 
-                            backgroundColor: '#1F2937', 
-                            border: '1px solid #374151',
-                            borderRadius: '8px',
-                            color: '#F3F4F6'
-                          }} 
-                        />
-                        <Line 
-                          type="monotone" 
-                          dataKey="score" 
-                          stroke="#8B5CF6" 
-                          strokeWidth={3}
-                          dot={{ fill: '#8B5CF6', strokeWidth: 2, r: 4 }}
-                        />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
+        //             <ResponsiveContainer width="100%" height={250}>
+        //               <LineChart data={getTrendData()}>
+        //                 <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+        //                 <XAxis dataKey="day" stroke="#9CA3AF" />
+        //                 <YAxis stroke="#9CA3AF" />
+        //                 <Tooltip 
+        //                   contentStyle={{ 
+        //                     backgroundColor: '#1F2937', 
+        //                     border: '1px solid #374151',
+        //                     borderRadius: '8px',
+        //                     color: '#F3F4F6'
+        //                   }} 
+        //                 />
+        //                 <Line 
+        //                   type="monotone" 
+        //                   dataKey="score" 
+        //                   stroke="#8B5CF6" 
+        //                   strokeWidth={3}
+        //                   dot={{ fill: '#8B5CF6', strokeWidth: 2, r: 4 }}
+        //                 />
+        //               </LineChart>
+        //             </ResponsiveContainer>
+        //           </div>
                   
-                  <div className="grid grid-cols-2 gap-4 mb-6">
-                    <div className="bg-black/20 rounded-lg p-4">
-                      <div className="text-2xl font-bold text-white">{user.current_streak}</div>
-                      <div className="text-gray-400">Day Streak</div>
-                    </div>
-                    <div className="bg-black/20 rounded-lg p-4">
-                      <div className="text-2xl font-bold text-white">{user.lastUpdated}</div>
-                      <div className="text-gray-400">Last Active</div>
-                    </div>
-                  </div>
+        //           <div className="grid grid-cols-2 gap-4 mb-6">
+        //             <div className="bg-black/20 rounded-lg p-4">
+        //               <div className="text-2xl font-bold text-white">{user.current_streak}</div>
+        //               <div className="text-gray-400">Day Streak</div>
+        //             </div>
+        //             <div className="bg-black/20 rounded-lg p-4">
+        //               <div className="text-2xl font-bold text-white">{user.lastUpdated}</div>
+        //               <div className="text-gray-400">Last Active</div>
+        //             </div>
+        //           </div>
                   
-                  <button
-                    onClick={() => setShowUserProfile(null)}
-                    className="w-full bg-gray-700 hover:bg-gray-600 text-white py-2 rounded-lg font-medium transition-all"
-                  >
-                    Close
-                  </button>
-                </>
-              );
-            })()}
-          </div>
-        </div>
+        //           <button
+        //             onClick={() => setShowUserProfile(null)}
+        //             className="w-full bg-gray-700 hover:bg-gray-600 text-white py-2 rounded-lg font-medium transition-all"
+        //           >
+        //             Close
+        //           </button>
+        //         </>
+        //       );
+        //     })()}
+        //   </div>
+        // </div>
       )}
     </div>
   );
