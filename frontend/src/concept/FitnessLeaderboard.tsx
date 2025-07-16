@@ -15,15 +15,18 @@ import {
   } from 'date-fns';
 import { Show } from '../helpers';
 import LoginModal, { isLoggedIn } from '../components/LoginModal';
-import UserProfileModal from '../components/UserProfileModal';
+import { UserProfileModal } from '../components/UserProfileModal';
+import { GoogleSheetsModal } from '../components/GoogleSheetsModal';
 
+
+export type Period = 'week' | 'month' | 'year';
 interface Action {
 created_at: string; // ISODateString
 category_key: string;
 category_score: number;
 }
 
-interface UserScore {
+export interface UserScore {
 name: string;
 id: string; // UUID
 avatar_url: string;
@@ -55,6 +58,10 @@ const timePeriods = [
     { key: 'year', label: 'This Year', filter: startOfYear(now).toISOString() }
 ];
 
+export const getScoreUnit = (category: string) => {
+  return category === 'running' ? 'mi' : 'reps';
+};
+
 const FitnessLeaderboard = () => {
     const [userScores, setUserScores] = useState<UserScore[]>([]);
     const [activeCategory, setActiveCategory] = useState<Category>('pushups');
@@ -65,7 +72,7 @@ const FitnessLeaderboard = () => {
   
   // have not touched yet
   const [showSubmitModal, setShowSubmitModal] = useState(false);
-  const [showUserProfile, setShowUserProfile] = useState<string | null>(null);
+  const [activeUserId, setActiveUserId] = useState<string | null>(null);
   
 
   // Pagination
@@ -107,12 +114,10 @@ const FitnessLeaderboard = () => {
     }
   };
 
-  const getScoreUnit = (category: string) => {
-    return category === 'running' ? 'mi' : 'reps';
-  };
+  
 
-  const getUserProfile = (userId: string) => {
-    return userScores.find(user => user.id === userId);
+  const getUserProfile = (userId: string): UserScore | null => {
+    return userScores.find(user => user.id === userId) || null;
   };
 
   // Generate overall progress data for charts
@@ -127,105 +132,9 @@ const FitnessLeaderboard = () => {
             })).sort((a, b) => type === 'streak' ? b.streak - a.streak : b.score - a.score).slice(0,5);
   };
 
-  const getWeeklyTrendData = () => {
-    if (!showUserProfile) return [];
-    const user = getUserProfile(showUserProfile);
-    if (!user || !user.Actions) return [];
   
-    const now = new Date();
-    const start = startOfISOWeek(now); // Monday
-    const end = endOfWeek(now, { weekStartsOn: 1 });     // Sunday
-  
-    const grouped: Record<string, number> = {};
-  
-    user.Actions.forEach(action => {
-      const date = parseISO(action.created_at);
-      if (date >= start && date <= end) {
-        const day = format(date, 'EEEE'); // Monday, Tuesday, etc.
-        if (!grouped[day]) grouped[day] = 0;
-        grouped[day] += action.category_score;
-      }
-    });
-  
-    const weekDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-  
-    return weekDays.map(day => ({
-      day: day,
-      score: grouped[day] || 0,
-    }));
-  };
 
-  const getMonthlyTrendData = () => {
-    if (!showUserProfile) return [];
-    const user = getUserProfile(showUserProfile);
-    if (!user || !user.Actions) return [];
   
-    const now = new Date();
-    const start = startOfMonth(now);
-    const end = endOfMonth(now);
-  
-    const grouped: Record<string, number> = {};
-  
-    user.Actions.forEach(action => {
-      const date = parseISO(action.created_at);
-      if (date >= start && date <= end) {
-        const dayKey = format(date, 'yyyy-MM-dd');
-        if (!grouped[dayKey]) grouped[dayKey] = 0;
-        grouped[dayKey] += action.category_score;
-      }
-    });
-  
-    const daysInMonth = eachDayOfInterval({ start, end });
-  
-    return daysInMonth.map(date => {
-      const key = format(date, 'yyyy-MM-dd');
-      return {
-        day: key,
-        score: grouped[key] || 0,
-      };
-    });
-  };
-
-  const getYearlyTrendData = () => {
-    if (!showUserProfile) return [];
-    const user = getUserProfile(showUserProfile);
-    if (!user || !user.Actions) return [];
-  
-    const now = new Date();
-    const start = startOfYear(now);
-    const end = endOfYear(now);
-  
-    const grouped: Record<string, number> = {};
-  
-    user.Actions.forEach(action => {
-      const date = parseISO(action.created_at);
-      if (date >= start && date <= end) {
-        const monthKey = format(date, 'MMM'); // e.g. 'Jan', 'Feb'
-        if (!grouped[monthKey]) grouped[monthKey] = 0;
-        grouped[monthKey] += action.category_score;
-      }
-    });
-  
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  
-    return months.map(month => ({
-      day: month,
-      score: grouped[month] || 0
-    }));
-  };
-
-  type TrendData = { day: string; score: number }[];
-  type Period = 'week' | 'month' | 'year';
-
-  const trendDataByPeriod: Record<Period, () => TrendData> = {
-    week: getWeeklyTrendData,
-    month: getMonthlyTrendData,
-    year: getYearlyTrendData,
-  };
-  
-  const getTrendData = () => {
-    return (trendDataByPeriod[timePeriod] || getWeeklyTrendData)();
-  };
 
     const getUserScores = async () => {
         // Example of response structure
@@ -532,7 +441,7 @@ const FitnessLeaderboard = () => {
                                 </div>
                             </div>
                             <button
-                            onClick={() => setShowUserProfile(user.id)}
+                            onClick={() => setActiveUserId(user.id)}
                             className="p-2 hover:bg-white/10 rounded-lg transition-colors"
                             >
                                 <User className="w-5 h-5 text-gray-400 hover:text-white" />
@@ -630,30 +539,26 @@ const FitnessLeaderboard = () => {
       </div>
 
         {/* User is not logged in and tries to click on restricted access */}
-      <Show when={true}>test</Show>
+      <Show when={showSubmitModal}>
+        <GoogleSheetsModal setOpen={setShowSubmitModal} />
+      </Show>
 
       {/* Submit Score Modal */}
-      {showSubmitModal && !isLoggedIn && (
+      {/* {showSubmitModal && !isLoggedIn && (
         <LoginModal />
-      )}
+      )} */}
 
       {/* User Profile Modal */}
-      {showUserProfile && ( <UserProfileModal />
+      {activeUserId && ( <UserProfileModal user={getUserProfile(activeUserId)} setActiveUserId={setActiveUserId} activeCategory={activeCategory} timePeriod={timePeriod} setTimePeriod={setTimePeriod} />
         // <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
         //   <div className="bg-gray-900 rounded-2xl p-6 w-full max-w-2xl border border-white/10">
         //     {(() => {
-        //       const user = getUserProfile(showUserProfile);
+        //       const user = getUserProfile(activeUserId);
         //       if (!user) return null;
               
         //       return (
         //         <>
-        //           <div className="flex items-center gap-4 mb-6">
-        //             <div className="text-4xl">{user.avatar_url}</div>
-        //             <div>
-        //               <h3 className="text-2xl font-bold text-white">{user.name}</h3>
-        //               <p className="text-gray-300">Current Score: {user.total_score_in_range} {getScoreUnit(activeCategory)}</p>
-        //             </div>
-        //           </div>
+                  
                   
         //           <div className="mb-6">
         //             <div className='flex flex-row justify-between items-baseline px-5'>
@@ -710,7 +615,7 @@ const FitnessLeaderboard = () => {
         //           </div>
                   
         //           <button
-        //             onClick={() => setShowUserProfile(null)}
+        //             onClick={() => setactiveUserId(null)}
         //             className="w-full bg-gray-700 hover:bg-gray-600 text-white py-2 rounded-lg font-medium transition-all"
         //           >
         //             Close
