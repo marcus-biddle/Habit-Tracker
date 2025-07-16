@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Filter, Activity, TrendingUp, ChevronRight, ChevronLeft } from 'lucide-react';
+import { Filter, Activity, TrendingUp, ChevronRight, ChevronLeft, ChartArea, User2 } from 'lucide-react';
 import { Show } from '../helpers';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
+import { ScoreModal } from './ScoreModal';
+import LoginModal from './LoginModal';
 
 // Mock categories - replace with your actual categories
 const categories = [
@@ -277,19 +279,20 @@ interface LeaderboardData {
   [personName: string]: PersonScore[];
 }
 
-const SHEET_NAMES = ['Push', 'Pull', 'Run'];
+const SHEET_NAMES = [{sheet: 'Push', label: 'Push-ups'}, {sheet: 'Pull', label: 'Pull-ups'}, {sheet: 'Run', label: 'Running'}];
 
 export const GoogleSheetsModal = ({ setOpen }: GoogleSheetsModalProps) => {
   const [leaderboardData, setLeaderboardData] = useState<LeaderboardData>({});
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedPerson, setSelectedPerson] = useState<string>('');
-  const [selectedSheet, setSelectedSheet] = useState<string>(SHEET_NAMES[0])
+  const [selectedSheet, setSelectedSheet] = useState<string>(SHEET_NAMES[0].sheet)
   const [openGraphs, setOpenGraphs] = useState<boolean>(false);
+  const [openScoreModal, setOpenScoreModal] = useState<boolean>(false);
 
   // Chart scrolling state
   const [chartScrollIndex, setChartScrollIndex] = useState(0);
-  const [chartViewSize, setChartViewSize] = useState(7); // Number of data points visible at once
+  const [chartViewSize, setChartViewSize] = useState(30); // Number of data points visible at once
 
   // Google Sheets configuration
   const SHEET_ID = '1La_601EPgc9BGWlZSoR-ZdozU041w5hSf7Ents4eAc8'; // Replace with your Google Sheet ID
@@ -385,7 +388,7 @@ export const GoogleSheetsModal = ({ setOpen }: GoogleSheetsModalProps) => {
   // Load data when modal opens
   useEffect(() => {
     fetchSheetData();
-  }, [selectedSheet, selectedPerson]);
+  }, [selectedSheet, selectedPerson, chartViewSize]);
 
   if (!leaderboardData[selectedPerson]) return;
 
@@ -394,7 +397,7 @@ export const GoogleSheetsModal = ({ setOpen }: GoogleSheetsModalProps) => {
   const visibleChartData = leaderboardData[selectedPerson].slice(chartScrollIndex, chartScrollIndex + chartViewSize);
   console.log(visibleChartData)
 
-  const scrollChart = (direction) => {
+  const scrollChart = (direction: string) => {
     if (direction === 'left' && canScrollLeft) {
       setChartScrollIndex(Math.max(0, chartScrollIndex - 1));
     } else if (direction === 'right' && canScrollRight) {
@@ -405,6 +408,8 @@ export const GoogleSheetsModal = ({ setOpen }: GoogleSheetsModalProps) => {
   const resetChartScroll = () => {
     setChartScrollIndex(Math.max(0, leaderboardData[selectedPerson].length - chartViewSize));
   };
+
+  console.log(chartViewSize)
 
   // Reset chart scroll when time period changes
   // React.useEffect(() => {
@@ -442,7 +447,7 @@ export const GoogleSheetsModal = ({ setOpen }: GoogleSheetsModalProps) => {
     <div className="flex items-center justify-center">
       <div className="bg-gray-900 p-6 w-full overflow-y-auto h-screen">
         <div className="flex justify-between items-center mb-6">
-          <h3 className="text-2xl font-bold text-white">Push-Up Leaderboard</h3>
+          <h3 className="text-2xl font-bold text-white">{SHEET_NAMES.find(item => item.sheet === selectedSheet)?.label} Leaderboard</h3>
           {/* <button
             onClick={() => setOpen(false)}
             className="text-gray-400 hover:text-white transition-colors"
@@ -468,7 +473,7 @@ export const GoogleSheetsModal = ({ setOpen }: GoogleSheetsModalProps) => {
             </p>
           </div>
         )} */}
-        <div className='flex justify-end gap-4'>
+        <div className='flex justify-end gap-4 mb-4'>
           <div className="flex items-center gap-2">
             <Filter className="w-6 h-6 text-gray-400" />
             <select
@@ -480,14 +485,17 @@ export const GoogleSheetsModal = ({ setOpen }: GoogleSheetsModalProps) => {
               className="bg-black/20 backdrop-blur-sm p-3 border border-white/10 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 text-white focus:outline-none w-48"
             >
               {SHEET_NAMES.map((category, index) => (
-                <option key={index} value={category} className="bg-gray-800 rounded-lg font-medium transition-all duration-200 flex items-center gap-2">
-                  {category}
+                <option key={category.sheet} value={category.sheet} className="bg-gray-800 rounded-lg font-medium transition-all duration-200 flex items-center gap-2">
+                  {category.label}
                 </option>
               ))}
             </select>
           </div>
           <button onClick={() => setOpenGraphs(!openGraphs)} className="bg-black/20 backdrop-blur-sm p-3 border border-white/10 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 text-white focus:outline-none w-12">
-              <Activity className='w-6 h-6 cursor-pointer' />
+              {openGraphs ? <Activity className='w-6 h-6 cursor-pointer' /> : <ChartArea className='w-6 h-6 cursor-pointer' />}
+          </button>
+          <button onClick={() => setOpenScoreModal(true)} className="bg-black/20 backdrop-blur-sm p-3 border border-white/10 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 text-white focus:outline-none w-12">
+              <User2 className='w-6 h-6 cursor-pointer' />
           </button>
         </div>
         
@@ -617,7 +625,7 @@ export const GoogleSheetsModal = ({ setOpen }: GoogleSheetsModalProps) => {
               </h3>
               {/* Chart Navigation */}
                 <div className="flex items-center justify-between mb-4 px-5">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center space-x-3">
                     <button
                       onClick={() => scrollChart('left')}
                       disabled={!canScrollLeft}
@@ -640,6 +648,29 @@ export const GoogleSheetsModal = ({ setOpen }: GoogleSheetsModalProps) => {
                     >
                       Latest
                     </button>
+                    <div className='flex space-x-1'>
+                      <button
+                        onClick={() => setChartViewSize(7)}
+                        className={`backdrop-blur-sm px-3 py-1 border rounded-lg font-sm transition-all duration-200 flex items-center text-white focus:outline-none ${
+                          chartViewSize === 7 
+                            ? 'bg-blue-500/30 border-blue-400/40 ring-1 ring-blue-400/20' 
+                            : 'bg-black/20 border-white/10 hover:bg-black/30'
+                        }`}
+                      >
+                        7 Day
+                      </button>
+                      <button
+                        onClick={() => setChartViewSize(30)}
+                        className={`backdrop-blur-sm px-3 py-1 border rounded-lg font-sm transition-all duration-200 flex items-center text-white focus:outline-none ${
+                          chartViewSize === 30 
+                            ? 'bg-blue-500/30 border-blue-400/40 ring-1 ring-blue-400/20' 
+                            : 'bg-black/20 border-white/10 hover:bg-black/30'
+                        }`}
+                      >
+                        30 Day
+                      </button>
+                    </div>
+                    
                   </div>
                   
                   <div className="text-gray-400 text-sm">
@@ -682,29 +713,14 @@ export const GoogleSheetsModal = ({ setOpen }: GoogleSheetsModalProps) => {
                       />
                   </LineChart>
                 </ResponsiveContainer>
-                {/* Scroll indicator */}
-                  {/* {leaderboardData[selectedPerson].length > chartViewSize && (
-                    <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2">
-                      <div className="bg-black/50 backdrop-blur-sm rounded-full px-3 py-1">
-                        <div className="flex gap-1">
-                          {Array.from({ length: Math.ceil(leaderboardData[selectedPerson].length / chartViewSize) }, (_, i) => (
-                            <div
-                              key={i}
-                              className={`w-2 h-2 rounded-full transition-all ${
-                                Math.floor(chartScrollIndex / chartViewSize) === i
-                                  ? 'bg-purple-500'
-                                  : 'bg-gray-600'
-                              }`}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  )} */}
             </div>
-            
           </Show>
         </div>
+
+        <Show when={openScoreModal}>
+          {/* <ScoreModal setOpen={setOpenScoreModal} /> */}
+          <LoginModal />
+        </Show>
       </div>
     </div>
   );

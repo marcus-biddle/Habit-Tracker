@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Eye, EyeOff, Mail, Lock, User, ArrowRight } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User2, ArrowRight } from 'lucide-react';
 import { supabase } from '../client/client';
 
 declare global {
@@ -85,7 +85,7 @@ export default function LoginModal() {
         <div className="relative">
           <div className="text-center mb-6">
             <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-4">
-              <User className="w-8 h-8 text-white" />
+              <User2 className="w-8 h-8 text-white" />
             </div>
             <h3 className="text-2xl font-bold text-white mb-2">
               {isSignUp ? 'Create Account' : 'Welcome Back'}
@@ -111,7 +111,7 @@ export default function LoginModal() {
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </button>
             
-            <button
+            {/* <button
               onClick={() => handleSocialLogin('GitHub')}
               className="w-full bg-white/10 hover:bg-white/20 border border-white/20 rounded-lg px-4 py-3 text-white font-medium transition-all flex items-center justify-center gap-3 group"
             >
@@ -120,21 +120,21 @@ export default function LoginModal() {
               </svg>
               Continue with GitHub
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </button>
+            </button> */}
           </div>
 
           {/* Divider */}
-          <div className="flex items-center gap-4 mb-6">
+          {/* <div className="flex items-center gap-4 mb-6">
             <div className="flex-1 h-px bg-white/20"></div>
             <span className="text-gray-400 text-sm">or</span>
             <div className="flex-1 h-px bg-white/20"></div>
-          </div>
+          </div> */}
 
           {/* Email/Password Form */}
-          <form className="space-y-4">
+          {/* <form className="space-y-4">
             {isSignUp && (
               <div className="relative">
-                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <User2 className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                 <input
                   type="text"
                   value={loginForm.name}
@@ -230,10 +230,10 @@ export default function LoginModal() {
                 Cancel
               </button>
             </div>
-          </form>
+          </form> */}
 
           {/* Toggle Sign Up/Login */}
-          <div className="text-center mt-6 pt-4 border-t border-white/10">
+          {/* <div className="text-center mt-6 pt-4 border-t border-white/10">
             <p className="text-gray-400">
               {isSignUp ? 'Already have an account?' : "Don't have an account?"}
               <button
@@ -243,7 +243,7 @@ export default function LoginModal() {
                 {isSignUp ? 'Sign In' : 'Sign Up'}
               </button>
             </p>
-          </div>
+          </div> */}
         </div>
       </div>
     </div>
