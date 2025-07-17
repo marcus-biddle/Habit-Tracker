@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const BASE_URL = 'http://localhost:3000'; // Change to your deployed URL if needed
+const BASE_URL = 'https://group-tracker.onrender.com'; // production
 
 interface SheetScoreUpdatePayload {
   sheet: string;
