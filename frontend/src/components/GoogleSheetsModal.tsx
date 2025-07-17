@@ -310,7 +310,8 @@ export const GoogleSheetsModal = ({ setOpen }: GoogleSheetsModalProps) => {
       
       // Set first person as selected by default
       const firstPerson = Object.keys(sheet.users)[0];
-      if (firstPerson && !selectedPerson) {
+
+      if (firstPerson && (!selectedPerson || Object.keys(sheet.users).find(user => user === selectedPerson))) {
         setSelectedPerson(firstPerson);
       }
       
@@ -401,7 +402,7 @@ export const GoogleSheetsModal = ({ setOpen }: GoogleSheetsModalProps) => {
               onChange={(e) => {
                 setSelectedSheet(e.target.value);
                 setChartScrollIndex(0);
-                setSelectedPerson('')
+                console.log('exercise button pushed',selectedPerson);
               }}
               className="bg-black/20 backdrop-blur-sm p-3 border border-white/10 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 text-white focus:outline-none w-48"
             >
