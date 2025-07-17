@@ -183,7 +183,7 @@ async function updatePushUpScore(sheet, date, userName, score, operation = 'upda
     
     // // Update the specific cell
     const range = `${userColumn}${rowIndex}`;
-    const value = operation === 'delete' ? '' : totalScore;
+    const value = operation === 'delete' ? 0 : totalScore;
     
     await updateCell(sheet, range, value);
     
@@ -237,10 +237,10 @@ app.get('/api/sheets/:sheetName', async (req, res) => {
  */
 app.post('/api/scores/update', async (req, res) => {
   try {
-    const { sheet, date, userName, score } = req.body;
+    const { sheet, date, userName, score, operation } = req.body;
     
     // Validate required fields
-    if (!sheet || !date || !userName || score === undefined) {
+    if (!sheet || !date || !userName || score === undefined || operation === 'update' | 'delete') {
       return res.status(400).json({
         success: false,
         error: 'Missing required fields: sheet, date, userName, score, userData'
@@ -266,7 +266,7 @@ app.post('/api/scores/update', async (req, res) => {
 
     console.log(sheet, date, userName, score)
     
-    const result = await updatePushUpScore(sheet, date, userName, score, 'update');
+    const result = await updatePushUpScore(sheet, date, userName, score, operation);
     
     res.json({
       success: true,

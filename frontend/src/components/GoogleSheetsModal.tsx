@@ -364,21 +364,6 @@ export const GoogleSheetsModal = ({ setOpen }: GoogleSheetsModalProps) => {
     setChartScrollIndex(Math.max(0, leaderboardData[selectedPerson].length - chartViewSize));
   };
 
-  console.log(chartViewSize)
-
-  // Reset chart scroll when time period changes
-  // React.useEffect(() => {
-  //   resetChartScroll();
-  // }, [timePeriod]);
-
-  
-
-  
-
-  
-
-  console.log('leaderboardData', leaderboardData)
-
   // Calculate total scores for each person
   const getTotalScore = (personName: string) => {
     return leaderboardData[personName]?.reduce((sum, entry) => sum + entry.score, 0) || 0;
@@ -414,8 +399,9 @@ export const GoogleSheetsModal = ({ setOpen }: GoogleSheetsModalProps) => {
             <select
               value={selectedSheet}
               onChange={(e) => {
-                setSelectedSheet(e.target.value)
-                setChartScrollIndex(0)
+                setSelectedSheet(e.target.value);
+                setChartScrollIndex(0);
+                setSelectedPerson('')
               }}
               className="bg-black/20 backdrop-blur-sm p-3 border border-white/10 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 text-white focus:outline-none w-48"
             >
@@ -527,17 +513,20 @@ export const GoogleSheetsModal = ({ setOpen }: GoogleSheetsModalProps) => {
                           <div key={index} className="bg-black/20 border border-white/10 rounded-lg p-3">
                             <div className="flex justify-between items-center">
                               <div>
-                                <p className="text-white font-medium">{entry.score} push-ups</p>
+                                <p className="text-white font-medium">{entry.score} {SHEET_NAMES.find(x => x.sheet === selectedSheet)?.label}</p>
                                 <p className="text-gray-400 text-sm">{entry.date}</p>
                               </div>
                               <div className="text-right">
                                 <div className={`px-2 py-1 rounded text-xs font-medium ${
-                                  entry.score >= 200 ? 'bg-green-500/20 text-green-400' :
-                                  entry.score >= 100 ? 'bg-yellow-500/20 text-yellow-400' :
+                                  entry.score > Math.round(getTotalScore(selectedPerson) / leaderboardData[selectedPerson].length + (entry.score*0.25)) ? 'bg-green-500/20 text-green-400' :
+                                  entry.score >= Math.round(getTotalScore(selectedPerson) / leaderboardData[selectedPerson].length) ? 'bg-yellow-500/20 text-yellow-400' :
                                   'bg-gray-500/20 text-gray-400'
                                 }`}>
-                                  {entry.score >= 200 ? 'Excellent' :
-                                    entry.score >= 100 ? 'Good' : 'Keep Going'}
+                                  {leaderboardData[selectedPerson]?.length > 0
+                                  ? entry.score > Math.round(getTotalScore(selectedPerson) / leaderboardData[selectedPerson].length + (entry.score*0.25))
+                                  ? 'Excellent' : entry.score >= Math.round(getTotalScore(selectedPerson) / leaderboardData[selectedPerson].length) ?
+                                  'Good' : 'OK'
+                                  : 0}
                                 </div>
                               </div>
                             </div>
@@ -562,6 +551,7 @@ export const GoogleSheetsModal = ({ setOpen }: GoogleSheetsModalProps) => {
                 {selectedPerson}'s Performance
               </h3>
               {/* Chart Navigation */}
+              <div>
                 <div className="flex items-center justify-between mb-4 px-5">
                   <div className="flex items-center space-x-3">
                     <button
@@ -586,35 +576,36 @@ export const GoogleSheetsModal = ({ setOpen }: GoogleSheetsModalProps) => {
                     >
                       Latest
                     </button>
-                    <div className='flex space-x-1'>
+                  </div>
+                  
+                  <div className="text-gray-400 text-sm max-w-28 sm:max-w-64 flex justify-end">
+                    Showing {chartScrollIndex + 1}-{Math.min(chartScrollIndex + chartViewSize, leaderboardData[selectedPerson].length)} of {leaderboardData[selectedPerson].length}
+                  </div>
+                </div>
+                <div className='flex space-x-4'>
                       <button
                         onClick={() => setChartViewSize(7)}
-                        className={`backdrop-blur-sm px-3 py-1 border rounded-lg font-sm transition-all duration-200 flex items-center text-white focus:outline-none ${
+                        className={`backdrop-blur-sm px-3 py-1 border rounded-lg text-sm transition-all duration-200 flex items-center text-white focus:outline-none ${
                           chartViewSize === 7 
                             ? 'bg-blue-500/30 border-blue-400/40 ring-1 ring-blue-400/20' 
                             : 'bg-black/20 border-white/10 hover:bg-black/30'
                         }`}
                       >
-                        7 Day
+                        Last 7 Sessions
                       </button>
                       <button
                         onClick={() => setChartViewSize(30)}
-                        className={`backdrop-blur-sm px-3 py-1 border rounded-lg font-sm transition-all duration-200 flex items-center text-white focus:outline-none ${
+                        className={`backdrop-blur-sm px-3 py-1 border rounded-lg text-sm transition-all duration-200 flex items-center text-white focus:outline-none ${
                           chartViewSize === 30 
                             ? 'bg-blue-500/30 border-blue-400/40 ring-1 ring-blue-400/20' 
                             : 'bg-black/20 border-white/10 hover:bg-black/30'
                         }`}
                       >
-                        30 Day
+                        Last 30 Sessions
                       </button>
                     </div>
-                    
-                  </div>
-                  
-                  <div className="text-gray-400 text-sm">
-                    Showing {chartScrollIndex + 1}-{Math.min(chartScrollIndex + chartViewSize, leaderboardData[selectedPerson].length)} of {leaderboardData[selectedPerson].length}
-                  </div>
-                </div>
+              </div>
+                
               <ResponsiveContainer width="100%" height={400}>
                   <LineChart data={visibleChartData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#374151" />

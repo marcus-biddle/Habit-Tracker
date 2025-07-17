@@ -15,13 +15,11 @@ export const ScoreModal = ({ leaderboardData, selectedSheet, setSelectedSheet, i
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedUser, setSelectedUser] = useState('');
   const [score, setScore] = useState('');
-  const [operation, setOperation] = useState('update'); // 'update', 'delete'
+  const [operation, setOperation] = useState<'update' | 'delete'>('update'); // 'update', 'delete'
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [message, setMessage] = useState('');
 
   const handleSubmit = async () => {
   setIsSubmitting(true);
-  setMessage('');
 
   try {
     // Validate inputs
@@ -44,15 +42,10 @@ export const ScoreModal = ({ leaderboardData, selectedSheet, setSelectedSheet, i
 
     console.log('yuh',updateAction)
 
-    // Show success message
-    const action = operation === 'delete' ? 'deleted' : `updated to ${score}`;
-    setMessage(`✅ Successfully ${action} score for ${selectedUser} on ${selectedDate}`);
-
     // Clear form
     setScore('');
   } catch (error) {
     console.error(error);
-    setMessage(`❌ Error: Something went wrong.`);
   } finally {
     setIsSubmitting(false);
     isOpen(false); // <- If this closes the modal, consider moving it only on success
@@ -159,7 +152,7 @@ export const ScoreModal = ({ leaderboardData, selectedSheet, setSelectedSheet, i
                     name="operation"
                     value="update"
                     checked={operation === 'update'}
-                    onChange={(e) => setOperation(e.target.value)}
+                    onChange={(e) => setOperation(e.target.value as 'update' | 'delete')}
                     className="mr-2 accent-blue-500"
                   />
                   <span className="text-sm text-gray-300">Add/Update Score</span>
@@ -170,7 +163,7 @@ export const ScoreModal = ({ leaderboardData, selectedSheet, setSelectedSheet, i
                     name="operation"
                     value="delete"
                     checked={operation === 'delete'}
-                    onChange={(e) => setOperation(e.target.value)}
+                    onChange={(e) => setOperation(e.target.value as 'update' | 'delete')}
                     className="mr-2 accent-red-500"
                   />
                   <span className="text-sm text-gray-300">Delete Score</span>

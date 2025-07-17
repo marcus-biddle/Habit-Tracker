@@ -7,7 +7,7 @@ interface SheetScoreUpdatePayload {
   date: string;
   userName: string;
   score: number | null;
-  operation?: string
+  operation: string
 }
 
 interface SheetScoreDeletePayload {
