@@ -4,6 +4,8 @@ import { Show } from '../helpers';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { ScoreModal } from './ScoreModal';
 import LoginModal from './LoginModal';
+import { supabase } from '../client/client';
+import { GoogleSheetApi } from '../api/GoogleSheetsAPI';
 
 // Mock categories - replace with your actual categories
 const categories = [
@@ -275,11 +277,11 @@ interface PersonScore {
   score: number;
 }
 
-interface LeaderboardData {
+export interface LeaderboardData {
   [personName: string]: PersonScore[];
 }
 
-const SHEET_NAMES = [{sheet: 'Push', label: 'Push-ups'}, {sheet: 'Pull', label: 'Pull-ups'}, {sheet: 'Run', label: 'Running'}];
+export const SHEET_NAMES = [{sheet: 'Push', label: 'Push-ups'}, {sheet: 'Pull', label: 'Pull-ups'}, {sheet: 'Run', label: 'Running'}];
 
 export const GoogleSheetsModal = ({ setOpen }: GoogleSheetsModalProps) => {
   const [leaderboardData, setLeaderboardData] = useState<LeaderboardData>({});
@@ -289,16 +291,11 @@ export const GoogleSheetsModal = ({ setOpen }: GoogleSheetsModalProps) => {
   const [selectedSheet, setSelectedSheet] = useState<string>(SHEET_NAMES[0].sheet)
   const [openGraphs, setOpenGraphs] = useState<boolean>(false);
   const [openScoreModal, setOpenScoreModal] = useState<boolean>(false);
+  const [userAuthenticated, isUserAuthenticated] = useState<boolean>(false);
 
   // Chart scrolling state
   const [chartScrollIndex, setChartScrollIndex] = useState(0);
   const [chartViewSize, setChartViewSize] = useState(30); // Number of data points visible at once
-
-  // Google Sheets configuration
-  const SHEET_ID = '1La_601EPgc9BGWlZSoR-ZdozU041w5hSf7Ents4eAc8'; // Replace with your Google Sheet ID
-  const API_KEY = 'AIzaSyBChEDpQCfwkxm0erHJsZ7StGhoYLLEmVs'; // Replace with your Google Sheets API key
-  // const SHEET_NAME = 'Run'; // Replace with your sheet name
-  const RANGE = 'A1:K50'; // Adjust range as needed to cover your data
   
   // Function to fetch and parse data from Google Sheets
   const fetchSheetData = async () => {
@@ -306,73 +303,13 @@ export const GoogleSheetsModal = ({ setOpen }: GoogleSheetsModalProps) => {
       setIsLoading(true);
       setError(null);
       
-      const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${selectedSheet}?key=${API_KEY}`;
+      const sheet = await GoogleSheetApi.getUserList(selectedSheet);
       
-      const response = await fetch(url);
-      const data = await response.json();
-      console.log('GS DATA', data)
-      
-      if (data.error) {
-        throw new Error(data.error.message);
-      }
-      
-      const rows = data.values || [];
-      
-      // Parse the data structure
-      const parsedData: LeaderboardData = {};
-      
-      if (rows.length > 4) {
-        // Row 5 (index 4) contains the names
-        const nameRow = rows[4];
-        
-        // Find name columns (skip first 4 columns: Yr, Qtr Yr, Mo Yr, Date)
-        const nameColumns: { [columnIndex: number]: string } = {};
-        
-        for (let colIndex = 4; colIndex < nameRow.length; colIndex++) {
-          const name = nameRow[colIndex];
-          if (name && name.trim()) {
-            nameColumns[colIndex] = name.trim();
-            parsedData[name.trim()] = [];
-          }
-        }
-        
-        // Process data rows (starting from row 6, index 5)
-        for (let rowIndex = 5; rowIndex < rows.length; rowIndex++) {
-          const row = rows[rowIndex];
-          if (row.length > 3) {
-            const date = row[3]; // Column D contains dates
-            
-            if (date && date.trim()) {
-              
-              const parsedDate = new Date(date.trim());
-              const today = new Date();
-              today.setHours(0, 0, 0, 0); // Strip time to compare only the date
-              parsedDate.setHours(0, 0, 0, 0);
-
-              if (parsedDate > today) continue;
-
-              // For each person column, check if there's a score
-              Object.entries(nameColumns).forEach(([colIndex, personName]) => {
-                const rawScore = row[parseInt(colIndex)];
-                const score = rawScore ? Number(rawScore.replace(/,/g, '')) : 0;
-                if (score && !isNaN(Number(score))) {
-                  parsedData[personName].push({
-                    name: personName,
-                    date: date.trim(),
-                    score: score 
-                  });
-                }
-              });
-            }
-          }
-        }
-      }
-      
-      setLeaderboardData(parsedData);
+      setLeaderboardData(sheet.users);
       
       
       // Set first person as selected by default
-      const firstPerson = Object.keys(parsedData)[0];
+      const firstPerson = Object.keys(sheet.users)[0];
       if (firstPerson && !selectedPerson) {
         setSelectedPerson(firstPerson);
       }
@@ -385,10 +322,28 @@ export const GoogleSheetsModal = ({ setOpen }: GoogleSheetsModalProps) => {
     }
   };
 
+  const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      console.log('SESSH', session)
+  
+      if (session) {
+        console.log("✅ User is logged in:", session.user);
+        // You can redirect, fetch user data, or update UI
+        isUserAuthenticated(true);
+      } else {
+        console.log("❌ No active session");
+        isUserAuthenticated(false);
+      }
+    };
+
+  useEffect(() => {
+    checkSession();
+  }, [])
+
   // Load data when modal opens
   useEffect(() => {
     fetchSheetData();
-  }, [selectedSheet, selectedPerson, chartViewSize]);
+  }, [selectedSheet, selectedPerson, chartViewSize, openScoreModal]);
 
   if (!leaderboardData[selectedPerson]) return;
 
@@ -443,37 +398,17 @@ export const GoogleSheetsModal = ({ setOpen }: GoogleSheetsModalProps) => {
     return;
   }
 
+  
+
   return (
     <div className="flex items-center justify-center">
       <div className="bg-gray-900 p-6 w-full overflow-y-auto h-screen">
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-2xl font-bold text-white">{SHEET_NAMES.find(item => item.sheet === selectedSheet)?.label} Leaderboard</h3>
-          {/* <button
-            onClick={() => setOpen(false)}
-            className="text-gray-400 hover:text-white transition-colors"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button> */}
         </div>
-        
-        {/* Error Display */}
-        {error && (
-          <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-3 mb-4">
-            <p className="text-red-400 text-sm">{error}</p>
-          </div>
-        )}
-        
-        {/* API Configuration Warning */}
-        {/* {(SHEET_ID === '1La_601EPgc9BGWlZSoR-ZdozU041w5hSf7Ents4eAc8' || API_KEY === 'AIzaSyBChEDpQCfwkxm0erHJsZ7StGhoYLLEmVs') && (
-          <div className="bg-yellow-500/20 border border-yellow-500/50 rounded-lg p-3 mb-4">
-            <p className="text-yellow-400 text-sm">
-              Please configure your Google Sheets API key and Sheet ID to load data.
-            </p>
-          </div>
-        )} */}
-        <div className='flex justify-end gap-4 mb-4'>
+
+        {/* Buttons */}
+        <div className='flex justify-between sm:justify-end gap-4 mb-4'>
           <div className="flex items-center gap-2">
             <Filter className="w-6 h-6 text-gray-400" />
             <select
@@ -491,12 +426,15 @@ export const GoogleSheetsModal = ({ setOpen }: GoogleSheetsModalProps) => {
               ))}
             </select>
           </div>
-          <button onClick={() => setOpenGraphs(!openGraphs)} className="bg-black/20 backdrop-blur-sm p-3 border border-white/10 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 text-white focus:outline-none w-12">
+          <div className='flex space-x-2'>
+            <button onClick={() => setOpenGraphs(!openGraphs)} className="bg-black/20 backdrop-blur-sm p-3 border border-white/10 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 text-white focus:outline-none w-12">
               {openGraphs ? <Activity className='w-6 h-6 cursor-pointer' /> : <ChartArea className='w-6 h-6 cursor-pointer' />}
-          </button>
-          <button onClick={() => setOpenScoreModal(true)} className="bg-black/20 backdrop-blur-sm p-3 border border-white/10 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 text-white focus:outline-none w-12">
-              <User2 className='w-6 h-6 cursor-pointer' />
-          </button>
+            </button>
+            <button onClick={() => setOpenScoreModal(true)} className="bg-black/20 backdrop-blur-sm p-3 border border-white/10 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 text-white focus:outline-none w-12">
+                <User2 className='w-6 h-6 cursor-pointer' />
+            </button>
+          </div>
+          
         </div>
         
         
@@ -718,9 +656,14 @@ export const GoogleSheetsModal = ({ setOpen }: GoogleSheetsModalProps) => {
         </div>
 
         <Show when={openScoreModal}>
-          {/* <ScoreModal setOpen={setOpenScoreModal} /> */}
-          <LoginModal />
+          <Show when={!userAuthenticated}>
+            <LoginModal />
+          </Show>
+          <Show when={userAuthenticated}>
+            <ScoreModal leaderboardData={leaderboardData} selectedSheet={selectedSheet} setSelectedSheet={setSelectedSheet} isOpen={setOpenScoreModal} setSelectedPerson={setSelectedPerson}/>
+          </Show>
         </Show>
+        
       </div>
     </div>
   );

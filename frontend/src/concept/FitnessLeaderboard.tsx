@@ -14,7 +14,6 @@ import {
     format,
   } from 'date-fns';
 import { Show } from '../helpers';
-import LoginModal, { isLoggedIn } from '../components/LoginModal';
 import { UserProfileModal } from '../components/UserProfileModal';
 import { GoogleSheetsModal } from '../components/GoogleSheetsModal';
 

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Eye, EyeOff, Mail, Lock, User2, ArrowRight } from 'lucide-react';
 import { supabase } from '../client/client';
 
@@ -9,72 +9,20 @@ declare global {
 }
 
 
-const { data: { session } } = await supabase.auth.getSession();
-export const isLoggedIn = !!session;
 
 export default function LoginModal() {
-  const [showLoginModal, setShowLoginModal] = useState(true);
-  const [isSignUp, setIsSignUp] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [loginForm, setLoginForm] = useState({
-    email: '',
-    password: '',
-    name: '',
-    confirmPassword: ''
-  });
-  const [isLoading, setIsLoading] = useState(false);
-  console.log(showLoginModal)
-
-  const handleSubmit = async (e: any) => {
-    e.preventDefault();
-    setIsLoading(true);
-  
-    let authResponse;
-    if (isSignUp) {
-      if (loginForm.password !== loginForm.confirmPassword) {
-        alert("Passwords do not match");
-        setIsLoading(false);
-        return;
-      }
-  
-      authResponse = await supabase.auth.signUp({
-        email: loginForm.email,
-        password: loginForm.password,
-        options: {
-          data: {
-            name: loginForm.name
-          }
-        }
-      });
-    } else {
-      authResponse = await supabase.auth.signInWithPassword({
-        email: loginForm.email,
-        password: loginForm.password,
-      });
-    }
-  
-    const { error, data } = authResponse;
-    setIsLoading(false);
-  
-    if (error) {
-      alert(error.message);
-    } else {
-      console.log("Success:", data, isLoggedIn);
-      setShowLoginModal(false);
-    }
-  };
-  
-
   const handleSocialLogin = async (provider: string) => {
     console.log(`Login with ${provider}`);
     if (provider === 'Google') {
-      const { data, error } = await supabase.auth.signInWithOAuth({
+      const { data } = await supabase.auth.signInWithOAuth({
         provider: 'google'
       })
 
-      console.log('success', data, error)
+      console.log('success', data)
     }
   };
+
+console.log('login')
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
@@ -88,10 +36,10 @@ export default function LoginModal() {
               <User2 className="w-8 h-8 text-white" />
             </div>
             <h3 className="text-2xl font-bold text-white mb-2">
-              {isSignUp ? 'Create Account' : 'Welcome Back'}
+              Welcome Back
             </h3>
             <p className="text-gray-400">
-              {isSignUp ? 'Join our community to submit scores' : 'Sign in to submit your score'}
+              Sign in to submit your score
             </p>
           </div>
 
