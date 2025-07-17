@@ -311,7 +311,7 @@ export const GoogleSheetsModal = ({ setOpen }: GoogleSheetsModalProps) => {
       // Set first person as selected by default
       const firstPerson = Object.keys(sheet.users)[0];
 
-      if (firstPerson && (!selectedPerson || Object.keys(sheet.users).find(user => user === selectedPerson))) {
+      if ((firstPerson && !selectedPerson) || !Object.keys(sheet.users).find(user => user === selectedPerson)) {
         setSelectedPerson(firstPerson);
       }
       
