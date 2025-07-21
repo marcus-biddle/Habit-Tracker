@@ -143,9 +143,6 @@ async function updateCell(selectedSheet, range, value) {
       },
     });
 
-    // Google API returns response data directly (no .ok, no .json())
-    // You can check response.status if you want, but usually errors throw automatically.
-
     console.log('Update response:', response.data || response);
     return response.data || response;
 
@@ -238,18 +235,27 @@ app.get('/api/sheets/:sheetName', async (req, res) => {
 app.post('/api/scores/update', async (req, res) => {
   try {
     const { sheet, date, userName, score, operation } = req.body;
+    console.log(sheet, date, userName, score, operation)
     
-    // Validate required fields
-    if (!sheet || !date || !userName || score === undefined || operation === 'update' | 'delete') {
-      return res.status(400).json({
-        success: false,
-        error: 'Missing required fields: sheet, date, userName, score, userData'
-      });
-    }
+   if (
+  !sheet ||
+  !date ||
+  !userName ||
+  score === undefined ||
+  (operation !== 'update' && operation !== 'delete')
+  ) {
+    console.log('Missing required fields or invalid operation');
+    return res.status(400).json({
+      success: false,
+      error: 'Missing required fields: sheet, date, userName, score, or invalid operation',
+    });
+  }
     
     // Validate date format (YYYY-MM-DD)
     const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    console.log('dateRegex outside', dateRegex)
     if (!dateRegex.test(date)) {
+      console.log('dateRegex inside', dateRegex)
       return res.status(400).json({
         success: false,
         error: 'Invalid date format. Use YYYY-MM-DD'
@@ -258,13 +264,12 @@ app.post('/api/scores/update', async (req, res) => {
     
     // Validate score is a number
     if (typeof score !== 'number' || score < 0) {
+      console.log('failed score validation')
       return res.status(400).json({
         success: false,
         error: 'Score must be a non-negative number'
       });
     }
-
-    console.log(sheet, date, userName, score)
     
     const result = await updatePushUpScore(sheet, date, userName, score, operation);
     

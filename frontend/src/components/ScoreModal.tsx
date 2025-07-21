@@ -31,6 +31,7 @@ export const ScoreModal = ({ leaderboardData, selectedSheet, setSelectedSheet, i
       throw new Error('Please enter a score');
     }
 
+    console.log('starting api call');
     // Perform update or delete
     const updateAction = await GoogleSheetApi.updateScore({
       sheet: selectedSheet,
@@ -175,7 +176,7 @@ export const ScoreModal = ({ leaderboardData, selectedSheet, setSelectedSheet, i
             {operation === 'update' && (
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-300">
-                  Push-Up Score
+                  Score
                 </label>
                 <input
                   type="number"
