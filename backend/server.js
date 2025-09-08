@@ -453,4 +453,4 @@ app.use((err, req, res, next) => {
 app.listen(PORT, () => {
   console.log(`Push-up Tracker API server running on port ${PORT}`);
   console.log(`Health check: http://localhost:${PORT}/api/health`);
-});
+}); 
