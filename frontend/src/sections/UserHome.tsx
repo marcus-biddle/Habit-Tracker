@@ -59,7 +59,6 @@ const wasGoalCompleted = (sheetName: string, value: number) => {
 }
 
 const DailyRequirements = ({ stats }: DailyReqProps) => {
-    console.log(stats, "AHHHHH")
     return (
         <div className='flex flex-col justify-center items-left w-full'>
             <h2 className='uppercase'>GOALS</h2>
@@ -245,26 +244,25 @@ const UserHome = () => {
     const fetchUserNames = async () => {
         const userNameData: userStatsData = await GoogleSheetApi.getUserList('Users');
         setUserDataList(userNameData);
-        console.log(userNameData)
     };
 
     const getDailyStats = () => {
-        console.log('getDailyStats - userStats', userStats, date.text)
         const dailyStats = userStats.filter((entry: any) => isSameDate(entry.date, date.text));
-        console.log('getDailyStats', dailyStats)
         setTodaysStats(dailyStats);
     }
 
     const fetchUserStats = async () => {
         const userStatsData = await GoogleSheetApi.getUserStats(activeUser);
-        console.log(userStatsData)
         setUserStats(userStatsData.data);
     }
 
     useEffect(() => {
         fetchUserNames();
+    }, []);
+
+    useEffect(() => {
         fetchUserStats();
-      }, [activeUser]);
+    }, [activeUser]);
 
     useEffect(() => {
         getDailyStats();
