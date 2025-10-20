@@ -58,16 +58,10 @@ export const MultiDateSelector = ({
     return data;
   }, []);
 
-  const currentYearData = historicData[selectedYear] || {};
-  const currentMonthData = currentYearData[selectedMonth] || {};
-  const currentDayEntries = currentMonthData[selectedDay] || [];
-  console.log(months[selectedMonth], selectedMonth+1, selectedDay, selectedYear);
-
   const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
 
   const handleChange = () => {
     const formattedDate : FormattedDate = getFormattedDate(selectedMonth+1, selectedDay, selectedYear)
-    console.log('BOOM',formattedDate)
     selectedDate(formattedDate)
   }
 

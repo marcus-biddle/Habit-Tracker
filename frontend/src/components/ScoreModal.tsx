@@ -41,8 +41,6 @@ export const ScoreModal = ({ leaderboardData, selectedSheet, setSelectedSheet, i
       operation: operation
     });
 
-    console.log('yuh',updateAction)
-
     // Clear form
     setScore('');
   } catch (error) {

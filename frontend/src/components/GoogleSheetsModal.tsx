@@ -325,7 +325,6 @@ export const GoogleSheetsModal = ({ setOpen }: GoogleSheetsModalProps) => {
 
   const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      console.log('SESSH', session)
   
       if (session) {
         console.log("✅ User is logged in:", session.user);
@@ -351,7 +350,6 @@ export const GoogleSheetsModal = ({ setOpen }: GoogleSheetsModalProps) => {
   const canScrollLeft = chartScrollIndex > 0;
   const canScrollRight = chartScrollIndex < leaderboardData[selectedPerson].length - chartViewSize;
   const visibleChartData = leaderboardData[selectedPerson].slice(chartScrollIndex, chartScrollIndex + chartViewSize);
-  console.log(visibleChartData)
 
   const scrollChart = (direction: string) => {
     if (direction === 'left' && canScrollLeft) {

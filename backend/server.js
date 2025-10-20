@@ -132,7 +132,6 @@ async function createNewDateRow(selectedSheet, targetDate) {
  * Update a specific cell in the sheet
  */
 async function updateCell(selectedSheet, range, value) {
-  console.log(selectedSheet, range, value);
   try {
     const response = await sheets.spreadsheets.values.update({
       spreadsheetId: process.env.SPREADSHEET_ID,
@@ -176,7 +175,6 @@ async function updatePushUpScore(sheet, date, userName, score, operation = 'upda
 
     const existingScore = users[userName].find(x => x.date === targetDate)
     const totalScore = existingScore !== undefined ? score + existingScore.score : score;
-    console.log('EXISRI', targetDate, existingScore, users[userName].slice(-10))
     
     // // Update the specific cell
     const range = `${userColumn}${rowIndex}`;
@@ -235,7 +233,6 @@ app.get('/api/sheets/:sheetName', async (req, res) => {
 app.post('/api/scores/update', async (req, res) => {
   try {
     const { sheet, date, userName, score, operation } = req.body;
-    console.log(sheet, date, userName, score, operation)
     
    if (
   !sheet ||
@@ -360,7 +357,6 @@ const getUsers = (data) => {
 app.get('/api/users/all/sheets/:sheetName', async (req, res) => {
   try {
     const { sheetName } = req.params;
-    console.log(sheetName)
     
     const response = await fetch(
       `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${sheetName}?key=${API_KEY}`
