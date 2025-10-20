@@ -9,11 +9,13 @@ export type SheetEntry = {
   value: string | null;
 };
 
+type FormatSheet = { push: string; pull: string; run: string; }
+
 type DailyReqProps = {
     stats: SheetEntry[]
 }
 
-const formattedSheet = {
+const formattedSheet: FormatSheet = {
     push: 'Push-ups',
     pull: 'Pull-ups',
     run: 'Run'
@@ -74,7 +76,7 @@ const DailyRequirements = ({ stats }: DailyReqProps) => {
                                     [{goal.text}]
                                 </span>
                                 <span className="truncate capitalize">
-                                    {key}
+                                    {formattedSheet[key as keyof FormatSheet]}
                                 </span>
                                 <span>{isEntryNull ? 0 : Number(entry.value)}/{repGoals[key]}</span>
                             </li>
