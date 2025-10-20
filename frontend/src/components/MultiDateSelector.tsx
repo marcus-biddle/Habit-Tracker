@@ -77,23 +77,6 @@ export const MultiDateSelector = ({
 
   return (
     <div className="w-full">
-        
-        {/* Header with Toggle Button */}
-        {/* <div className="flex justify-between items-center mb-3">
-        <div className="text-sm font-bold text-slate-700">
-            {months[selectedMonth]} {selectedDay}, {selectedYear}
-        </div>
-        <button
-            onClick={() => setIsOpen(!isOpen)}
-            className="p-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors"
-            aria-label="Toggle date selector"
-        >
-            <Calendar className="w-4 h-4" />
-        </button>
-        </div> */}
-
-        {/* Collapsible Selectors */}
-        {isOpen && (
         <div className=' space-y-2'>
             {/* Year Slider */}
             <div className="">
@@ -147,7 +130,7 @@ export const MultiDateSelector = ({
                 />
             </div>
         </div>
-        )}
+
     </div>
   );
 }
