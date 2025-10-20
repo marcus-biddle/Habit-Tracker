@@ -408,6 +408,10 @@ app.get('/api/users/:userName', async (req, res) => {
     const sheetNames = ['Push', 'Pull', 'Run'];
     const { userName } = req.params;
 
+    if (!userName) {
+      return res.status(400).json({ success: false, message: 'Missing userName parameter' });
+    }
+
     // Step 1: Get headers from all sheets (row 5)
     const headerRanges = sheetNames.map(sheet => `${sheet}!5:5`);
     const headerResponse = await sheets.spreadsheets.values.batchGet({
@@ -415,7 +419,11 @@ app.get('/api/users/:userName', async (req, res) => {
       ranges: headerRanges,
     });
 
-    // Step 2: Find the start (D) and end column (userName) indexes for each sheet; prepare data ranges
+    if (!headerResponse.data.valueRanges || headerResponse.data.valueRanges.length === 0) {
+      return res.status(500).json({ success: false, message: 'No header data found for sheets' });
+    }
+
+    // Step 2: Find start/end column indexes and prepare data ranges
     const dataRanges = [];
 
     headerResponse.data.valueRanges.forEach((vr, i) => {
@@ -425,9 +433,7 @@ app.get('/api/users/:userName', async (req, res) => {
       const valueColIndex = headers.indexOf(userName);
       if (dateColIndex === -1 || valueColIndex === -1) return;
 
-      // Column letters from D(4th col) to user's column for full coverage
-      const startColLetter = 'D'; // Column D is index 3 (0-based)
-      // Function to convert valueColIndex (0-based) to column letter:
+      const startColLetter = 'D';
       const getColumnLetter = (col) => {
         let letter = '';
         while (col >= 0) {
@@ -441,10 +447,10 @@ app.get('/api/users/:userName', async (req, res) => {
     });
 
     if (dataRanges.length === 0) {
-      return res.status(404).json({ success: false, message: 'Columns not found in any sheet' });
+      return res.status(404).json({ success: false, message: 'Columns not found in any sheet for user' });
     }
 
-    // Step 3: Fetch data ranges based on above
+    // Step 3: Fetch data ranges
     const dataResponse = await sheets.spreadsheets.values.batchGet({
       spreadsheetId: SPREADSHEET_ID,
       ranges: dataRanges,
@@ -452,7 +458,11 @@ app.get('/api/users/:userName', async (req, res) => {
       valueRenderOption: 'FORMATTED_VALUE',
     });
 
-    // Step 4: Process rows, padding each to full column length before extracting date and user value
+    if (!dataResponse.data.valueRanges) {
+      return res.status(500).json({ success: false, message: 'No data found in specified ranges' });
+    }
+
+    // Step 4: Process and pad rows
     const results = [];
 
     dataResponse.data.valueRanges.forEach((rangeData, i) => {
@@ -460,16 +470,15 @@ app.get('/api/users/:userName', async (req, res) => {
       const headers = headerResponse.data.valueRanges[i].values[0];
       const dateColIndex = headers.indexOf('Date');
       const valueColIndex = headers.indexOf(userName);
-      const expectedLength = valueColIndex - 3 + 1; // 'D' is column 3 index, coverage length
+      const expectedLength = valueColIndex - 3 + 1;
 
       rows.forEach(row => {
-        // Pad row to expected length for empty cells
         const paddedRow = [...row];
         while (paddedRow.length < expectedLength) {
           paddedRow.push('');
         }
-        const date = paddedRow[0] || null; // Date is first in range D6...
-        const value = paddedRow[expectedLength - 1] || 0; // User column is last
+        const date = paddedRow[0] || null;
+        const value = paddedRow[expectedLength - 1] || 0;
 
         results.push({
           sheet: rangeData.range.split('!')[0],
@@ -479,17 +488,22 @@ app.get('/api/users/:userName', async (req, res) => {
       });
     });
 
-    // Return JSON response with results including empty cells as empty strings
-    res.json({
-      success: true,
-      data: results,
-    });
+    res.json({ success: true, data: results });
 
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ success: false, message: 'Internal Server Error' });
+    // Enhanced error logging with detailed stack and message
+    console.error('API error stack:', error.stack || error);
+    console.error('API error message:', error.message || 'No detailed message');
+
+    res.status(500).json({
+      success: false,
+      message: 'Internal Server Error',
+      errorMessage: error.message || 'Unknown error',
+      // Consider removing stack trace in production for security reasons
+    });
   }
 });
+
 
 
 // /**

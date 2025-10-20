@@ -1,5 +1,3 @@
-import './App.css'
-import { GoogleSheetsModal } from './components/GoogleSheetsModal'
 import Header from './sections/Header'
 import UserHome from './sections/UserHome'
 // import FitnessLeaderboard from './concept/FitnessLeaderboard'

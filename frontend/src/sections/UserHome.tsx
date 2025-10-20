@@ -64,7 +64,7 @@ const DailyRequirements = ({ stats }: DailyReqProps) => {
             <code className=' m-2'>Complete daily tasks. </code>
             <div className='bg-white/10 flex justify-center rounded-lg w-full'>
                 <ul className='items-start justify-center space-y-2 p-4 w-full'>
-                    {stats.length > 0 && Object.entries(formattedSheet).map(([key, value], index) => {
+                    {Object.entries(formattedSheet).map(([key, value], index) => {
                         const entry = stats.find(e => e.sheet.toLowerCase() === key) || null;
                         const isEntryNull = entry === null;
                         const goal = wasGoalCompleted(key, Number(isEntryNull ? 0 : entry.value));
