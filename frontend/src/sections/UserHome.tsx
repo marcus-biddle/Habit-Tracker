@@ -269,7 +269,7 @@ const UserHome = () => {
     }, [date, userStats])
 
   return (
-    <div className='relative h-screen space-y-10 flex flex-col justify-center items-center'>
+    <div className='relative space-y-10 flex flex-col justify-center items-center'>
         <TimeTracker />
         <MultiDateSelector rawData={userStats} selectedDate={selectedDate} date={date} />
         <UserSelection userList={userDataList.users} totalUsers={userDataList.totalUsers} activeUser={activeUser} setActiveUser={setActiveUser} />

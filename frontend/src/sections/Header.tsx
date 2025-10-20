@@ -1,15 +1,13 @@
-import { Omega, User } from 'lucide-react'
-import React from 'react'
-
+import { Omega } from 'lucide-react'
 const Header = () => {
   return (
-    <div className='flex justify-between text-white'>
+    <div className='relative flex justify-between text-white p-8 md:p-16'>
         <div>
             <Omega className=' size-10' />
         </div>
-        <div>
+        {/* <div>
             <User className=' size-10' />
-        </div>
+        </div> */}
     </div>
   )
 }

@@ -5,11 +5,11 @@ import UserHome from './sections/UserHome'
 function App() {
 
   return (
-    <div className=' bg-slate-900 p-8 md:p-16 '>
+    <div className='relative min-h-screen bg-slate-900 flex flex-col justify-center'>
       <Header />
-      <UserHome />
-      {/* <FitnessLeaderboard /> */}
-      {/* <GoogleSheetsModal setOpen={() => true} /> */}
+      <main className='px-8 mb-8 md:px-16'>
+        <UserHome />
+      </main>
     </div>
   )
 }
