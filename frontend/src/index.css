@@ -43,3 +43,7 @@
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.15) rgba(0, 0, 0, 0.1);
 }
+
+html, body {
+  overscroll-behavior: none; /* disables pull-to-refresh and overscroll on supported browsers */
+}

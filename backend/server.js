@@ -338,61 +338,29 @@ app.delete('/api/scores/delete', async (req, res) => {
 const getUsers = (data) => {
     const rows = data.values || [];
     
-    // Parse the data structure
-    const users = {};
-    
-    if (rows.length > 4) {
-      // Row 5 (index 4) contains the names
-      const nameRow = rows[4];
+    if (rows.length > 3) {
+      const nameRow = rows[3];
       
-      // Find name columns (skip first 4 columns: Yr, Qtr Yr, Mo Yr, Date)
-      const nameColumns = {};
+      const names = [];
       
-      for (let colIndex = 4; colIndex < nameRow.length; colIndex++) {
-        const name = nameRow[colIndex];
-        if (name && name.trim()) {
-          nameColumns[colIndex] = name.trim();
-          users[name.trim()] = [];
+      for (let rowIndex = 1; rowIndex < rows.length; rowIndex++) {
+        const name = rows[rowIndex][3];
+        if (name && name !== ' ') {
+          names.push(name);
         }
       }
-      
-      // Process data rows (starting from row 6, index 5)
-      for (let rowIndex = 5; rowIndex < rows.length; rowIndex++) {
-        const row = rows[rowIndex];
-        if (row.length > 3) {
-          const date = row[3]; // Column D contains dates
-          
-          if (date && date.trim()) {
-            
-            const parsedDate = new Date(date.trim());
-            const today = new Date();
-            today.setHours(0, 0, 0, 0); // Strip time to compare only the date
-            parsedDate.setHours(0, 0, 0, 0);
 
-            if (parsedDate > today) continue;
-
-            // For each person column, check if there's a score
-            Object.entries(nameColumns).forEach(([colIndex, personName]) => {
-              const rawScore = row[parseInt(colIndex)];
-              const score = rawScore ? Number(rawScore.replace(/,/g, '')) : 0;
-              if (score && !isNaN(Number(score))) {
-                users[personName].push({
-                  name: personName,
-                  date: date.trim(),
-                  score: score 
-                });
-              }
-            });
-          }
-        }
-      }
+      return names;
     }
-    return users;
+
+    return;
 };
 
-app.get('/api/users/:sheetName', async (req, res) => {
+// GET  all users that are on spreadsheet
+app.get('/api/users/all/sheets/:sheetName', async (req, res) => {
   try {
     const { sheetName } = req.params;
+    console.log(sheetName)
     
     const response = await fetch(
       `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${sheetName}?key=${API_KEY}`
@@ -422,6 +390,104 @@ app.get('/api/users/:sheetName', async (req, res) => {
       success: false,
       error: error.message
     });
+  }
+});
+
+function getColumnLetter(index) {
+  let letter = "";
+  while (index >= 0) {
+    letter = String.fromCharCode((index % 26) + 65) + letter;
+    index = Math.floor(index / 26) - 1;
+  }
+  return letter;
+}
+
+// GET  specific user data for each sheet
+app.get('/api/users/:userName', async (req, res) => {
+  try {
+    const sheetNames = ['Push', 'Pull', 'Run'];
+    const { userName } = req.params;
+
+    // Step 1: Get headers from all sheets (row 5)
+    const headerRanges = sheetNames.map(sheet => `${sheet}!5:5`);
+    const headerResponse = await sheets.spreadsheets.values.batchGet({
+      spreadsheetId: SPREADSHEET_ID,
+      ranges: headerRanges,
+    });
+
+    // Step 2: Find the start (D) and end column (userName) indexes for each sheet; prepare data ranges
+    const dataRanges = [];
+
+    headerResponse.data.valueRanges.forEach((vr, i) => {
+      if (!vr.values || !vr.values[0]) return;
+      const headers = vr.values[0];
+      const dateColIndex = headers.indexOf('Date');
+      const valueColIndex = headers.indexOf(userName);
+      if (dateColIndex === -1 || valueColIndex === -1) return;
+
+      // Column letters from D(4th col) to user's column for full coverage
+      const startColLetter = 'D'; // Column D is index 3 (0-based)
+      // Function to convert valueColIndex (0-based) to column letter:
+      const getColumnLetter = (col) => {
+        let letter = '';
+        while (col >= 0) {
+          letter = String.fromCharCode((col % 26) + 65) + letter;
+          col = Math.floor(col / 26) - 1;
+        }
+        return letter;
+      };
+      const endColLetter = getColumnLetter(valueColIndex);
+      dataRanges.push(`${sheetNames[i]}!${startColLetter}6:${endColLetter}`);
+    });
+
+    if (dataRanges.length === 0) {
+      return res.status(404).json({ success: false, message: 'Columns not found in any sheet' });
+    }
+
+    // Step 3: Fetch data ranges based on above
+    const dataResponse = await sheets.spreadsheets.values.batchGet({
+      spreadsheetId: SPREADSHEET_ID,
+      ranges: dataRanges,
+      majorDimension: 'ROWS',
+      valueRenderOption: 'FORMATTED_VALUE',
+    });
+
+    // Step 4: Process rows, padding each to full column length before extracting date and user value
+    const results = [];
+
+    dataResponse.data.valueRanges.forEach((rangeData, i) => {
+      const rows = rangeData.values || [];
+      const headers = headerResponse.data.valueRanges[i].values[0];
+      const dateColIndex = headers.indexOf('Date');
+      const valueColIndex = headers.indexOf(userName);
+      const expectedLength = valueColIndex - 3 + 1; // 'D' is column 3 index, coverage length
+
+      rows.forEach(row => {
+        // Pad row to expected length for empty cells
+        const paddedRow = [...row];
+        while (paddedRow.length < expectedLength) {
+          paddedRow.push('');
+        }
+        const date = paddedRow[0] || null; // Date is first in range D6...
+        const value = paddedRow[expectedLength - 1] || 0; // User column is last
+
+        results.push({
+          sheet: rangeData.range.split('!')[0],
+          date,
+          value,
+        });
+      });
+    });
+
+    // Return JSON response with results including empty cells as empty strings
+    res.json({
+      success: true,
+      data: results,
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: 'Internal Server Error' });
   }
 });
 

@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const BASE_URL = 'https://group-tracker.onrender.com'; // production
+const BASE_URL = 'http://localhost:3000'
+//'https://group-tracker.onrender.com'; // production
 
 interface SheetScoreUpdatePayload {
   sheet: string;
@@ -28,7 +29,12 @@ async function getSheetData(sheetName: string) {
 }
 
 async function getUserList(sheetName: string) {
-  const res = await axios.get(`${BASE_URL}/api/users/${sheetName}`);
+  const res = await axios.get(`${BASE_URL}/api/users/all/sheets/${sheetName}`);
+  return res.data;
+}
+
+async function getUserStats(userName: string) {
+  const res = await axios.get(`${BASE_URL}/api/users/${userName}`);
   return res.data;
 }
 
@@ -47,5 +53,6 @@ async function deleteScore(payload: SheetScoreDeletePayload) {
 export const GoogleSheetApi = {
     getSheetData,
     getUserList,
-    updateScore
+    updateScore,
+    getUserStats
 }
