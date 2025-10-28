@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
-import { GoogleSheetApi } from '../api/GoogleSheetsAPI';
 import { MultiDateSelector } from '../components/MultiDateSelector';
+import { useActiveUser } from '../context/ActiveUserCotnext';
+import { ActionsOverview } from '../components/ActionsOverview';
 
 export type SheetEntry = {
   sheet: string;
@@ -59,11 +60,12 @@ const wasGoalCompleted = (sheetName: string, value: number) => {
 }
 
 const DailyRequirements = ({ stats }: DailyReqProps) => {
+    console.log('stats', stats)
     return (
         <div className='flex flex-col justify-center items-left w-full'>
             <h2 className='uppercase'>GOALS</h2>
             <code className=' m-2'>Complete daily tasks. </code>
-            <div className='bg-white/10 flex justify-center rounded-lg w-full'>
+            <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl p-6 shadow-2xl border border-slate-700/50">
                 <ul className='items-start justify-center space-y-2 p-4 w-full'>
                     {Object.entries(formattedSheet).map(([key, value], index) => {
                         const entry = stats.find(e => e.sheet.toLowerCase() === key) || null;
@@ -168,113 +170,44 @@ const Progress: React.FC<ProgressProps> = ({ progress }) => {
   );
 };
 
-export type FormattedDate = {
-    text: string;
-    month: string;
-    day: string;
-    year: string;
-}
-
-export function getFormattedDate(month?: number, day?: number, year?: number): FormattedDate {
-  const today = new Date();
-
-  // Use provided values or fallback to today's components
-  const m = month ?? today.getMonth(); // Months are zero-based
-  const d = day ?? today.getDate();
-  const y = year ?? today.getFullYear();
-
-  // Format with leading zeros
-  const formattedMonth = m.toString().padStart(2, "0");
-  const formattedDay = d.toString().padStart(2, "0");
-  const formattedYear = y.toString(); // Last two digits
-
-  return { text:`${formattedMonth}/${formattedDay}/${formattedYear.slice(-2)}`, month: formattedMonth, day: formattedDay, year: formattedYear };
-}
-
-function isSameDate(date1: string, date2?: string): boolean {
-  const d1 = new Date(date1);
-  const d2 = date2 ? new Date(date2) : new Date(); // default to today if not provided
-
-  // Compare only year, month, and day (ignore time zone/time)
-  return (
-    d1.getFullYear() === d2.getFullYear() &&
-    d1.getMonth() === d2.getMonth() &&
-    d1.getDate() === d2.getDate()
-  );
-}
-
 type UserSelectionProps = {
     userList: string[];
     totalUsers: number;
     activeUser: string;
     setActiveUser: (user: string) => void;
 }
-const UserSelection = ({ userList, totalUsers, activeUser, setActiveUser }: UserSelectionProps) => {
-    return (
-        <div className='w-full space-y-4'>
-            <h4 className=' uppercase'>total users: <code className='text-xl'>{totalUsers}</code></h4>
-            <ul className='grid grid-cols-4 gap-2'>
-                {userList.map((user, index) => (
-                    <li key={index}>
-                        <button onClick={() => setActiveUser(user)} className={`w-full ${user === activeUser ? 'bg-slate-500 text-slate-800 font-bold' : 'bg-white/10'} py-2 px-4 rounded-sm`}>{user}</button>
-                    </li>
-                ))}
-            </ul>
-        </div>
-    )
-}
-
-type userStatsData = {
-    success: boolean;
-    users: string[];
-    totalUsers: number;
-}
 
 const UserHome = () => {
-    const [activeUser, setActiveUser] = useState('Cal');
-    const [userDataList, setUserDataList] = useState<userStatsData>({
-        success: false,
-        users: [],
-        totalUsers: 0
-    });
-    const [userStats, setUserStats] = useState<SheetEntry[]>([]);
-    const [date, selectedDate] = useState<FormattedDate>(getFormattedDate());
-    const [todaysStats, setTodaysStats] = useState<SheetEntry[]>([]);
+   const { date, selectedDate, actionsByDate, userActionList } = useActiveUser();
+   console.log(date, actionsByDate, userActionList)
 
-    const fetchUserNames = async () => {
-        const userNameData: userStatsData = await GoogleSheetApi.getUserList('Users');
-        setUserDataList(userNameData);
-    };
+    // const getDailyStats = () => {
+    //     const dailyStats = userStats.filter((entry: any) => isSameDate(entry.date, date.text));
+    //     setTodaysStats(dailyStats);
+    // }
 
-    const getDailyStats = () => {
-        const dailyStats = userStats.filter((entry: any) => isSameDate(entry.date, date.text));
-        setTodaysStats(dailyStats);
-    }
+    // const fetchUserStats = async () => {
+    //     const userListData = await GoogleSheetApi.getUserStats(user ?? '');
+    //     setUserStats(userListData.data);
+    // }
 
-    const fetchUserStats = async () => {
-        const userStatsData = await GoogleSheetApi.getUserStats(activeUser);
-        setUserStats(userStatsData.data);
-    }
+    // useEffect(() => {
+    //     fetchUserStats();
+    // }, [user]);
 
-    useEffect(() => {
-        fetchUserNames();
-    }, []);
-
-    useEffect(() => {
-        fetchUserStats();
-    }, [activeUser]);
-
-    useEffect(() => {
-        getDailyStats();
-    }, [date, userStats])
+    // useEffect(() => {
+    //     getDailyStats();
+    // }, [date, userStats])
 
   return (
-    <div className='relative space-y-10 flex flex-col justify-center items-center'>
+    <div className='relative flex flex-col '>
         <TimeTracker />
-        <MultiDateSelector rawData={userStats} selectedDate={selectedDate} date={date} />
-        <UserSelection userList={userDataList.users} totalUsers={userDataList.totalUsers} activeUser={activeUser} setActiveUser={setActiveUser} />
-        <Progress progress={calculateProgress(todaysStats)} />
-        <DailyRequirements stats={todaysStats} />
+        <ActionsOverview />
+        
+        {/* <MultiDateSelector rawData={userActionList} selectedDate={selectedDate} date={date} /> */}
+        {/* <UserSelection userList={userDataList.users} totalUsers={userDataList.totalUsers} activeUser={activeUser} setActiveUser={setActiveUser} /> */}
+        {/* <Progress progress={calculateProgress(actionByDate)} /> */}
+        {/* <DailyRequirements stats={actionByDate} /> */}
     </div>
   )
 }

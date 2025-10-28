@@ -31,7 +31,7 @@ async function getSheetData(sheetName: string) {
 
 async function getUserList(sheetName: string) {
   const res = await axios.get(`${BASE_URL}/api/users/all/sheets/${sheetName}`);
-  return res.data;
+  return res.data ?? null;
 }
 
 async function getUserStats(userName: string) {
