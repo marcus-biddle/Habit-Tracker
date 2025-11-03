@@ -6,7 +6,7 @@ type ContainerProps = {
 
 export const Container = ({children}: ContainerProps) => {
   return (
-    <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl p-6 shadow-2xl border border-slate-700/50">
+    <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl p-6 shadow-2xl border border-slate-700/50 w-full h-full">
         {children}
     </div>
   )

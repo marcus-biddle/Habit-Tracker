@@ -3,6 +3,15 @@ import { motion } from 'framer-motion'
 import { MultiDateSelector } from '../components/MultiDateSelector';
 import { useActiveUser } from '../context/ActiveUserCotnext';
 import { ActionsOverview } from '../components/ActionsOverview';
+import { WeeklyWorkoutFrequencyChart } from '../components/Charts/WeeklyWorkoutFrequencyChart';
+import { TotalVolumeChart } from '../components/Charts/TotalVolumeChart';
+import { ExerciseProgressionChart } from '../components/Charts/ExerciseProgressionChart';
+import { ConsistencyStreaksChart } from '../components/Charts/ConsistencyStreaksChart';
+import { ExerciseVarietyChart } from '../components/Charts/ExerciseVarietyChart';
+import { BodyMeasurementsChart } from '../components/Charts/BodyMeasurementChart';
+import { Grid, Box } from "@mui/material";
+import { Filter, PlusCircleIcon } from 'lucide-react';
+import SimpleDropdown from '../components/Mui/Dropdown';
 
 export type SheetEntry = {
   sheet: string;
@@ -178,8 +187,56 @@ type UserSelectionProps = {
 }
 
 const UserHome = () => {
-   const { date, selectedDate, actionsByDate, userActionList } = useActiveUser();
+   const { date, selectedDate, actionsByDate, userActionList, user } = useActiveUser();
    console.log(date, actionsByDate, userActionList)
+   const userWorkoutDates = [
+  "2025-11-02T14:23:00.000Z",
+  "2025-11-02T17:45:00.000Z",
+  "2025-11-01T12:10:00.000Z",
+  "2025-10-30T19:00:00.000Z",
+  "2025-10-29T09:30:00.000Z",
+  "2025-10-27T07:15:00.000Z"
+];
+
+const workoutEntries = [
+  { date: "2025-11-01T10:00:00.000Z", sets: 4, reps: 8, weight: 100 },
+  { date: "2025-11-01T10:00:00.000Z", sets: 3, reps: 10, weight: 80 },
+  { date: "2025-11-03T12:30:00.000Z", sets: 5, reps: 5, weight: 120 },
+  { date: "2025-11-05T09:15:00.000Z", sets: 4, reps: 6, weight: 110 },
+  { date: "2025-11-05T09:15:00.000Z", sets: 3, reps: 12, weight: 60 },
+];
+
+const exerciseName = "Barbell Bench Press";
+const entries = [
+  { date: "2025-11-01T10:00:00.000Z", weight: 150, reps: 8 },
+  { date: "2025-11-02T11:30:00.000Z", weight: 155, reps: 6 },
+  { date: "2025-11-04T09:45:00.000Z", weight: 160, reps: 5 },
+  { date: "2025-11-05T12:15:00.000Z", weight: 152.5, reps: 8 },
+];
+
+const workoutDates = [
+  "2025-11-01T10:00:00.000Z",
+  "2025-11-02T11:30:00.000Z",
+  "2025-11-03T09:45:00.000Z",
+  "2025-11-05T12:15:00.000Z",
+  "2025-11-06T15:00:00.000Z",
+  "2025-11-07T08:20:00.000Z",
+];
+
+const exerciseData = [
+  { category: "Chest", count: 10 },
+  { category: "Back", count: 7 },
+  { category: "Legs", count: 5 },
+  { category: "Shoulders", count: 4 },
+];
+
+const measurements = [
+  { date: "2025-10-01T07:00:00.000Z", weight: 180, bodyFatPercent: 18.5 },
+  { date: "2025-10-15T07:00:00.000Z", weight: 178, bodyFatPercent: 17.8 },
+  { date: "2025-11-01T07:00:00.000Z", weight: 175, bodyFatPercent: 17.0 },
+  { date: "2025-11-10T07:00:00.000Z", weight: 172, bodyFatPercent: 16.5 },
+];
+
 
     // const getDailyStats = () => {
     //     const dailyStats = userStats.filter((entry: any) => isSameDate(entry.date, date.text));
@@ -201,6 +258,60 @@ const UserHome = () => {
 
   return (
     <div className='relative flex flex-col '>
+      <div className='p-4 flex flex-col justify-center items-baseline gap-2 md:flex-row md:justify-between'>
+        <h2 className='text-4xl'>{user}</h2>
+        <div className='flex gap-4 justify-center items-center h-10'>
+          <Filter className='size-8' />
+          <SimpleDropdown />
+          <button>
+            <PlusCircleIcon className='size-8' />
+          </button>
+        </div>
+      </div>
+      {/* Charts */}
+<Grid container spacing={4}>
+{/* First item takes 8/12 columns */}
+<Grid item xs={12} md={8} sx={{ minHeight: '400px', width: '600px' }}>
+<Box sx={{ height: "100%", width: "100%" }}>
+<WeeklyWorkoutFrequencyChart workoutDates={userWorkoutDates} />
+</Box>
+</Grid>
+
+{/* Second item takes remaining 4/12 columns */}
+<Grid item xs={12} md={4} container direction="column" spacing={4}>
+<Grid item xs={12}>
+<Box sx={{ width: "100%", minHeight: '190px' }}>
+<ConsistencyStreaksChart workoutDates={workoutDates} />
+</Box>
+</Grid>
+<Grid item xs={12}>
+<Box sx={{ width: "100%", minHeight: '190px' }}>
+<ExerciseVarietyChart exerciseData={exerciseData} />
+</Box>
+</Grid>
+</Grid>
+
+{/* Following rows */}
+<Grid item xs={12} md={8} sx={{ minHeight: '400px', width: '600px' }}>
+<Box sx={{ height: "100%", width: "100%" }}>
+<BodyMeasurementsChart measurements={measurements} />
+</Box>
+</Grid>
+
+<Grid item xs={12} md={8} sx={{ minHeight: '400px', width: '600px' }}>
+<Box sx={{ height: "100%", width: "100%" }}>
+<ExerciseProgressionChart exerciseName={exerciseName} entries={entries} />
+</Box>
+</Grid>
+
+<Grid item xs={12} md={4} sx={{ minHeight: '400px', width: '600px' }}>
+<Box sx={{ height: "100%", width: "100%" }}>
+<TotalVolumeChart workoutEntries={workoutEntries} />
+</Box>
+</Grid>
+</Grid>
+
+
         <TimeTracker />
         <ActionsOverview />
         

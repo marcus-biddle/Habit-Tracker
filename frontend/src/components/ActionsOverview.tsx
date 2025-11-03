@@ -13,9 +13,10 @@ const getProgressPercentage = (current, target) => {
 
 export const ActionsOverview = () => {
     const { actionsByDate } = useActiveUser();
+    
   return (
     <Container>
-        <div className={`grid grid-cols-${actionsByDate.length ?? 1} gap-4 w-full`}>
+        <div className={`grid grid-cols-${actionsByDate && (actionsByDate.length ?? 1)} gap-4 w-full`}>
             {actionsByDate && actionsByDate.map((action, index) => (
               <div
                 key={index}

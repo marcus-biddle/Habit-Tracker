@@ -8,7 +8,6 @@ function App() {
 
   return (
     <ActiveUserProvider>
-      <Sidebar />
       <div className='relative min-h-screen bg-slate-900 flex flex-col justify-center px-8'>
         <Header />
         <main className=''>

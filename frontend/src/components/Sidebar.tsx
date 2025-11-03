@@ -54,7 +54,7 @@ export function Sidebar() {
       <button
         onClick={toggleSidebar}
         aria-label="toggle sidebar"
-        className="p-3 border-2 border-zinc-800 rounded-xl"
+        className="p-3 border-2 border-zinc-800/50 rounded-xl"
       >
         <Menu />
       </button>
