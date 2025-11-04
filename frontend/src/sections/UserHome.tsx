@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { MultiDateSelector } from '../components/MultiDateSelector';
-import { useActiveUser } from '../context/ActiveUserCotnext';
+import { useActiveUser } from '../context/ActiveUserContext';
 import { ActionsOverview } from '../components/ActionsOverview';
 import { WeeklyWorkoutFrequencyChart } from '../components/Charts/WeeklyWorkoutFrequencyChart';
 import { TotalVolumeChart } from '../components/Charts/TotalVolumeChart';
@@ -12,6 +12,7 @@ import { BodyMeasurementsChart } from '../components/Charts/BodyMeasurementChart
 import { Grid, Box } from "@mui/material";
 import { Filter, PlusCircleIcon } from 'lucide-react';
 import SimpleDropdown from '../components/Mui/Dropdown';
+import BasicGrid from '../components/Mui/BasicGrid';
 
 export type SheetEntry = {
   sheet: string;
@@ -256,8 +257,13 @@ const measurements = [
     //     getDailyStats();
     // }, [date, userStats])
 
+    const gridItems = [
+      { component: <WeeklyWorkoutFrequencyChart workoutDates={userWorkoutDates} />, size: 8 },
+      { component: <ConsistencyStreaksChart workoutDates={workoutDates} />, size: 4 }
+    ]
+
   return (
-    <div className='relative flex flex-col '>
+    <div className='w-full h-screen'>
       <div className='p-4 flex flex-col justify-center items-baseline gap-2 md:flex-row md:justify-between'>
         <h2 className='text-4xl'>{user}</h2>
         <div className='flex gap-4 justify-center items-center h-10'>
@@ -268,52 +274,11 @@ const measurements = [
           </button>
         </div>
       </div>
-      {/* Charts */}
-<Grid container spacing={4}>
-{/* First item takes 8/12 columns */}
-<Grid item xs={12} md={8} sx={{ minHeight: '400px', width: '600px' }}>
-<Box sx={{ height: "100%", width: "100%" }}>
-<WeeklyWorkoutFrequencyChart workoutDates={userWorkoutDates} />
-</Box>
-</Grid>
-
-{/* Second item takes remaining 4/12 columns */}
-<Grid item xs={12} md={4} container direction="column" spacing={4}>
-<Grid item xs={12}>
-<Box sx={{ width: "100%", minHeight: '190px' }}>
-<ConsistencyStreaksChart workoutDates={workoutDates} />
-</Box>
-</Grid>
-<Grid item xs={12}>
-<Box sx={{ width: "100%", minHeight: '190px' }}>
-<ExerciseVarietyChart exerciseData={exerciseData} />
-</Box>
-</Grid>
-</Grid>
-
-{/* Following rows */}
-<Grid item xs={12} md={8} sx={{ minHeight: '400px', width: '600px' }}>
-<Box sx={{ height: "100%", width: "100%" }}>
-<BodyMeasurementsChart measurements={measurements} />
-</Box>
-</Grid>
-
-<Grid item xs={12} md={8} sx={{ minHeight: '400px', width: '600px' }}>
-<Box sx={{ height: "100%", width: "100%" }}>
-<ExerciseProgressionChart exerciseName={exerciseName} entries={entries} />
-</Box>
-</Grid>
-
-<Grid item xs={12} md={4} sx={{ minHeight: '400px', width: '600px' }}>
-<Box sx={{ height: "100%", width: "100%" }}>
-<TotalVolumeChart workoutEntries={workoutEntries} />
-</Box>
-</Grid>
-</Grid>
+      <BasicGrid GridItems={gridItems} />
 
 
-        <TimeTracker />
-        <ActionsOverview />
+        {/* <TimeTracker />
+        <ActionsOverview /> */}
         
         {/* <MultiDateSelector rawData={userActionList} selectedDate={selectedDate} date={date} /> */}
         {/* <UserSelection userList={userDataList.users} totalUsers={userDataList.totalUsers} activeUser={activeUser} setActiveUser={setActiveUser} /> */}

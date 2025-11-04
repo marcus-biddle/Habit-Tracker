@@ -1,5 +1,5 @@
 import { Omega } from 'lucide-react'
-import { useActiveUser } from '../context/ActiveUserCotnext'
+import { useActiveUser } from '../context/ActiveUserContext'
 import { Sidebar } from '../components/Sidebar';
 const Header = () => {
   const { user } = useActiveUser();

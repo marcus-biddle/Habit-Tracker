@@ -1,5 +1,5 @@
 import { Sidebar } from './components/Sidebar'
-import { ActiveUserProvider } from './context/ActiveUserCotnext'
+import { ActiveUserProvider } from './context/ActiveUserContext'
 import Header from './sections/Header'
 import UserHome from './sections/UserHome'
 // import FitnessLeaderboard from './concept/FitnessLeaderboard'

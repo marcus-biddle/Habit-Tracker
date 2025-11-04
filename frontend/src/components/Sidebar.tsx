@@ -1,7 +1,7 @@
 import React, { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, User, Undo2 } from 'lucide-react';
-import { useActiveUser } from "../context/ActiveUserCotnext";
+import { useActiveUser } from "../context/ActiveUserContext";
 import { RollingNumber } from "./framer/RollingNumber";
 
 // const items = [

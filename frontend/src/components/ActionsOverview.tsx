@@ -1,6 +1,6 @@
 import React from 'react'
 import { Container } from './Container/Container'
-import { useActiveUser } from '../context/ActiveUserCotnext'
+import { useActiveUser } from '../context/ActiveUserContext'
 import { CheckCircle2, Circle } from 'lucide-react';
 
 const getProgressPercentage = (current, target) => {
