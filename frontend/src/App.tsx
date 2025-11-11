@@ -1,4 +1,5 @@
-import { Sidebar } from './components/Sidebar'
+
+import { DashboardLayout } from './components/DashboardLayout'
 import { ActiveUserProvider } from './context/ActiveUserContext'
 import Header from './sections/Header'
 import UserHome from './sections/UserHome'
@@ -8,12 +9,12 @@ function App() {
 
   return (
     <ActiveUserProvider>
-      <div className='relative min-h-screen bg-slate-900 flex flex-col justify-center px-8'>
-        <Header />
-        <main className=''>
+      <>
+        <DashboardLayout />
+        {/* <main className=''>
           <UserHome />
-        </main>
-      </div>
+        </main> */}
+      </>
     </ActiveUserProvider>
     
   )
