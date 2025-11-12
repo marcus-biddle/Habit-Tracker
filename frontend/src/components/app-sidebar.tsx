@@ -12,7 +12,8 @@ import {
   PieChart,
   Settings2,
   SquareTerminal,
-  ChartBar
+  ChartBar,
+  Home
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -60,39 +61,27 @@ const data = {
       items: [
         {
           title: "Overview",
-          url: "#",
+          url: "overview",
+        },
+      ],
+    },
+    {
+      title: "Users",
+      url: "#",
+      icon: Bot,
+      items: [
+        {
+          title: "Compare",
+          url: "compare",
         },
         {
-          title: "Month to Month",
-          url: "#",
-        },
-        {
-          title: "Day to Day",
-          url: "#",
+          title: "Explore",
+          url: "explore",
         },
       ],
     },
     // {
-    //   title: "Models",
-    //   url: "#",
-    //   icon: Bot,
-    //   items: [
-    //     {
-    //       title: "Genesis",
-    //       url: "#",
-    //     },
-    //     {
-    //       title: "Explorer",
-    //       url: "#",
-    //     },
-    //     {
-    //       title: "Quantum",
-    //       url: "#",
-    //     },
-    //   ],
-    // },
-    // {
-    //   title: "Documentation",
+    //   title: "History",
     //   url: "#",
     //   icon: BookOpen,
     //   items: [
@@ -114,35 +103,35 @@ const data = {
     //     },
     //   ],
     // },
-    {
-      title: "Settings",
-      url: "#",
-      icon: Settings2,
-      items: [
-        {
-          title: "General",
-          url: "#",
-        },
-        {
-          title: "Team",
-          url: "#",
-        },
-        {
-          title: "Billing",
-          url: "#",
-        },
-        {
-          title: "Limits",
-          url: "#",
-        },
-      ],
-    },
+    // {
+    //   title: "Settings",
+    //   url: "#",
+    //   icon: Settings2,
+    //   items: [
+    //     {
+    //       title: "General",
+    //       url: "general",
+    //     },
+    //     {
+    //       title: "Team",
+    //       url: "team",
+    //     },
+    //     {
+    //       title: "Billing",
+    //       url: "#",
+    //     },
+    //     {
+    //       title: "Limits",
+    //       url: "#",
+    //     },
+    //   ],
+    // },
   ],
   projects: [
     {
-      name: "Users",
-      url: "#",
-      icon: Bot,
+      name: "Home",
+      url: "/",
+      icon: Home,
     },
     // {
     //   name: "Sales & Marketing",
@@ -164,8 +153,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <TeamSwitcher teams={data.teams} />
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
         <NavProjects projects={data.projects} />
+        <NavMain items={data.navMain} />
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={data.user} />
