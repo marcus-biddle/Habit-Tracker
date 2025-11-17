@@ -1,8 +1,9 @@
-import React, { createContext, useState, useContext } from 'react';
+import { supabase } from '@/client/client';
+import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 interface AuthContextType {
-  user: null | { email: string };
+  user: null | { id: string };
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   register: (email: string, password: string) => Promise<void>;
@@ -11,48 +12,58 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [user, setUser] = useState<null | { email: string }>(null);
+  const [user, setUser] = useState<null | { id: string }>(null);
   const navigate = useNavigate();
 
   const login = async (email: string, password: string) => {
-    const res = await fetch('http://localhost:3000/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-      credentials: 'include',
-    });
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
-    if (!res.ok) throw new Error('Login failed');
+  if (error) {
+    throw new Error('Login failed: ' + error.message);
+  }
 
-    const data = await res.json();
-
-    // Data contains { message, success, id }
-    console.log('login response data:', data);
-    
-    setUser(data.id);
+  if (data.session) {
+    // You can get user ID from data.user.id
+    setUser({id: data.user.id});
     navigate('/');
-  };
+  }
+};
 
   const register = async (email: string, password: string) => {
-    const res = await fetch('http://localhost:3000/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-      credentials: 'include',
-    });
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+  });
 
-    if (!res.ok) {
-      const errorData = await res.json();
-      throw new Error(errorData.error || 'Registration failed');
+  if (error) {
+    throw new Error('Registration failed: ' + error.message);
+  }
+
+  if (data.session) navigate('/login');
+};
+
+  const logout = async () => {
+  const { error } = await supabase.auth.signOut();
+  if (error) {
+    console.error("Error signing out:", error.message);
+    return;
+  }
+  setUser(null);
+  navigate('/login');
+};
+
+useEffect(() => {
+    async function fetchUser() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) setUser({ id: user.id });
+      if (!user) navigate('/login')
     }
-
-    navigate('/login');
-  };
-
-  const logout = () => {
-    setUser(null);
-    navigate('/login');
-  };
+    fetchUser();
+    const { data: authListener } = supabase.auth.onAuthStateChange(() => {
+      fetchUser();
+    });
+    return () => authListener?.subscription?.unsubscribe();
+  }, []);
 
   const value = React.useMemo(() => ({ user, login, logout, register }), [user]);
 

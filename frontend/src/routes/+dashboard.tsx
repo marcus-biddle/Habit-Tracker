@@ -13,11 +13,14 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
+import { useAuth } from "@/context/AuthContext";
 import { Outlet } from "react-router";
-import Login from "./auth/login";
 
+// App/Root file
 
 const DashboardLayout = () => {
+  const { user } = useAuth();
+
   return (
     <SidebarProvider>
       <AppSidebar  />
@@ -40,13 +43,17 @@ const DashboardLayout = () => {
                 <BreadcrumbItem>
                   <BreadcrumbPage>Dashboard</BreadcrumbPage>
                 </BreadcrumbItem>
+                <BreadcrumbSeparator className="hidden md:block" />
+                <BreadcrumbItem>
+                  <BreadcrumbPage>User ID {user?.id}</BreadcrumbPage>
+                </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
           </div>
         </header>
-        <>
+        <div className="relative h-screen">
           <Outlet />
-        </>
+        </div>
       </SidebarInset>
     </SidebarProvider>
   )

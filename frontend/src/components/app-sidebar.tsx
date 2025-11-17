@@ -133,11 +133,11 @@ const data = {
       url: "/",
       icon: Home,
     },
-    // {
-    //   name: "Sales & Marketing",
-    //   url: "#",
-    //   icon: PieChart,
-    // },
+    {
+      name: "Habits",
+      url: "/habits",
+      icon: Map,
+    },
     // {
     //   name: "Travel",
     //   url: "#",

@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { MultiDateSelector } from '../components/MultiDateSelector';
-import { useActiveUser } from '../context/ActiveUserContext';
 import { ActionsOverview } from '../components/ActionsOverview';
 import { WeeklyWorkoutFrequencyChart } from '../components/Charts/WeeklyWorkoutFrequencyChart';
 import { TotalVolumeChart } from '../components/Charts/TotalVolumeChart';
@@ -188,8 +187,8 @@ type UserSelectionProps = {
 }
 
 const UserHome = () => {
-   const { date, selectedDate, actionsByDate, userActionList, user } = useActiveUser();
-   console.log(date, actionsByDate, userActionList)
+  //  const { date, selectedDate, actionsByDate, userActionList, user } = useActiveUser();
+  //  console.log(date, actionsByDate, userActionList)
    const userWorkoutDates = [
   "2025-11-02T14:23:00.000Z",
   "2025-11-02T17:45:00.000Z",
@@ -265,7 +264,7 @@ const measurements = [
   return (
     <div className='w-full h-screen'>
       <div className='p-4 flex flex-col justify-center items-baseline gap-2 md:flex-row md:justify-between'>
-        <h2 className='text-4xl'>{user}</h2>
+        {/* <h2 className='text-4xl'>{user}</h2> */}
         <div className='flex gap-4 justify-center items-center h-10'>
           <Filter className='size-8' />
           <SimpleDropdown />

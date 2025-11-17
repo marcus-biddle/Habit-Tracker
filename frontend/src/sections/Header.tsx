@@ -1,7 +1,5 @@
 import { Omega } from 'lucide-react'
-import { useActiveUser } from '../context/ActiveUserContext'
 const Header = () => {
-  const { user } = useActiveUser();
 
   return (
     <div className='relative flex gap-8 text-white p-4'>

@@ -14,6 +14,11 @@ export default [
         route("profile/:userid", "./routes/users/profile.tsx")
       ]),
     ]),
+    ...prefix("habits", [
+      layout("./routes/habits/layout.tsx", [
+        index("./routes/habits/overview.tsx"),
+      ]),
+    ]),
     route("*?", "catchall.tsx"),
   ]),
   layout("./routes/auth/layout.tsx", [

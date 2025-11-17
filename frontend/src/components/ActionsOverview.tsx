@@ -1,6 +1,5 @@
 import React from 'react'
 import { Container } from './Container/Container'
-import { useActiveUser } from '../context/ActiveUserContext'
 import { CheckCircle2, Circle } from 'lucide-react';
 
 const getProgressPercentage = (current, target) => {
@@ -12,7 +11,7 @@ const getProgressPercentage = (current, target) => {
   };
 
 export const ActionsOverview = () => {
-    const { actionsByDate } = useActiveUser();
+    // const { actionsByDate } = useActiveUser();
     
   return (
     <Container>
@@ -62,9 +61,9 @@ export const ActionsOverview = () => {
           <div className="mt-6 pt-6 border-t border-slate-700/50">
             <div className="flex items-center justify-between text-sm">
               <span className="text-slate-400">Progress</span>
-              <span className="text-slate-300 font-semibold">
+              {/* <span className="text-slate-300 font-semibold">
                 {actionsByDate && actionsByDate.filter(g => g.value >= 10).length} of {actionsByDate && actionsByDate.length} completed
-              </span>
+              </span> */}
             </div>
           </div>
     </Container>

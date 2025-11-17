@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Calendar, Users, Trophy, Trash2, Save, Dumbbell } from 'lucide-react';
 import { SHEET_NAMES, type LeaderboardData } from './GoogleSheetsModal';
-import { GoogleSheetApi } from '../api/GoogleSheetsAPI';
+import { GoogleSheetApi } from '../api/supabse';
 
 interface ScoreModalProps {
   leaderboardData: LeaderboardData;

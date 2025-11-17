@@ -5,7 +5,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { ScoreModal } from './ScoreModal';
 import LoginModal from './LoginModal';
 import { supabase } from '../client/client';
-import { GoogleSheetApi } from '../api/GoogleSheetsAPI';
+import { GoogleSheetApi } from '../api/supabse';
 
 // Mock categories - replace with your actual categories
 const categories = [

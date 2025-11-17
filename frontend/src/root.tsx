@@ -37,8 +37,9 @@ export function Layout({
 export default function Root() {
   return (
     <AuthProvider>
-        <Outlet />
+      <Outlet />
     </AuthProvider>
+    
     );
 }
 
