@@ -102,11 +102,9 @@ export default function home() {
   const formRef = useRef<HTMLFormElement>(null);
 
   const today = new TZDate().toISOString().split('T')[0];
-  console.log(today)
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    console.log(habit, value);
     if (!user) return;
 
     try {
@@ -133,8 +131,6 @@ export default function home() {
       p_date: today
     });
 
-    console.log(data)
-
     if (error) {
       console.error("RPC call failed:", error);
       return 0;
@@ -149,7 +145,6 @@ export default function home() {
   const sums = await Promise.all(
     res.map(habit => fetchHabitDailySum(habit.id))
   );
-  console.log('SUMS', sums)
   const dailySums = res.map((habit, idx) => ({
     id: habit.id,
     value: sums[idx],
@@ -164,7 +159,6 @@ export default function home() {
     const res = await getHabitsByUserId(user.id);
     setData(res)
     fetchAllSums(res);
-    console.log(data, dailySums)
   }
 
   const setDate = (habitDate: string) => {
@@ -175,8 +169,6 @@ export default function home() {
   useEffect(() => {
     fetchData();
   }, [user, update]);
-
-  console.log(data)
 
   return (
     <div className="relative h-full flex flex-1 flex-col gap-4 p-4 pt-0 ">

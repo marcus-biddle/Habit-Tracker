@@ -25,8 +25,6 @@ export function NavUser({
     return;
   };
 
-  console.log('UH', user)
-
   return (
     <SidebarMenu>
       <SidebarMenuItem>

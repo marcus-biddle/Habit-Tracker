@@ -41,7 +41,6 @@ export async function clientLoader({
   params,
 }: any) {
     const { data: { user } } = await supabase.auth.getUser();
-    console.log(user, 'test')
     if (!user) return;
 
   const entries: HabitEntry[] = await fetchHabitEntriesFor(user.id, params.habitId);
@@ -172,7 +171,6 @@ const habit = ({
       rowSelection,
     },
   })
-    console.log(entries, table.getFilteredSelectedRowModel().rows)
 
     const handleBatchDelete = async() => {
         if (!user) return;

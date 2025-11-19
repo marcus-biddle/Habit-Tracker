@@ -71,7 +71,6 @@ export function HabitModalButton({ isOpen, open, setHabits }: HabitModalProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        console.log('touched', form)
         if (!user) return;
         if (form === formTemplate) return;
         const today = new TZDate().toISOString().split('T')[0];
