@@ -20,7 +20,7 @@ export default [
         route(":habitId", "./pages/habits/habit.tsx"),
       ]),
     ]),
-    route("*?", "catchall.tsx"),
+    route("*", "catchall.tsx"),
   ]),
   layout("./pages/auth/layout.tsx", [
     route("login", "./pages/auth/login.tsx"),
