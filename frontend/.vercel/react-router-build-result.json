@@ -1,0 +1,228 @@
+{
+  "buildManifest": {
+    "serverBundles": {
+      "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0": {
+        "id": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+        "file": "build/server/nodejs_eyJydW50aW1lIjoibm9kZWpzIn0/index.js",
+        "config": {
+          "runtime": "nodejs"
+        }
+      }
+    },
+    "routeIdToServerBundleId": {
+      "root": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+      "pages/home": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+      "pages/habits/overview": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+      "pages/habits/habit": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+      "catchall": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+      "pages/auth/login": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+      "pages/auth/register": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0"
+    },
+    "routes": {
+      "root": {
+        "id": "root",
+        "file": "app/root.tsx",
+        "path": "",
+        "config": {
+          "runtime": "nodejs"
+        }
+      },
+      "pages/dashboard": {
+        "id": "pages/dashboard",
+        "parentId": "root",
+        "file": "app/pages/dashboard.tsx",
+        "path": "/dashboard?",
+        "config": {}
+      },
+      "pages/home": {
+        "id": "pages/home",
+        "parentId": "pages/dashboard",
+        "file": "app/pages/home.tsx",
+        "index": true,
+        "config": {}
+      },
+      "pages/habits/layout": {
+        "id": "pages/habits/layout",
+        "parentId": "pages/dashboard",
+        "file": "app/pages/habits/layout.tsx",
+        "config": {}
+      },
+      "pages/habits/overview": {
+        "id": "pages/habits/overview",
+        "parentId": "pages/habits/layout",
+        "file": "app/pages/habits/overview.tsx",
+        "path": "habits",
+        "index": true,
+        "config": {}
+      },
+      "pages/habits/habit": {
+        "id": "pages/habits/habit",
+        "parentId": "pages/habits/layout",
+        "file": "app/pages/habits/habit.tsx",
+        "path": "habits/:habitId",
+        "config": {}
+      },
+      "catchall": {
+        "id": "catchall",
+        "parentId": "pages/dashboard",
+        "file": "app/catchall.tsx",
+        "path": "*?",
+        "config": {}
+      },
+      "pages/auth/layout": {
+        "id": "pages/auth/layout",
+        "parentId": "root",
+        "file": "app/pages/auth/layout.tsx",
+        "config": {}
+      },
+      "pages/auth/login": {
+        "id": "pages/auth/login",
+        "parentId": "pages/auth/layout",
+        "file": "app/pages/auth/login.tsx",
+        "path": "login",
+        "config": {}
+      },
+      "pages/auth/register": {
+        "id": "pages/auth/register",
+        "parentId": "pages/auth/layout",
+        "file": "app/pages/auth/register.tsx",
+        "path": "register",
+        "config": {}
+      }
+    }
+  },
+  "reactRouterConfig": {
+    "appDirectory": "C:/Users/mbidd/OneDrive/Desktop/FitTrackPro/frontend/app",
+    "basename": "/",
+    "buildDirectory": "C:/Users/mbidd/OneDrive/Desktop/FitTrackPro/frontend/build",
+    "future": {
+      "v8_middleware": false,
+      "unstable_optimizeDeps": false,
+      "unstable_splitRouteModules": false,
+      "unstable_subResourceIntegrity": false,
+      "unstable_viteEnvironmentApi": false
+    },
+    "routes": {
+      "root": {
+        "id": "root",
+        "file": "root.tsx",
+        "path": ""
+      },
+      "pages/dashboard": {
+        "id": "pages/dashboard",
+        "parentId": "root",
+        "file": "./pages/dashboard.tsx",
+        "path": "/dashboard?"
+      },
+      "pages/home": {
+        "id": "pages/home",
+        "parentId": "pages/dashboard",
+        "file": "./pages/home.tsx",
+        "index": true
+      },
+      "pages/habits/layout": {
+        "id": "pages/habits/layout",
+        "parentId": "pages/dashboard",
+        "file": "./pages/habits/layout.tsx"
+      },
+      "pages/habits/overview": {
+        "id": "pages/habits/overview",
+        "parentId": "pages/habits/layout",
+        "file": "./pages/habits/overview.tsx",
+        "path": "habits",
+        "index": true
+      },
+      "pages/habits/habit": {
+        "id": "pages/habits/habit",
+        "parentId": "pages/habits/layout",
+        "file": "./pages/habits/habit.tsx",
+        "path": "habits/:habitId"
+      },
+      "catchall": {
+        "id": "catchall",
+        "parentId": "pages/dashboard",
+        "file": "catchall.tsx",
+        "path": "*?"
+      },
+      "pages/auth/layout": {
+        "id": "pages/auth/layout",
+        "parentId": "root",
+        "file": "./pages/auth/layout.tsx"
+      },
+      "pages/auth/login": {
+        "id": "pages/auth/login",
+        "parentId": "pages/auth/layout",
+        "file": "./pages/auth/login.tsx",
+        "path": "login"
+      },
+      "pages/auth/register": {
+        "id": "pages/auth/register",
+        "parentId": "pages/auth/layout",
+        "file": "./pages/auth/register.tsx",
+        "path": "register"
+      }
+    },
+    "routeDiscovery": {
+      "mode": "lazy",
+      "manifestPath": "/__manifest"
+    },
+    "serverBuildFile": "index.js",
+    "serverModuleFormat": "esm",
+    "ssr": true,
+    "unstable_routeConfig": [
+      {
+        "id": "root",
+        "path": "",
+        "file": "root.tsx",
+        "children": [
+          {
+            "file": "./pages/dashboard.tsx",
+            "children": [
+              {
+                "file": "./pages/home.tsx",
+                "index": true
+              },
+              {
+                "file": "./pages/habits/layout.tsx",
+                "children": [
+                  {
+                    "file": "./pages/habits/overview.tsx",
+                    "index": true,
+                    "path": "habits"
+                  },
+                  {
+                    "file": "./pages/habits/habit.tsx",
+                    "path": "habits/:habitId"
+                  }
+                ]
+              },
+              {
+                "file": "catchall.tsx",
+                "path": "*?"
+              }
+            ],
+            "path": "/dashboard?"
+          },
+          {
+            "file": "./pages/auth/layout.tsx",
+            "children": [
+              {
+                "file": "./pages/auth/login.tsx",
+                "path": "login"
+              },
+              {
+                "file": "./pages/auth/register.tsx",
+                "path": "register"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "viteConfig": {
+    "build": {
+      "assetsDir": "assets"
+    }
+  }
+}

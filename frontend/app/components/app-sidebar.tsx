@@ -1,5 +1,3 @@
-"use client"
-
 import * as React from "react"
 import {
 
@@ -9,7 +7,6 @@ import {
 } from "lucide-react"
 
 import { NavMain } from "../components/nav-main"
-import { NavProjects } from "../components/nav-projects"
 import { NavUser } from "../components/nav-user"
 import { TeamSwitcher } from "../components/team-switcher"
 import {
@@ -143,12 +140,6 @@ const teams = [
       plan: "Individual",
     },
   ]
-
-const user = {
-    name: "shadcn",
-    email: "m@example.com",
-    avatar: "/avatars/shadcn.jpg",
-  }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { user } = useAuth();

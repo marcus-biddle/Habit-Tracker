@@ -1,4 +1,4 @@
-import { ArrowUpRightIcon, Projector } from "lucide-react"
+import { Projector } from "lucide-react"
 
 import { Button } from "./ui/button"
 import {
