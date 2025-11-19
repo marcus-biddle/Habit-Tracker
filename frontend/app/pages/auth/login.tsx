@@ -4,6 +4,7 @@ import { useState } from 'react'
 export default function Login() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    
 
   return (
     <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10">

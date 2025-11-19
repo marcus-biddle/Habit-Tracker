@@ -66,7 +66,7 @@
         "id": "catchall",
         "parentId": "pages/dashboard",
         "file": "app/catchall.tsx",
-        "path": "*?",
+        "path": "*",
         "config": {}
       },
       "pages/auth/layout": {
@@ -86,7 +86,7 @@
         "id": "pages/auth/register",
         "parentId": "pages/auth/layout",
         "file": "app/pages/auth/register.tsx",
-        "path": "register",
+        "path": "/register",
         "config": {}
       }
     }
@@ -142,7 +142,7 @@
         "id": "catchall",
         "parentId": "pages/dashboard",
         "file": "catchall.tsx",
-        "path": "*?"
+        "path": "*"
       },
       "pages/auth/layout": {
         "id": "pages/auth/layout",
@@ -159,7 +159,7 @@
         "id": "pages/auth/register",
         "parentId": "pages/auth/layout",
         "file": "./pages/auth/register.tsx",
-        "path": "register"
+        "path": "/register"
       }
     },
     "routeDiscovery": {
@@ -198,7 +198,7 @@
               },
               {
                 "file": "catchall.tsx",
-                "path": "*?"
+                "path": "*"
               }
             ],
             "path": "/dashboard?"
@@ -212,7 +212,7 @@
               },
               {
                 "file": "./pages/auth/register.tsx",
-                "path": "register"
+                "path": "/register"
               }
             ]
           }

@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../api/client/client';
 import { Spinner } from '../components/ui/spinner';
 
@@ -16,6 +16,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<null | { id: string; email: string; avatar: string }>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const location = useLocation();
 
   const login = async (email: string, password: string) => {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
@@ -38,14 +39,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const logout = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      console.error('Error signing out:', error.message);
-      return;
-    }
+  const session = supabase.auth.getSession();
+  if (!session) {
+    console.warn("No active session. Skipping sign out API call.");
     setUser(null);
     navigate('/login');
-  };
+    return;
+  }
+
+  const { error } = await supabase.auth.signOut();
+  if (error) {
+    console.error('Error signing out:', error.message);
+    return;
+  }
+  setUser(null);
+  navigate('/login');
+};
+
 
   useEffect(() => {
     let mounted = true;
@@ -54,6 +64,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const {
         data: { session },
       } = await supabase.auth.getSession();
+      console.log('here', location.pathname)
 
       if (!mounted) return;
 
@@ -65,6 +76,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         });
       } else {
         setUser(null);
+        // navigate('/login');
       }
       setLoading(false);
     }
@@ -81,6 +93,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         });
       } else {
         setUser(null);
+        // navigate('/login');
       }
     });
 
@@ -91,11 +104,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   useEffect(() => {
-    // Only navigate if loading has finished and user is null (not logged in)
-    if (!loading && !user) {
-      navigate('/login');
-    }
-  }, [loading, user, navigate]);
+  if (
+    !loading && 
+    !user && 
+    location.pathname !== '/login' && 
+    location.pathname !== '/register'
+  ) {
+    navigate('/login');
+  }
+}, [loading, user, navigate, location.pathname]);
 
   const value = React.useMemo(() => ({ user, login, logout, register }), [user]);
 

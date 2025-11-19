@@ -24,6 +24,6 @@ export default [
   ]),
   layout("./pages/auth/layout.tsx", [
     route("login", "./pages/auth/login.tsx"),
-    route("register", "./pages/auth/register.tsx"),
+    route("/register", "./pages/auth/register.tsx"),
   ]),
 ] satisfies RouteConfig;

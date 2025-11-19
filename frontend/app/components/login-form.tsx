@@ -45,8 +45,6 @@ export function LoginForm({
         <CardContent>
           <form onSubmit={async (event) => {
     event.preventDefault();
-    // Your login logic here
-    console.log(email, password)
     await login(email, password);
   }}>
             <FieldGroup>
@@ -64,12 +62,12 @@ export function LoginForm({
               <Field>
                 <div className="flex items-center">
                   <FieldLabel htmlFor="password">Password</FieldLabel>
-                  <a
+                  {/* <a
                     href="#"
                     className="ml-auto inline-block text-sm underline-offset-4 hover:underline"
                   >
                     Forgot your password?
-                  </a>
+                  </a> */}
                 </div>
                 <Input 
                   id="password" 
@@ -86,7 +84,7 @@ export function LoginForm({
                   Login with Google
                 </Button> */}
                 <FieldDescription className="text-center">
-                  Don&apos;t have an account? <a href="#">Sign up</a>
+                  Don&apos;t have an account? <a href="/register">Sign up</a>
                 </FieldDescription>
               </Field>
             </FieldGroup>
