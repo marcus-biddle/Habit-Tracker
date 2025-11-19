@@ -9,7 +9,9 @@
     "moduleResolution": "node",
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
-    }
+    "@/components/*": ["app/components/*"],
+    "@/lib/*": ["app/lib/*"],
+    // ...other mappings
+  }
   }
 }
