@@ -4,8 +4,8 @@ import { Show } from '../helpers';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { ScoreModal } from './ScoreModal';
 import LoginModal from './LoginModal';
-import { supabase } from '../client/client';
-import { GoogleSheetApi } from '../api/supabse';
+import { supabase } from '../api/client/client';
+import { GoogleSheetApi } from '../api/supabase';
 
 // Mock categories - replace with your actual categories
 const categories = [

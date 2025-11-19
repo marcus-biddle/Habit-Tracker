@@ -8,7 +8,7 @@ const layout = () => {
             <div className="space-y-1">
                 <h4 className="text-sm leading-none font-medium">Habits</h4>
                 <p className="text-muted-foreground text-sm">
-                    Create or update exisiting habits to track.
+                    View activities and charts.
                 </p>
             </div>
             <Separator className="my-4" />

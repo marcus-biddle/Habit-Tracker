@@ -32,8 +32,6 @@ const RollingNumberDigit: React.FC<RollingNumberDigitProps> = ({
       style={{
         overflow: "hidden",
         height: digitHeight,
-        width: 20,
-        fontSize: 30,
         fontWeight: "bold",
         textAlign: "center",
         userSelect: "none",
@@ -43,6 +41,7 @@ const RollingNumberDigit: React.FC<RollingNumberDigitProps> = ({
         {digits.map((num, idx) => (
           <div
             key={idx}
+            className="text-6xl"
             style={{
               height: digitHeight,
               lineHeight: `${digitHeight}px`,
@@ -63,13 +62,13 @@ interface RollingNumberProps {
 
 export const RollingNumber: React.FC<RollingNumberProps> = ({
   number,
-  digitHeight = 40,
+  digitHeight = 55,
 }) => {
   // Convert number to string then array of digits
   const digits = number.toString().split("").map(Number);
 
   return (
-    <div style={{ display: "flex" }}>
+    <div className="text-6xl" style={{ display: "flex" }}>
       {digits.map((digit, idx) => (
         <RollingNumberDigit key={idx} digit={digit} digitHeight={digitHeight} />
       ))}

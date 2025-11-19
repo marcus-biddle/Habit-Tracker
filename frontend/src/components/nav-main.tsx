@@ -25,6 +25,7 @@ export function NavMain({
     url: string
     icon?: LucideIcon
     isActive?: boolean
+    showItems?: boolean
     items?: {
       title: string
       url: string
@@ -44,13 +45,27 @@ export function NavMain({
           >
             <SidebarMenuItem>
               <CollapsibleTrigger asChild>
+                {item.showItems ? 
                 <SidebarMenuButton tooltip={item.title}>
                   {item.icon && <item.icon />}
-                  <span>{item.title}</span>
-                  <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                  {item.showItems ? 
+                    <span>{item.title}</span> :
+                    <Link to={item.url}>
+                      <span>{item.title}</span>
+                    </Link>
+                  }
+                  {item.showItems && <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />}
                 </SidebarMenuButton>
+                :
+                <Link to={item.url}>
+                  <SidebarMenuButton tooltip={item.title}>
+                    {item.icon && <item.icon />}
+                    <span>{item.title}</span>
+                  </SidebarMenuButton>
+                </Link>
+                }
               </CollapsibleTrigger>
-              <CollapsibleContent>
+              {item.showItems && <CollapsibleContent>
                 <SidebarMenuSub>
                   {item.items?.map((subItem) => (
                     <SidebarMenuSubItem key={subItem.title}>
@@ -62,7 +77,7 @@ export function NavMain({
                     </SidebarMenuSubItem>
                   ))}
                 </SidebarMenuSub>
-              </CollapsibleContent>
+              </CollapsibleContent>}
             </SidebarMenuItem>
           </Collapsible>
         ))}

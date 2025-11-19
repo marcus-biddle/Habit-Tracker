@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Eye, EyeOff, Mail, Lock, User2, ArrowRight } from 'lucide-react';
-import { supabase } from '../client/client';
+import { supabase } from '../api/client/client';
 
 declare global {
   interface Window {

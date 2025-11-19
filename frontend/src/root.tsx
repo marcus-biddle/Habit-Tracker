@@ -7,6 +7,7 @@ import {
 } from "react-router";
 import "./index.css"
 import { AuthProvider } from "./context/AuthContext";
+import { Toaster } from "@/components/ui/sonner"
 
 export function Layout({
   children,
@@ -29,6 +30,7 @@ export function Layout({
         {children}
         <ScrollRestoration />
         <Scripts />
+        <Toaster />
       </body>
     </html>
   );

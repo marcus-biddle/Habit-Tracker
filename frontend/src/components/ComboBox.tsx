@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/popover"
 import { useEffect, useState } from "react"
 import { useAuth } from "@/context/AuthContext"
-import { getHabitsByUserId } from "@/api/supabse"
+import { getHabitsByUserId } from "@/api/supabase"
 import type { Habit } from "./Tables/Habits/columns"
 
 const frameworks = [
@@ -74,7 +74,7 @@ export function Combobox({
           className="w-full justify-between"
         >
           {(value && data)
-            ? data.find((habit) => habit.name === value)?.name
+            ? data.find((habit) => habit.id === value)?.name
             : "Select habit..."}
           <ChevronsUpDown className="opacity-50" />
         </Button>
@@ -87,8 +87,8 @@ export function Combobox({
             <CommandGroup>
               {data && data.map((habit) => (
                 <CommandItem
-                  key={habit.name}
-                  value={habit.name}
+                  key={habit.id}
+                  value={habit.id}
                   onSelect={(currentValue) => {
                     setValue(currentValue === value ? "" : currentValue)
                     onSelect(currentValue === value ? "" : currentValue)
@@ -99,7 +99,7 @@ export function Combobox({
                   <Check
                     className={cn(
                       "ml-auto",
-                      value === habit.name ? "opacity-100" : "opacity-0"
+                      value === habit.id ? "opacity-100" : "opacity-0"
                     )}
                   />
                 </CommandItem>

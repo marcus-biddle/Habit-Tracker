@@ -24,7 +24,7 @@ const DashboardLayout = () => {
   return (
     <SidebarProvider>
       <AppSidebar  />
-      <SidebarInset className="m-2 rounded-md">
+      <SidebarInset className="">
         <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
           <div className="flex items-center gap-2 px-4">
             <SidebarTrigger className="-ml-1" />
@@ -43,15 +43,15 @@ const DashboardLayout = () => {
                 <BreadcrumbItem>
                   <BreadcrumbPage>Dashboard</BreadcrumbPage>
                 </BreadcrumbItem>
-                <BreadcrumbSeparator className="hidden md:block" />
+                {/* <BreadcrumbSeparator className="hidden md:block" />
                 <BreadcrumbItem>
                   <BreadcrumbPage>User ID {user?.id}</BreadcrumbPage>
-                </BreadcrumbItem>
+                </BreadcrumbItem> */}
               </BreadcrumbList>
             </Breadcrumb>
           </div>
         </header>
-        <div className="relative h-screen">
+        <div className="relative min-h-screen">
           <Outlet />
         </div>
       </SidebarInset>

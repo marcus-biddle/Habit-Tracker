@@ -16,20 +16,24 @@ type AlertDialogButtonProps = {
   type?: "button" | "submit" | "reset" | undefined;
   dialogTitle?: string;
   dialingDesc: string;
-  formRef: React.RefObject<HTMLFormElement | null>
+  disabled?: boolean;
+  variant?: "link" | "default" | "destructive" | "outline" | "secondary" | "ghost" | null | undefined;
+  onContinue: () => void;
 }
 
 export function AlertDialogButton({
   buttonText,
   type=undefined,
+  disabled=false,
+  variant,
   dialogTitle='Are you absolutely sure?',
   dialingDesc,
-  formRef
+  onContinue,
 }: AlertDialogButtonProps) {
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <Button className="w-full">{buttonText}</Button>
+        <Button disabled={disabled} variant={variant} className="w-full">{buttonText}</Button>
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
@@ -40,7 +44,7 @@ export function AlertDialogButton({
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={() => formRef.current?.requestSubmit()}>Continue</AlertDialogAction>
+          <AlertDialogAction onClick={() => onContinue()}>Continue</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
