@@ -1,19 +1,20 @@
-# FitTrack
+# Habit Tracker 📅
 
-FitTrack is a fitness tracking application designed to monitor and visualize workout metrics such as pushups, pullups, and running performance for you and your friends. The app leverages the Google Sheets API to fetch workout data stored in spreadsheets, and uses a backend built with Express and Node.js to serve this data seamlessly to the frontend for visualization.
+Designed to help a user track the progression of their habits and goals to help better understand their consistency.
 
-## Features
+## Background 💡
+I have multiple different media for tracking random tasks, such as how much water I drink in a day (MyFitnessPal app), how many miles I run in a year (Strava app), how many pushups and pullups I do each day (Google sheets). This is designed to make my life easier and have everything in one place.
 
-- Tracks pushups, pullups, and running statistics for multiple users.
-- Integrates with Google Sheets API to dynamically fetch and update workout data.
-- Visualizes progress over time with user-friendly charts and graphs. (todo)
-- Backend built with Express and Node.js handles API requests and data retrieval.
-- Scalable architecture supports adding new exercises and users easily. (todo)
+## What I learned 🧠
+- How to design and implement a relational database schema in Supabase
+- Implementing server-side functions or triggers to update automatically
+- Working with Supabase SQL functions, including some edge cases like time zone handling and date calculations
+- Managing state and asynchronous data fetching
 
-## Technologies Used
+## How it looks 📷
 
-- React (frontend UI & visualization)
-- Google Sheets API (data source)
-- Express & Node.js (backend server)
-- TypeScript for type safety and maintainability
-- Tailwind CSS for responsive styling
+<img width="1846" height="1005" alt="screenshot-1763590785200" src="https://github.com/user-attachments/assets/824ecbb4-7700-462f-8b37-9aeeb43df90c" />
+<img width="1848" height="1005" alt="screenshot-1763590815882" src="https://github.com/user-attachments/assets/e2b17a00-7d69-41c7-bf5e-e9e647b9dd4f" />
+<img width="1847" height="1005" alt="screenshot-1763590883723" src="https://github.com/user-attachments/assets/bfad5efa-d7f2-4410-bba1-cba543a4b5f9" />
+<img width="1846" height="1005" alt="screenshot-1763590934026" src="https://github.com/user-attachments/assets/e8e3802e-ca36-4eee-9694-6a04f07b1875" />
+<img width="1846" height="1005" alt="screenshot-1763590902589" src="https://github.com/user-attachments/assets/b16e2f7e-f815-414d-a643-0692bd8156a2" />
