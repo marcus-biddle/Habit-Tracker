@@ -1,7 +1,17 @@
 import React, { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
-import { GoogleSheetApi } from '../api/GoogleSheetsAPI';
 import { MultiDateSelector } from '../components/MultiDateSelector';
+import { ActionsOverview } from '../components/ActionsOverview';
+import { WeeklyWorkoutFrequencyChart } from '../components/Charts/WeeklyWorkoutFrequencyChart';
+import { TotalVolumeChart } from '../components/Charts/TotalVolumeChart';
+import { ExerciseProgressionChart } from '../components/Charts/ExerciseProgressionChart';
+import { ConsistencyStreaksChart } from '../components/Charts/ConsistencyStreaksChart';
+import { ExerciseVarietyChart } from '../components/Charts/ExerciseVarietyChart';
+import { BodyMeasurementsChart } from '../components/Charts/BodyMeasurementChart';
+import { Grid, Box } from "@mui/material";
+import { Filter, PlusCircleIcon } from 'lucide-react';
+import SimpleDropdown from '../components/Mui/Dropdown';
+import BasicGrid from '../components/Mui/BasicGrid';
 
 export type SheetEntry = {
   sheet: string;
@@ -59,11 +69,12 @@ const wasGoalCompleted = (sheetName: string, value: number) => {
 }
 
 const DailyRequirements = ({ stats }: DailyReqProps) => {
+    console.log('stats', stats)
     return (
         <div className='flex flex-col justify-center items-left w-full'>
             <h2 className='uppercase'>GOALS</h2>
             <code className=' m-2'>Complete daily tasks. </code>
-            <div className='bg-white/10 flex justify-center rounded-lg w-full'>
+            <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl p-6 shadow-2xl border border-slate-700/50">
                 <ul className='items-start justify-center space-y-2 p-4 w-full'>
                     {Object.entries(formattedSheet).map(([key, value], index) => {
                         const entry = stats.find(e => e.sheet.toLowerCase() === key) || null;
@@ -168,113 +179,110 @@ const Progress: React.FC<ProgressProps> = ({ progress }) => {
   );
 };
 
-export type FormattedDate = {
-    text: string;
-    month: string;
-    day: string;
-    year: string;
-}
-
-export function getFormattedDate(month?: number, day?: number, year?: number): FormattedDate {
-  const today = new Date();
-
-  // Use provided values or fallback to today's components
-  const m = month ?? today.getMonth(); // Months are zero-based
-  const d = day ?? today.getDate();
-  const y = year ?? today.getFullYear();
-
-  // Format with leading zeros
-  const formattedMonth = m.toString().padStart(2, "0");
-  const formattedDay = d.toString().padStart(2, "0");
-  const formattedYear = y.toString(); // Last two digits
-
-  return { text:`${formattedMonth}/${formattedDay}/${formattedYear.slice(-2)}`, month: formattedMonth, day: formattedDay, year: formattedYear };
-}
-
-function isSameDate(date1: string, date2?: string): boolean {
-  const d1 = new Date(date1);
-  const d2 = date2 ? new Date(date2) : new Date(); // default to today if not provided
-
-  // Compare only year, month, and day (ignore time zone/time)
-  return (
-    d1.getFullYear() === d2.getFullYear() &&
-    d1.getMonth() === d2.getMonth() &&
-    d1.getDate() === d2.getDate()
-  );
-}
-
 type UserSelectionProps = {
     userList: string[];
     totalUsers: number;
     activeUser: string;
     setActiveUser: (user: string) => void;
 }
-const UserSelection = ({ userList, totalUsers, activeUser, setActiveUser }: UserSelectionProps) => {
-    return (
-        <div className='w-full space-y-4'>
-            <h4 className=' uppercase'>total users: <code className='text-xl'>{totalUsers}</code></h4>
-            <ul className='grid grid-cols-4 gap-2'>
-                {userList.map((user, index) => (
-                    <li key={index}>
-                        <button onClick={() => setActiveUser(user)} className={`w-full ${user === activeUser ? 'bg-slate-500 text-slate-800 font-bold' : 'bg-white/10'} py-2 px-4 rounded-sm`}>{user}</button>
-                    </li>
-                ))}
-            </ul>
-        </div>
-    )
-}
-
-type userStatsData = {
-    success: boolean;
-    users: string[];
-    totalUsers: number;
-}
 
 const UserHome = () => {
-    const [activeUser, setActiveUser] = useState('Cal');
-    const [userDataList, setUserDataList] = useState<userStatsData>({
-        success: false,
-        users: [],
-        totalUsers: 0
-    });
-    const [userStats, setUserStats] = useState<SheetEntry[]>([]);
-    const [date, selectedDate] = useState<FormattedDate>(getFormattedDate());
-    const [todaysStats, setTodaysStats] = useState<SheetEntry[]>([]);
+  //  const { date, selectedDate, actionsByDate, userActionList, user } = useActiveUser();
+  //  console.log(date, actionsByDate, userActionList)
+   const userWorkoutDates = [
+  "2025-11-02T14:23:00.000Z",
+  "2025-11-02T17:45:00.000Z",
+  "2025-11-01T12:10:00.000Z",
+  "2025-10-30T19:00:00.000Z",
+  "2025-10-29T09:30:00.000Z",
+  "2025-10-27T07:15:00.000Z"
+];
 
-    const fetchUserNames = async () => {
-        const userNameData: userStatsData = await GoogleSheetApi.getUserList('Users');
-        setUserDataList(userNameData);
-    };
+const workoutEntries = [
+  { date: "2025-11-01T10:00:00.000Z", sets: 4, reps: 8, weight: 100 },
+  { date: "2025-11-01T10:00:00.000Z", sets: 3, reps: 10, weight: 80 },
+  { date: "2025-11-03T12:30:00.000Z", sets: 5, reps: 5, weight: 120 },
+  { date: "2025-11-05T09:15:00.000Z", sets: 4, reps: 6, weight: 110 },
+  { date: "2025-11-05T09:15:00.000Z", sets: 3, reps: 12, weight: 60 },
+];
 
-    const getDailyStats = () => {
-        const dailyStats = userStats.filter((entry: any) => isSameDate(entry.date, date.text));
-        setTodaysStats(dailyStats);
-    }
+const exerciseName = "Barbell Bench Press";
+const entries = [
+  { date: "2025-11-01T10:00:00.000Z", weight: 150, reps: 8 },
+  { date: "2025-11-02T11:30:00.000Z", weight: 155, reps: 6 },
+  { date: "2025-11-04T09:45:00.000Z", weight: 160, reps: 5 },
+  { date: "2025-11-05T12:15:00.000Z", weight: 152.5, reps: 8 },
+];
 
-    const fetchUserStats = async () => {
-        const userStatsData = await GoogleSheetApi.getUserStats(activeUser);
-        setUserStats(userStatsData.data);
-    }
+const workoutDates = [
+  "2025-11-01T10:00:00.000Z",
+  "2025-11-02T11:30:00.000Z",
+  "2025-11-03T09:45:00.000Z",
+  "2025-11-05T12:15:00.000Z",
+  "2025-11-06T15:00:00.000Z",
+  "2025-11-07T08:20:00.000Z",
+];
 
-    useEffect(() => {
-        fetchUserNames();
-    }, []);
+const exerciseData = [
+  { category: "Chest", count: 10 },
+  { category: "Back", count: 7 },
+  { category: "Legs", count: 5 },
+  { category: "Shoulders", count: 4 },
+];
 
-    useEffect(() => {
-        fetchUserStats();
-    }, [activeUser]);
+const measurements = [
+  { date: "2025-10-01T07:00:00.000Z", weight: 180, bodyFatPercent: 18.5 },
+  { date: "2025-10-15T07:00:00.000Z", weight: 178, bodyFatPercent: 17.8 },
+  { date: "2025-11-01T07:00:00.000Z", weight: 175, bodyFatPercent: 17.0 },
+  { date: "2025-11-10T07:00:00.000Z", weight: 172, bodyFatPercent: 16.5 },
+];
 
-    useEffect(() => {
-        getDailyStats();
-    }, [date, userStats])
+
+    // const getDailyStats = () => {
+    //     const dailyStats = userStats.filter((entry: any) => isSameDate(entry.date, date.text));
+    //     setTodaysStats(dailyStats);
+    // }
+
+    // const fetchUserStats = async () => {
+    //     const userListData = await GoogleSheetApi.getUserStats(user ?? '');
+    //     setUserStats(userListData.data);
+    // }
+
+    // useEffect(() => {
+    //     fetchUserStats();
+    // }, [user]);
+
+    // useEffect(() => {
+    //     getDailyStats();
+    // }, [date, userStats])
+
+    const gridItems = [
+      { component: <WeeklyWorkoutFrequencyChart workoutDates={userWorkoutDates} />, size: 8 },
+      { component: <ConsistencyStreaksChart workoutDates={workoutDates} />, size: 4 }
+    ]
 
   return (
-    <div className='relative space-y-10 flex flex-col justify-center items-center'>
-        <TimeTracker />
-        <MultiDateSelector rawData={userStats} selectedDate={selectedDate} date={date} />
-        <UserSelection userList={userDataList.users} totalUsers={userDataList.totalUsers} activeUser={activeUser} setActiveUser={setActiveUser} />
-        <Progress progress={calculateProgress(todaysStats)} />
-        <DailyRequirements stats={todaysStats} />
+    <div className='w-full h-screen'>
+      <div className='p-4 flex flex-col justify-center items-baseline gap-2 md:flex-row md:justify-between'>
+        {/* <h2 className='text-4xl'>{user}</h2> */}
+        <div className='flex gap-4 justify-center items-center h-10'>
+          <Filter className='size-8' />
+          <SimpleDropdown />
+          <button>
+            <PlusCircleIcon className='size-8' />
+          </button>
+        </div>
+      </div>
+      <BasicGrid GridItems={gridItems} />
+
+
+        {/* <TimeTracker />
+        <ActionsOverview /> */}
+        
+        {/* <MultiDateSelector rawData={userActionList} selectedDate={selectedDate} date={date} /> */}
+        {/* <UserSelection userList={userDataList.users} totalUsers={userDataList.totalUsers} activeUser={activeUser} setActiveUser={setActiveUser} /> */}
+        {/* <Progress progress={calculateProgress(actionByDate)} /> */}
+        {/* <DailyRequirements stats={actionByDate} /> */}
     </div>
   )
 }
