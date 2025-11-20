@@ -1,3 +1,4 @@
+import { useAuth } from "../context/AuthContext";
 import { Button } from "./ui/button"
 import {
   Card,
@@ -15,6 +16,7 @@ import {
 import { Input } from "./ui/input"
 
 export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
+  const { register } = useAuth();
   return (
     <Card {...props}>
       <CardHeader>
@@ -24,7 +26,10 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form>
+        <form onSubmit={async (event) => {
+          event.preventDefault();
+          await register(event.currentTarget.email.value, event.currentTarget.password.value);
+        }}>
           <FieldGroup>
             <Field>
               <FieldLabel htmlFor="name">Full Name</FieldLabel>
@@ -60,9 +65,9 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
             <FieldGroup>
               <Field>
                 <Button type="submit">Create Account</Button>
-                <Button variant="outline" type="button">
+                {/* <Button variant="outline" type="button">
                   Sign up with Google
-                </Button>
+                </Button> */}
                 <FieldDescription className="px-6 text-center">
                   Already have an account? <a href="/login">Sign in</a>
                 </FieldDescription>

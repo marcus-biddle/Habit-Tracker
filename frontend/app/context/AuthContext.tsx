@@ -2,6 +2,7 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../api/client/client';
 import { Spinner } from '../components/ui/spinner';
+import { toast } from 'sonner';
 
 interface AuthContextType {
   user: null | { id: string; email: string; avatar: string };
@@ -24,6 +25,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     if (data.session && data.user) {
       setUser({ id: data.user.id, email: data.user.email ?? email, avatar: '' });
       navigate('/dashboard');
+      toast.success("Successfully logged in. Welcome back!")
     } else {
       throw new Error('Login failed: no session returned');
     }
@@ -31,11 +33,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const register = async (email: string, password: string) => {
     const { data, error } = await supabase.auth.signUp({ email, password });
-    if (error) throw new Error('Registration failed: ' + error.message);
-    if (data.session === null) {
-      // After sign up, user usually needs to confirm email and then login
-      navigate('/login');
+    if (error) {
+      toast.error(error.message);
+      throw new Error('Registration failed: ' + error.message);
     }
+    navigate('/login');
+    toast.success("User created. Please log in.")
   };
 
   const logout = async () => {
