@@ -3,7 +3,7 @@
 Designed to help a user track the progression of their habits and goals to help better understand their consistency.
 
 ## Background 💡
-I have multiple different media for tracking random tasks, such as how much water I drink in a day (MyFitnessPal app), how many miles I run in a year (Strava app), how many pushups and pullups I do each day (Google sheets). This is designed to make my life easier and have everything in one place.
+I had too many different apps that tracked different habits (Strava, MyFitnessPal, Google Sheets). I wanted a singular app that can keep track of everything and provide clarity into my habit patterns.
 
 ## What I learned 🧠
 - How to design and implement a relational database schema in Supabase
