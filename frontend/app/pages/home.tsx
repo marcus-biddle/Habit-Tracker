@@ -279,55 +279,81 @@ export default function home() {
                 }}
                 className="w-full"
               >
-                <CarouselContent className="">
+                <CarouselContent className="p-3">
                   {data.map((habit, index) => {
                   const backendValue = dailySums.find(s => s.id === habit.id)
                   const isOpen = expanded.includes(habit.id)
                   return (
-                    <CarouselItem key={index} onClick={() => handleCardExpansion(habit.id)} className={`${isOpen ? 'basis-9/10 lg:basis-1/3' : 'basis-6/15 lg:basis-1/3' }`}>
-                        {backendValue && <>
-                        {!isOpen ? 
-                        <div className='w-full '>
-                          <HabitCounter habitUnit={habit.unit} showActions={false} habitId={habit.id} backendValue={(backendValue.value)} goal={habit.goal ?? 1} />
-                        </div> :
-                        <Card className="relative capitalize">
-                        <CardHeader>
-                          <CardTitle>{habit.name}</CardTitle>
-                          <CardDescription>
-                            {habit.description === ''? `${habit.frequency} ${habit.goal} ${habit.unit}` : habit.description}
-                          </CardDescription>
-                          <CardAction>
-                            <Link to={`habits/${habit.id}`}>
-                              <Button variant="secondary">
-                                <Forward />
-                              </Button>
-                            </Link>
-                          </CardAction>
-                        </CardHeader>
-                        <Separator />
-                        <CardContent className='flex flex-col gap-4 justify-center items-center'>
-                          {backendValue && <HabitCounter habitUnit={habit.unit} habitId={habit.id} backendValue={(backendValue.value)} goal={habit.goal ?? 1} />}
-                        </CardContent>
-                        <CardFooter className="flex flex-row justify-around items-center">
-                            <div className='flex flex-col items-center w-full'>
-                              <Button variant={'ghost'}>
-                                <TrendingUp />
-                              </Button>
-                              <p className="text-muted-foreground text-sm font-light">Frequency</p>
-                              <span>{habit.frequency}</span>
-                            </div>
-                            
-                            <div className='flex flex-col items-center w-full'>
-                              <Button variant={'ghost'}>
-                                <Calendar />
-                              </Button>
-                              <p className="text-muted-foreground text-sm font-light">Last Updated</p>
-                              <span>{formatHabitDate(habit.updated_at)}</span>
-                            </div>
-                            
+                    <CarouselItem key={index} onClick={() => handleCardExpansion(habit.id)} className={`${isOpen ? 'basis-6/7 lg:basis-1/3' : 'basis-7/8 lg:basis-1/3' }`}>
+                        {backendValue && 
+                        <>
+                          {!isOpen ? 
+                            <Card className='w-full shadow-lg rounded-md p-2'>
+                              <CardAction className='flex'>
+                                <div>
+                                  <HabitCounter habitUnit={habit.unit} showActions={false} habitId={habit.id} backendValue={(backendValue.value)} goal={habit.goal ?? 1} />
+                                </div>
+                                <CardHeader className='m-0 p-0'>
+                                  <CardTitle className='p-2'>{habit.name}</CardTitle>
+                                  <div>
+                                    <div className='flex items-center w-full'>
+                                      <Button variant={'ghost'}>
+                                        <TrendingUp />
+                                      </Button>
+                                      {/* <p className="text-muted-foreground text-sm font-light">Frequency</p> */}
+                                      <span>{habit.frequency}</span>
+                                    </div>
+                                
+                                    <div className='flex items-center w-full truncate'>
+                                      <Button variant={'ghost'}>
+                                        <Calendar />
+                                      </Button>
+                                      {/* <p className="text-muted-foreground text-sm font-light">Last Updated</p> */}
+                                      <span>{formatHabitDate(habit.updated_at)}</span>
+                                    </div>
+                                  </div>
+                                </CardHeader>
+                              </CardAction>
+                            </Card> :
+                            <Card className="relative capitalize shadow-lg">
+                            <CardHeader>
+                              <CardTitle>{habit.name}</CardTitle>
+                              <CardDescription>
+                                {habit.description === ''? `${habit.frequency} ${habit.goal} ${habit.unit}` : habit.description}
+                              </CardDescription>
+                              <CardAction>
+                                <Link to={`habits/${habit.id}`}>
+                                  <Button variant="secondary">
+                                    <Forward />
+                                  </Button>
+                                </Link>
+                              </CardAction>
+                            </CardHeader>
+                            <Separator />
+                            <CardContent className='flex flex-col gap-4 justify-center items-center'>
+                              {backendValue && <HabitCounter habitUnit={habit.unit} habitId={habit.id} backendValue={(backendValue.value)} goal={habit.goal ?? 1} />}
+                            </CardContent>
+                            <CardFooter className="flex flex-row justify-around items-center">
+                                <div className='flex flex-col items-center w-full'>
+                                  <Button variant={'ghost'}>
+                                    <TrendingUp />
+                                  </Button>
+                                  <p className="text-muted-foreground text-sm font-light">Frequency</p>
+                                  <span>{habit.frequency}</span>
+                                </div>
+                                
+                                <div className='flex flex-col items-center w-full'>
+                                  <Button variant={'ghost'}>
+                                    <Calendar />
+                                  </Button>
+                                  <p className="text-muted-foreground text-sm font-light">Last Updated</p>
+                                  <span>{formatHabitDate(habit.updated_at)}</span>
+                                </div>
+                                
 
-                        </CardFooter>
-                      </Card>}
+                            </CardFooter>
+                            </Card>
+                          }
                         </>}
                     </CarouselItem>
                   )
