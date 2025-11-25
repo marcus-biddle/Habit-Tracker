@@ -8,6 +8,7 @@ import {
 import "./index.css"
 import { AuthProvider } from "./context/AuthContext";
 import { Toaster } from "./components/ui/sonner";
+import { PresenceProvider } from "./context/PresenceContext";
 
 export function Layout({
   children,
@@ -22,7 +23,7 @@ export function Layout({
           name="viewport"
           content="width=device-width, initial-scale=1.0"
         />
-        <title>My App</title>
+        <title>Habit Tracker</title>
         <Meta />
         <Links />
       </head>
@@ -39,7 +40,9 @@ export function Layout({
 export default function Root() {
   return (
     <AuthProvider>
-      <Outlet />
+      <PresenceProvider>
+        <Outlet />
+      </PresenceProvider>
     </AuthProvider>
     
     );

@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import { Separator } from "../components/ui/separator"
 import { type Habit } from '../components/Tables/Habits/columns'
 import { Button } from '../components/ui/button'
-import { Forward, Goal, Map, Plus, Timer, Waves } from 'lucide-react'
+import { Calendar, Forward, Map, Plus, TrendingUp } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { addHabitEntry, getHabitsByUserId } from '../api/supabase'
 import { motion } from 'framer-motion'
@@ -13,11 +13,14 @@ import { Input } from '../components/ui/input'
 import { Combobox } from '../components/ComboBox'
 import { AlertDialogButton } from '../components/AlertDialogButton'
 import { supabase } from '../api/client/client'
-import { RollingNumber } from '../components/framer/RollingNumber'
 import { Link } from 'react-router'
 import { toast } from 'sonner'
 import { TZDate } from '@date-fns/tz';
 import { EmptyHabitState } from '../components/EmptyHabitState'
+import { HabitCounter } from '../components/HabitCounter'
+import { Carousel } from '../components/ui/carousel'
+import { CarouselContent } from '../components/ui/carousel'
+import { CarouselItem } from '../components/ui/carousel'
 
 export const fakeHabits: Habit[] = [
   {
@@ -92,16 +95,36 @@ export const fakeHabits: Habit[] = [
   },
 ];
 
+export const today = new TZDate().toISOString().split('T')[0];
+
+export function formatHabitDate(habitDate: string) {
+  const date = new TZDate(habitDate)
+
+  const now = new TZDate()
+  const startOfToday = new TZDate(now.getFullYear(), now.getMonth(), now.getDate())
+  const startOfTarget = new TZDate(date.getFullYear(), date.getMonth(), date.getDate())
+
+  const diffMs = startOfToday.getTime() - startOfTarget.getTime()
+  const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24))
+
+  if (diffDays === 0) return "Today"
+  if (diffDays === 1) return "Yesterday"
+  if (diffDays > 1 && diffDays < 7) return `${diffDays} days ago`
+
+  return date.toLocaleString()
+}
+
 export default function home() {
   const { user } = useAuth();
   const [update, setUpdate] = useState(false);
   const [habit, selectHabit] = useState<string>('');
   const [value, selectValue] = useState<number>(0);
   const [data, setData] = useState<Habit[] | null>([])
-  const [dailySums, setDailySums] = useState<{ id: string; value: 0 | undefined; }[]>([]);
+  const [dailySums, setDailySums] = useState<{ id: string; value: 0 }[]>([]);
+  const [expanded, setExpanded] = useState<string[]>([]);
   const formRef = useRef<HTMLFormElement>(null);
 
-  const today = new TZDate().toISOString().split('T')[0];
+  
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -166,9 +189,19 @@ export default function home() {
     return date.toLocaleString();
   }
 
+  const handleCardExpansion = (id: string) => {
+    if (expanded.includes(id)) {
+      // setExpanded(prev => prev.filter(h => h === id))
+    } else {
+      setExpanded(prev => [...prev, id])
+    }
+  }
+
   useEffect(() => {
     fetchData();
   }, [user, update]);
+
+  console.log(expanded)
 
   return (
     <div className="relative h-full flex flex-1 flex-col gap-4 p-4 pt-0 ">
@@ -241,68 +274,66 @@ export default function home() {
           )}
           <div className="">
             {data && data.length > 0 ? 
-              <div className="grid auto-rows-min gap-4 md:grid-cols-3">
-                {data.map((habit, index) => (
-                <div key={index} className="bg-slate-300/50 aspect-auto rounded-xl overflow-hidden">
-                  <Card className="relative capitalize">
-                    <CardHeader>
-                      <CardTitle>Habit</CardTitle>
-                      <CardDescription>
-                        {habit.name}
-                      </CardDescription>
-                      <CardAction>
-                        <Link to={`habits/${habit.id}`}>
-                          <Button variant="outline">
-                            <Forward />
-                          </Button>
-                        </Link>
-                      </CardAction>
-                    </CardHeader>
-                    <CardContent className='flex flex-col gap-8'>
-                      <div className='flex flex-wrap justify-center items-baseline'>
-                        <div className='flex flex-wrap items-start gap-2'>
-                          <h1 className='max-w-xs'>
-                            {dailySums.length === data.length && <RollingNumber number={dailySums.find(s => s.id === habit.id)?.value ?? 0} />}
-                          </h1>
-                          <span>{habit.unit}</span>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground text-sm">/ {habit.goal} {habit.unit}</span>
-                        </div>
-                      </div>
-                      <Separator />
-                    </CardContent>
-                    <CardFooter className="flex flex-col gap-2 items-center">
-                        <div className='flex flex-col md:flex-row justify-between items-center w-full'>
-                          <Button variant={'ghost'}>
-                            <Waves />
-                            Frequency
-                          </Button>
-                          <span>{habit.frequency}</span>
-                        </div>
-                        
-                        <div className='flex flex-col md:flex-row justify-between items-center w-full'>
-                          <Button variant={'ghost'}>
-                            <Goal />
-                            Goal
-                          </Button>
-                          <span>{habit.goal} {habit.unit}</span>
-                        </div>
-                        
-                        <div className='flex flex-col md:flex-row justify-between items-center w-full'>
-                          <Button variant={'ghost'}>
-                            <Timer />
-                            Last Updated
-                          </Button>
-                          <span>{setDate(habit.updated_at)}</span>
-                        </div>
-                        
+              <Carousel opts={{
+                align: "start",
+                }}
+                className="w-full"
+              >
+                <CarouselContent className="">
+                  {data.map((habit, index) => {
+                  const backendValue = dailySums.find(s => s.id === habit.id)
+                  const isOpen = expanded.includes(habit.id)
+                  return (
+                    <CarouselItem key={index} onClick={() => handleCardExpansion(habit.id)} className={`${isOpen ? 'basis-9/10 lg:basis-1/3' : 'basis-6/15 lg:basis-1/3' }`}>
+                        {backendValue && <>
+                        {!isOpen ? 
+                        <div className='w-full '>
+                          <HabitCounter habitUnit={habit.unit} showActions={false} habitId={habit.id} backendValue={(backendValue.value)} goal={habit.goal ?? 1} />
+                        </div> :
+                        <Card className="relative capitalize">
+                        <CardHeader>
+                          <CardTitle>{habit.name}</CardTitle>
+                          <CardDescription>
+                            {habit.description === ''? `${habit.frequency} ${habit.goal} ${habit.unit}` : habit.description}
+                          </CardDescription>
+                          <CardAction>
+                            <Link to={`habits/${habit.id}`}>
+                              <Button variant="secondary">
+                                <Forward />
+                              </Button>
+                            </Link>
+                          </CardAction>
+                        </CardHeader>
+                        <Separator />
+                        <CardContent className='flex flex-col gap-4 justify-center items-center'>
+                          {backendValue && <HabitCounter habitUnit={habit.unit} habitId={habit.id} backendValue={(backendValue.value)} goal={habit.goal ?? 1} />}
+                        </CardContent>
+                        <CardFooter className="flex flex-row justify-around items-center">
+                            <div className='flex flex-col items-center w-full'>
+                              <Button variant={'ghost'}>
+                                <TrendingUp />
+                              </Button>
+                              <p className="text-muted-foreground text-sm font-light">Frequency</p>
+                              <span>{habit.frequency}</span>
+                            </div>
+                            
+                            <div className='flex flex-col items-center w-full'>
+                              <Button variant={'ghost'}>
+                                <Calendar />
+                              </Button>
+                              <p className="text-muted-foreground text-sm font-light">Last Updated</p>
+                              <span>{formatHabitDate(habit.updated_at)}</span>
+                            </div>
+                            
 
-                    </CardFooter>
-      </Card>
-                </div>
-              ))}
-              </div>
+                        </CardFooter>
+                      </Card>}
+                        </>}
+                    </CarouselItem>
+                  )
+                })}
+                </CarouselContent>
+              </Carousel>
               :
               <EmptyHabitState />
           }

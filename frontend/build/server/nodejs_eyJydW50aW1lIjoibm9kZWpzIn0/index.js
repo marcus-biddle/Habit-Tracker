@@ -8,7 +8,7 @@ import * as React from "react";
 import React__default, { createContext, useState, useEffect, useContext, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { createClient } from "@supabase/supabase-js";
-import { Loader2Icon, OctagonXIcon, TriangleAlertIcon, InfoIcon, CircleCheckIcon, XIcon, PanelLeftIcon, ChevronRight, ChevronsUpDown, LogOut, Plus, GalleryVerticalEnd, Home, Map, SearchIcon, Check, Projector, Forward, Waves, Goal, Timer, CheckIcon, CircleIcon, MoreHorizontal, ChevronDownIcon, ChevronUpIcon, ArrowUpDown } from "lucide-react";
+import { Loader2Icon, OctagonXIcon, TriangleAlertIcon, InfoIcon, CircleCheckIcon, XIcon, PanelLeftIcon, ChevronRight, ChevronsUpDown, LogOut, Plus, GalleryVerticalEnd, Home, Map, SearchIcon, Check, Projector, Minus, Forward, TrendingUp, Calendar, CheckIcon, CircleIcon, MoreHorizontal, ChevronDownIcon, ChevronUpIcon, ArrowUpDown } from "lucide-react";
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { toast, Toaster as Toaster$1 } from "sonner";
@@ -21,13 +21,14 @@ import * as TooltipPrimitive from "@radix-ui/react-tooltip";
 import * as AvatarPrimitive from "@radix-ui/react-avatar";
 import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu";
 import * as SeparatorPrimitive from "@radix-ui/react-separator";
-import { useMotionValue, animate, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import { CardContent as CardContent$1 } from "@mui/material";
 import * as LabelPrimitive from "@radix-ui/react-label";
 import { Command as Command$1 } from "cmdk";
 import * as PopoverPrimitive from "@radix-ui/react-popover";
 import * as AlertDialogPrimitive from "@radix-ui/react-alert-dialog";
 import { TZDate } from "@date-fns/tz";
+import useEmblaCarousel from "embla-carousel-react";
 import { useReactTable, getFilteredRowModel, getSortedRowModel, getPaginationRowModel, getCoreRowModel, flexRender } from "@tanstack/react-table";
 import * as CheckboxPrimitive from "@radix-ui/react-checkbox";
 import * as RadioGroupPrimitive from "@radix-ui/react-radio-group";
@@ -231,6 +232,57 @@ const Toaster = ({ ...props }) => {
     }
   );
 };
+const PresenceContext = createContext(void 0);
+const PresenceProvider = ({ children }) => {
+  const { user } = useAuth();
+  const [presenceState, setPresenceState] = useState({});
+  const presenceChannel = useRef(null);
+  const idleTimeout = useRef(null);
+  const IDLE_DELAY = 2 * 60 * 1e3;
+  useEffect(() => {
+    if (!user) return;
+    presenceChannel.current = supabase.channel("habit-presence", {
+      config: { presence: { key: user.id } }
+    });
+    presenceChannel.current.on("presence", { event: "sync" }, () => {
+      setPresenceState(presenceChannel.current.presenceState());
+      console.log("sync,", presenceChannel.current.presenceState());
+    });
+    presenceChannel.current.subscribe(async (status) => {
+      if (status === "SUBSCRIBED") {
+        trackPresence("online");
+      }
+    });
+    const trackPresence = (status) => {
+      if (!presenceChannel.current) return;
+      presenceChannel.current.track({
+        user_id: user.id,
+        status,
+        last_active: Date.now()
+      });
+    };
+    const setIdle = () => {
+      trackPresence("idle");
+    };
+    const resetIdleTimeout = () => {
+      if (idleTimeout.current) clearTimeout(idleTimeout.current);
+      trackPresence("online");
+      idleTimeout.current = setTimeout(setIdle, IDLE_DELAY);
+    };
+    ["mousemove", "keydown", "touchstart"].forEach(
+      (event) => window.addEventListener(event, resetIdleTimeout)
+    );
+    resetIdleTimeout();
+    return () => {
+      if (presenceChannel.current) presenceChannel.current.unsubscribe();
+      if (idleTimeout.current) clearTimeout(idleTimeout.current);
+      ["mousemove", "keydown", "touchstart"].forEach(
+        (event) => window.removeEventListener(event, resetIdleTimeout)
+      );
+    };
+  }, [user]);
+  return /* @__PURE__ */ jsx(PresenceContext.Provider, { value: { presenceState }, children });
+};
 function Layout({
   children
 }) {
@@ -243,7 +295,7 @@ function Layout({
         name: "viewport",
         content: "width=device-width, initial-scale=1.0"
       }), /* @__PURE__ */ jsx("title", {
-        children: "My App"
+        children: "Habit Tracker"
       }), /* @__PURE__ */ jsx(Meta, {}), /* @__PURE__ */ jsx(Links, {})]
     }), /* @__PURE__ */ jsxs("body", {
       children: [children, /* @__PURE__ */ jsx(ScrollRestoration, {}), /* @__PURE__ */ jsx(Scripts, {}), /* @__PURE__ */ jsx(Toaster, {})]
@@ -252,7 +304,9 @@ function Layout({
 }
 const root = UNSAFE_withComponentProps(function Root() {
   return /* @__PURE__ */ jsx(AuthProvider, {
-    children: /* @__PURE__ */ jsx(Outlet, {})
+    children: /* @__PURE__ */ jsx(PresenceProvider, {
+      children: /* @__PURE__ */ jsx(Outlet, {})
+    })
   });
 });
 const route0 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
@@ -2059,54 +2113,6 @@ function AlertDialogButton({
     ] })
   ] });
 }
-const RollingNumberDigit = ({
-  digit,
-  digitHeight
-}) => {
-  const y = useMotionValue(0);
-  useEffect(() => {
-    const targetY = -digitHeight * digit;
-    const controls = animate(y, targetY, {
-      type: "spring",
-      stiffness: 200,
-      damping: 25,
-      delay: 0.75
-    });
-    return controls.stop;
-  }, [digit, y, digitHeight]);
-  const digits = [...Array(20).keys()].map((i) => i % 10);
-  return /* @__PURE__ */ jsx(
-    "div",
-    {
-      style: {
-        overflow: "hidden",
-        height: digitHeight,
-        fontWeight: "bold",
-        textAlign: "center",
-        userSelect: "none"
-      },
-      children: /* @__PURE__ */ jsx(motion.div, { style: { y }, children: digits.map((num, idx) => /* @__PURE__ */ jsx(
-        "div",
-        {
-          className: "text-6xl",
-          style: {
-            height: digitHeight,
-            lineHeight: `${digitHeight}px`
-          },
-          children: num
-        },
-        idx
-      )) })
-    }
-  );
-};
-const RollingNumber = ({
-  number,
-  digitHeight = 55
-}) => {
-  const digits = number.toString().split("").map(Number);
-  return /* @__PURE__ */ jsx("div", { className: "text-6xl", style: { display: "flex" }, children: digits.map((digit, idx) => /* @__PURE__ */ jsx(RollingNumberDigit, { digit, digitHeight }, idx)) });
-};
 function Empty({ className, ...props }) {
   return /* @__PURE__ */ jsx(
     "div",
@@ -2211,6 +2217,249 @@ function EmptyHabitState() {
     ] }) })
   ] });
 }
+function CircularProgress({
+  value,
+  goal,
+  unit,
+  size = 175,
+  strokeWidth = 6,
+  showGoal,
+  className
+}) {
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const clamped = Math.min(goal, Math.max(0, value));
+  const offset = circumference - clamped / goal * circumference;
+  return /* @__PURE__ */ jsxs(
+    "div",
+    {
+      className: cn("inline-flex items-center justify-center", className),
+      style: { width: size, height: size },
+      children: [
+        /* @__PURE__ */ jsxs("svg", { className: "rotate-[-90deg]", width: size, height: size, children: [
+          /* @__PURE__ */ jsx(
+            "circle",
+            {
+              className: "text-slate-500/20 stroke-current",
+              strokeWidth,
+              fill: "transparent",
+              r: radius,
+              cx: size / 2,
+              cy: size / 2,
+              style: {
+                strokeDasharray: circumference
+              }
+            }
+          ),
+          /* @__PURE__ */ jsx(
+            "circle",
+            {
+              className: "text-primary stroke-current transition-[stroke-dashoffset] duration-300 ease-out",
+              strokeWidth,
+              fill: "transparent",
+              r: radius,
+              cx: size / 2,
+              cy: size / 2,
+              style: {
+                strokeDasharray: circumference,
+                strokeDashoffset: offset,
+                strokeLinecap: "round"
+              }
+            }
+          )
+        ] }),
+        /* @__PURE__ */ jsxs("div", { className: "absolute text-sm font-medium flex flex-col justify-center items-center", children: [
+          /* @__PURE__ */ jsx("p", { className: "text-4xl font-bold text-black mb-1", children: value }),
+          showGoal ? /* @__PURE__ */ jsxs("p", { className: "text-gray-400 text-sm font-medium", children: [
+            "/ ",
+            goal,
+            " ",
+            unit
+          ] }) : /* @__PURE__ */ jsx("p", { className: "text-gray-400 text-sm font-medium", children: unit })
+        ] })
+      ]
+    }
+  );
+}
+const HabitCounter = ({
+  backendValue,
+  goal,
+  habitId,
+  habitUnit,
+  showActions = true
+}) => {
+  const { user } = useAuth();
+  const [value, setValue] = useState(backendValue);
+  const [isSaving, setSaving] = useState(false);
+  const [hasChanges, setChanges] = useState(backendValue !== value);
+  const incrementValue = () => {
+    if (value < goal) {
+      setValue((prev) => Math.min(prev + 1, goal));
+    }
+    setChanges(value + 1 === backendValue ? false : true);
+  };
+  const decrementValue = () => {
+    if (value > 0) {
+      setValue((prev) => Math.max(prev - 1, 0));
+    }
+    setChanges(value - 1 === backendValue ? false : true);
+  };
+  const handleUpdate = async () => {
+    if (!user) return;
+    setSaving(true);
+    const newEntry = {
+      user_id: user.id,
+      habit_id: habitId,
+      value: value - backendValue,
+      entry_date: today,
+      notes: "quick add by increment/decrement button"
+    };
+    try {
+      await addHabitEntry(newEntry);
+      setSaving(false);
+      setChanges(false);
+    } catch (err) {
+      toast.error("Failed to update. Please refresh or try again later.");
+    }
+  };
+  return /* @__PURE__ */ jsxs(Fragment, { children: [
+    /* @__PURE__ */ jsx(CircularProgress, { showGoal: false, unit: habitUnit, size: !showActions ? 130 : 175, value, goal }),
+    showActions && /* @__PURE__ */ jsxs("div", { className: "flex gap-6", children: [
+      /* @__PURE__ */ jsx(Button, { onClick: decrementValue, disabled: isSaving || value <= 0, children: /* @__PURE__ */ jsx(Minus, {}) }),
+      /* @__PURE__ */ jsx(Button, { onClick: incrementValue, disabled: isSaving || value >= goal, children: /* @__PURE__ */ jsx(Plus, {}) })
+    ] }),
+    /* @__PURE__ */ jsx("div", { className: "w-full", children: hasChanges && /* @__PURE__ */ jsx(Button, { className: "w-full", onClick: handleUpdate, children: "Update" }) })
+  ] });
+};
+const CarouselContext = React.createContext(null);
+function useCarousel() {
+  const context = React.useContext(CarouselContext);
+  if (!context) {
+    throw new Error("useCarousel must be used within a <Carousel />");
+  }
+  return context;
+}
+function Carousel({
+  orientation = "horizontal",
+  opts,
+  setApi,
+  plugins,
+  className,
+  children,
+  ...props
+}) {
+  const [carouselRef, api] = useEmblaCarousel(
+    {
+      ...opts,
+      axis: orientation === "horizontal" ? "x" : "y"
+    },
+    plugins
+  );
+  const [canScrollPrev, setCanScrollPrev] = React.useState(false);
+  const [canScrollNext, setCanScrollNext] = React.useState(false);
+  const onSelect = React.useCallback((api2) => {
+    if (!api2) return;
+    setCanScrollPrev(api2.canScrollPrev());
+    setCanScrollNext(api2.canScrollNext());
+  }, []);
+  const scrollPrev = React.useCallback(() => {
+    api?.scrollPrev();
+  }, [api]);
+  const scrollNext = React.useCallback(() => {
+    api?.scrollNext();
+  }, [api]);
+  const handleKeyDown = React.useCallback(
+    (event) => {
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        scrollPrev();
+      } else if (event.key === "ArrowRight") {
+        event.preventDefault();
+        scrollNext();
+      }
+    },
+    [scrollPrev, scrollNext]
+  );
+  React.useEffect(() => {
+    if (!api || !setApi) return;
+    setApi(api);
+  }, [api, setApi]);
+  React.useEffect(() => {
+    if (!api) return;
+    onSelect(api);
+    api.on("reInit", onSelect);
+    api.on("select", onSelect);
+    return () => {
+      api?.off("select", onSelect);
+    };
+  }, [api, onSelect]);
+  return /* @__PURE__ */ jsx(
+    CarouselContext.Provider,
+    {
+      value: {
+        carouselRef,
+        api,
+        opts,
+        orientation: orientation || (opts?.axis === "y" ? "vertical" : "horizontal"),
+        scrollPrev,
+        scrollNext,
+        canScrollPrev,
+        canScrollNext
+      },
+      children: /* @__PURE__ */ jsx(
+        "div",
+        {
+          onKeyDownCapture: handleKeyDown,
+          className: cn("relative", className),
+          role: "region",
+          "aria-roledescription": "carousel",
+          "data-slot": "carousel",
+          ...props,
+          children
+        }
+      )
+    }
+  );
+}
+function CarouselContent({ className, ...props }) {
+  const { carouselRef, orientation } = useCarousel();
+  return /* @__PURE__ */ jsx(
+    "div",
+    {
+      ref: carouselRef,
+      className: "overflow-hidden",
+      "data-slot": "carousel-content",
+      children: /* @__PURE__ */ jsx(
+        "div",
+        {
+          className: cn(
+            "flex",
+            orientation === "horizontal" ? "-ml-4" : "-mt-4 flex-col",
+            className
+          ),
+          ...props
+        }
+      )
+    }
+  );
+}
+function CarouselItem({ className, ...props }) {
+  const { orientation } = useCarousel();
+  return /* @__PURE__ */ jsx(
+    "div",
+    {
+      role: "group",
+      "aria-roledescription": "slide",
+      "data-slot": "carousel-item",
+      className: cn(
+        "min-w-0 shrink-0 grow-0 basis-full",
+        orientation === "horizontal" ? "pl-4" : "pt-4",
+        className
+      ),
+      ...props
+    }
+  );
+}
 const fakeHabits = [{
   id: "a68f1e3f-9c4e-4a7d-b8fa-2f8dcb7a4a01",
   user_id: "43d6791c-829a-46fd-8baf-1ff73eea35e7",
@@ -2277,6 +2526,19 @@ const fakeHabits = [{
   created_at: "2025-08-01T10:00:00.000Z",
   updated_at: "2025-09-01T15:00:00.000Z"
 }];
+const today = new TZDate().toISOString().split("T")[0];
+function formatHabitDate(habitDate) {
+  const date = new TZDate(habitDate);
+  const now = new TZDate();
+  const startOfToday = new TZDate(now.getFullYear(), now.getMonth(), now.getDate());
+  const startOfTarget = new TZDate(date.getFullYear(), date.getMonth(), date.getDate());
+  const diffMs = startOfToday.getTime() - startOfTarget.getTime();
+  const diffDays = Math.round(diffMs / (1e3 * 60 * 60 * 24));
+  if (diffDays === 0) return "Today";
+  if (diffDays === 1) return "Yesterday";
+  if (diffDays > 1 && diffDays < 7) return `${diffDays} days ago`;
+  return date.toLocaleString();
+}
 const home = UNSAFE_withComponentProps(function home2() {
   const {
     user
@@ -2286,8 +2548,8 @@ const home = UNSAFE_withComponentProps(function home2() {
   const [value, selectValue] = useState(0);
   const [data2, setData] = useState([]);
   const [dailySums, setDailySums] = useState([]);
+  const [expanded, setExpanded] = useState([]);
   const formRef = useRef(null);
-  const today = new TZDate().toISOString().split("T")[0];
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!user) return;
@@ -2335,13 +2597,16 @@ const home = UNSAFE_withComponentProps(function home2() {
     setData(res);
     fetchAllSums(res);
   };
-  const setDate = (habitDate) => {
-    const date = new TZDate(habitDate);
-    return date.toLocaleString();
+  const handleCardExpansion = (id) => {
+    if (expanded.includes(id)) ;
+    else {
+      setExpanded((prev) => [...prev, id]);
+    }
   };
   useEffect(() => {
     fetchData();
   }, [user, update]);
+  console.log(expanded);
   return /* @__PURE__ */ jsxs("div", {
     className: "relative h-full flex flex-1 flex-col gap-4 p-4 pt-0 ",
     children: [/* @__PURE__ */ jsxs("div", {
@@ -2450,77 +2715,84 @@ const home = UNSAFE_withComponentProps(function home2() {
       })
     }), /* @__PURE__ */ jsx("div", {
       className: "",
-      children: data2 && data2.length > 0 ? /* @__PURE__ */ jsx("div", {
-        className: "grid auto-rows-min gap-4 md:grid-cols-3",
-        children: data2.map((habit22, index) => /* @__PURE__ */ jsx("div", {
-          className: "bg-slate-300/50 aspect-auto rounded-xl overflow-hidden",
-          children: /* @__PURE__ */ jsxs(Card, {
-            className: "relative capitalize",
-            children: [/* @__PURE__ */ jsxs(CardHeader, {
-              children: [/* @__PURE__ */ jsx(CardTitle, {
-                children: "Habit"
-              }), /* @__PURE__ */ jsx(CardDescription, {
-                children: habit22.name
-              }), /* @__PURE__ */ jsx(CardAction, {
-                children: /* @__PURE__ */ jsx(Link, {
-                  to: `habits/${habit22.id}`,
-                  children: /* @__PURE__ */ jsx(Button, {
-                    variant: "outline",
-                    children: /* @__PURE__ */ jsx(Forward, {})
+      children: data2 && data2.length > 0 ? /* @__PURE__ */ jsx(Carousel, {
+        opts: {
+          align: "start"
+        },
+        className: "w-full",
+        children: /* @__PURE__ */ jsx(CarouselContent, {
+          className: "",
+          children: data2.map((habit22, index) => {
+            const backendValue = dailySums.find((s) => s.id === habit22.id);
+            const isOpen = expanded.includes(habit22.id);
+            return /* @__PURE__ */ jsx(CarouselItem, {
+              onClick: () => handleCardExpansion(habit22.id),
+              className: `${isOpen ? "basis-9/10 lg:basis-1/3" : "basis-6/15 lg:basis-1/3"}`,
+              children: backendValue && /* @__PURE__ */ jsx(Fragment, {
+                children: !isOpen ? /* @__PURE__ */ jsx("div", {
+                  className: "w-full ",
+                  children: /* @__PURE__ */ jsx(HabitCounter, {
+                    habitUnit: habit22.unit,
+                    showActions: false,
+                    habitId: habit22.id,
+                    backendValue: backendValue.value,
+                    goal: habit22.goal ?? 1
                   })
-                })
-              })]
-            }), /* @__PURE__ */ jsxs(CardContent$1, {
-              className: "flex flex-col gap-8",
-              children: [/* @__PURE__ */ jsxs("div", {
-                className: "flex flex-wrap justify-center items-baseline",
-                children: [/* @__PURE__ */ jsxs("div", {
-                  className: "flex flex-wrap items-start gap-2",
-                  children: [/* @__PURE__ */ jsx("h1", {
-                    className: "max-w-xs",
-                    children: dailySums.length === data2.length && /* @__PURE__ */ jsx(RollingNumber, {
-                      number: dailySums.find((s) => s.id === habit22.id)?.value ?? 0
+                }) : /* @__PURE__ */ jsxs(Card, {
+                  className: "relative capitalize",
+                  children: [/* @__PURE__ */ jsxs(CardHeader, {
+                    children: [/* @__PURE__ */ jsx(CardTitle, {
+                      children: habit22.name
+                    }), /* @__PURE__ */ jsx(CardDescription, {
+                      children: habit22.description === "" ? `${habit22.frequency} ${habit22.goal} ${habit22.unit}` : habit22.description
+                    }), /* @__PURE__ */ jsx(CardAction, {
+                      children: /* @__PURE__ */ jsx(Link, {
+                        to: `habits/${habit22.id}`,
+                        children: /* @__PURE__ */ jsx(Button, {
+                          variant: "secondary",
+                          children: /* @__PURE__ */ jsx(Forward, {})
+                        })
+                      })
+                    })]
+                  }), /* @__PURE__ */ jsx(Separator, {}), /* @__PURE__ */ jsx(CardContent$1, {
+                    className: "flex flex-col gap-4 justify-center items-center",
+                    children: backendValue && /* @__PURE__ */ jsx(HabitCounter, {
+                      habitUnit: habit22.unit,
+                      habitId: habit22.id,
+                      backendValue: backendValue.value,
+                      goal: habit22.goal ?? 1
                     })
-                  }), /* @__PURE__ */ jsx("span", {
-                    children: habit22.unit
+                  }), /* @__PURE__ */ jsxs(CardFooter, {
+                    className: "flex flex-row justify-around items-center",
+                    children: [/* @__PURE__ */ jsxs("div", {
+                      className: "flex flex-col items-center w-full",
+                      children: [/* @__PURE__ */ jsx(Button, {
+                        variant: "ghost",
+                        children: /* @__PURE__ */ jsx(TrendingUp, {})
+                      }), /* @__PURE__ */ jsx("p", {
+                        className: "text-muted-foreground text-sm font-light",
+                        children: "Frequency"
+                      }), /* @__PURE__ */ jsx("span", {
+                        children: habit22.frequency
+                      })]
+                    }), /* @__PURE__ */ jsxs("div", {
+                      className: "flex flex-col items-center w-full",
+                      children: [/* @__PURE__ */ jsx(Button, {
+                        variant: "ghost",
+                        children: /* @__PURE__ */ jsx(Calendar, {})
+                      }), /* @__PURE__ */ jsx("p", {
+                        className: "text-muted-foreground text-sm font-light",
+                        children: "Last Updated"
+                      }), /* @__PURE__ */ jsx("span", {
+                        children: formatHabitDate(habit22.updated_at)
+                      })]
+                    })]
                   })]
-                }), /* @__PURE__ */ jsx("div", {
-                  children: /* @__PURE__ */ jsxs("span", {
-                    className: "text-muted-foreground text-sm",
-                    children: ["/ ", habit22.goal, " ", habit22.unit]
-                  })
-                })]
-              }), /* @__PURE__ */ jsx(Separator, {})]
-            }), /* @__PURE__ */ jsxs(CardFooter, {
-              className: "flex flex-col gap-2 items-center",
-              children: [/* @__PURE__ */ jsxs("div", {
-                className: "flex flex-col md:flex-row justify-between items-center w-full",
-                children: [/* @__PURE__ */ jsxs(Button, {
-                  variant: "ghost",
-                  children: [/* @__PURE__ */ jsx(Waves, {}), "Frequency"]
-                }), /* @__PURE__ */ jsx("span", {
-                  children: habit22.frequency
-                })]
-              }), /* @__PURE__ */ jsxs("div", {
-                className: "flex flex-col md:flex-row justify-between items-center w-full",
-                children: [/* @__PURE__ */ jsxs(Button, {
-                  variant: "ghost",
-                  children: [/* @__PURE__ */ jsx(Goal, {}), "Goal"]
-                }), /* @__PURE__ */ jsxs("span", {
-                  children: [habit22.goal, " ", habit22.unit]
-                })]
-              }), /* @__PURE__ */ jsxs("div", {
-                className: "flex flex-col md:flex-row justify-between items-center w-full",
-                children: [/* @__PURE__ */ jsxs(Button, {
-                  variant: "ghost",
-                  children: [/* @__PURE__ */ jsx(Timer, {}), "Last Updated"]
-                }), /* @__PURE__ */ jsx("span", {
-                  children: setDate(habit22.updated_at)
-                })]
-              })]
-            })]
+                })
+              })
+            }, index);
           })
-        }, index))
+        })
       }) : /* @__PURE__ */ jsx(EmptyHabitState, {})
     })]
   });
@@ -2528,7 +2800,9 @@ const home = UNSAFE_withComponentProps(function home2() {
 const route2 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   default: home,
-  fakeHabits
+  fakeHabits,
+  formatHabitDate,
+  today
 }, Symbol.toStringTag, { value: "Module" }));
 const layout$1 = () => {
   return /* @__PURE__ */ jsxs("div", {
@@ -2834,7 +3108,7 @@ function HabitModalButton({ isOpen, open, setHabits }) {
     e.preventDefault();
     if (!user) return;
     if (form === formTemplate) return;
-    const today = new TZDate().toISOString().split("T")[0];
+    const today2 = new TZDate().toISOString().split("T")[0];
     try {
       await addHabit({
         user_id: user.id,
@@ -2847,7 +3121,7 @@ function HabitModalButton({ isOpen, open, setHabits }) {
         reminder_time: null,
         is_archived: false
       });
-      setHabits((prev) => [...prev, { ...form, created_at: today }]);
+      setHabits((prev) => [...prev, { ...form, created_at: today2 }]);
       isOpen(false);
       toast.success("Successfully added a new habit.");
     } catch {
@@ -4100,7 +4374,7 @@ const route7 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProper
   __proto__: null,
   default: layout
 }, Symbol.toStringTag, { value: "Module" }));
-const serverManifest = { "entry": { "module": "/assets/entry.client-B9K-RFgp.js", "imports": ["/assets/catchall-DwulxZne.js", "/assets/index-C4tjowxs.js"], "css": ["/assets/index-CQXEbRJy.css"] }, "routes": { "root": { "id": "root", "parentId": void 0, "path": "", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasErrorBoundary": false, "module": "/assets/root-Cgak3cSv.js", "imports": ["/assets/catchall-DwulxZne.js", "/assets/index-C4tjowxs.js", "/assets/AuthContext-CVIf5Sz9.js", "/assets/utils-CDN07tui.js"], "css": ["/assets/index-CQXEbRJy.css"], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "pages/dashboard": { "id": "pages/dashboard", "parentId": "root", "path": "/dashboard?", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasErrorBoundary": false, "module": "/assets/dashboard-n9_M9BzX.js", "imports": ["/assets/index-C4tjowxs.js", "/assets/catchall-DwulxZne.js", "/assets/index-BpNPvmzu.js", "/assets/index-BGqFuT78.js", "/assets/button-BdwCQaQm.js", "/assets/utils-CDN07tui.js", "/assets/x-llPyrhA8.js", "/assets/index-CP3L_gY7.js", "/assets/AuthContext-CVIf5Sz9.js", "/assets/dropdown-menu-16LMhZFV.js", "/assets/map-BRdV3QtG.js", "/assets/plus-DQ9pYXXo.js", "/assets/separator-G_U5ctMB.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "pages/home": { "id": "pages/home", "parentId": "pages/dashboard", "path": void 0, "index": true, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasErrorBoundary": false, "module": "/assets/home-DG67ot9B.js", "imports": ["/assets/index-C4tjowxs.js", "/assets/catchall-DwulxZne.js", "/assets/separator-G_U5ctMB.js", "/assets/button-BdwCQaQm.js", "/assets/AuthContext-CVIf5Sz9.js", "/assets/AlertDialogButton-B_A-eDf3.js", "/assets/card-7visTkmD.js", "/assets/label-CGXZxnbG.js", "/assets/utils-CDN07tui.js", "/assets/index-BpNPvmzu.js", "/assets/index-BGqFuT78.js", "/assets/map-BRdV3QtG.js", "/assets/index-BQcZugzN.js", "/assets/plus-DQ9pYXXo.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "pages/habits/layout": { "id": "pages/habits/layout", "parentId": "pages/dashboard", "path": void 0, "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasErrorBoundary": false, "module": "/assets/layout-D3gIJPMh.js", "imports": ["/assets/index-C4tjowxs.js", "/assets/catchall-DwulxZne.js", "/assets/separator-G_U5ctMB.js", "/assets/index-BGqFuT78.js", "/assets/utils-CDN07tui.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "pages/habits/overview": { "id": "pages/habits/overview", "parentId": "pages/habits/layout", "path": "habits", "index": true, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": true, "hasClientMiddleware": false, "hasErrorBoundary": false, "module": "/assets/overview-C5pY6VtN.js", "imports": ["/assets/index-C4tjowxs.js", "/assets/catchall-DwulxZne.js", "/assets/AlertDialogButton-B_A-eDf3.js", "/assets/table-CY8VXiLW.js", "/assets/AuthContext-CVIf5Sz9.js", "/assets/button-BdwCQaQm.js", "/assets/dropdown-menu-16LMhZFV.js", "/assets/index-BQcZugzN.js", "/assets/label-CGXZxnbG.js", "/assets/index-BpNPvmzu.js", "/assets/utils-CDN07tui.js", "/assets/x-llPyrhA8.js", "/assets/field-hu4poVML.js", "/assets/index-BGqFuT78.js", "/assets/plus-DQ9pYXXo.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "pages/habits/habit": { "id": "pages/habits/habit", "parentId": "pages/habits/layout", "path": "habits/:habitId", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": true, "hasClientMiddleware": false, "hasErrorBoundary": false, "module": "/assets/habit-RNWhxLfc.js", "imports": ["/assets/index-C4tjowxs.js", "/assets/catchall-DwulxZne.js", "/assets/AlertDialogButton-B_A-eDf3.js", "/assets/AuthContext-CVIf5Sz9.js", "/assets/table-CY8VXiLW.js", "/assets/button-BdwCQaQm.js", "/assets/dropdown-menu-16LMhZFV.js", "/assets/card-7visTkmD.js", "/assets/utils-CDN07tui.js", "/assets/index-BpNPvmzu.js", "/assets/index-BGqFuT78.js", "/assets/index-CP3L_gY7.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "catchall": { "id": "catchall", "parentId": "pages/dashboard", "path": "*", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasErrorBoundary": false, "module": "/assets/catchall-DwulxZne.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "pages/auth/layout": { "id": "pages/auth/layout", "parentId": "root", "path": void 0, "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasErrorBoundary": false, "module": "/assets/layout-D0u6hQKD.js", "imports": ["/assets/index-C4tjowxs.js", "/assets/catchall-DwulxZne.js", "/assets/AuthContext-CVIf5Sz9.js", "/assets/utils-CDN07tui.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "pages/auth/login": { "id": "pages/auth/login", "parentId": "pages/auth/layout", "path": "login", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasErrorBoundary": false, "module": "/assets/login-C5-QLzrU.js", "imports": ["/assets/index-C4tjowxs.js", "/assets/catchall-DwulxZne.js", "/assets/utils-CDN07tui.js", "/assets/button-BdwCQaQm.js", "/assets/card-7visTkmD.js", "/assets/field-hu4poVML.js", "/assets/label-CGXZxnbG.js", "/assets/AuthContext-CVIf5Sz9.js", "/assets/index-BGqFuT78.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "pages/auth/register": { "id": "pages/auth/register", "parentId": "pages/auth/layout", "path": "/register", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasErrorBoundary": false, "module": "/assets/register-C17sA2vm.js", "imports": ["/assets/index-C4tjowxs.js", "/assets/catchall-DwulxZne.js", "/assets/AuthContext-CVIf5Sz9.js", "/assets/button-BdwCQaQm.js", "/assets/card-7visTkmD.js", "/assets/field-hu4poVML.js", "/assets/label-CGXZxnbG.js", "/assets/utils-CDN07tui.js", "/assets/index-BGqFuT78.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 } }, "url": "/assets/manifest-7d0ab23a.js", "version": "7d0ab23a", "sri": void 0 };
+const serverManifest = { "entry": { "module": "/assets/entry.client-CPAYb8e-.js", "imports": ["/assets/catchall-DwulxZne.js", "/assets/index-C4tjowxs.js"], "css": ["/assets/index-cbun3zR3.css"] }, "routes": { "root": { "id": "root", "parentId": void 0, "path": "", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasErrorBoundary": false, "module": "/assets/root-DYJI3-bf.js", "imports": ["/assets/catchall-DwulxZne.js", "/assets/index-C4tjowxs.js", "/assets/AuthContext-CVIf5Sz9.js", "/assets/utils-CDN07tui.js"], "css": ["/assets/index-cbun3zR3.css"], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "pages/dashboard": { "id": "pages/dashboard", "parentId": "root", "path": "/dashboard?", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasErrorBoundary": false, "module": "/assets/dashboard-n9_M9BzX.js", "imports": ["/assets/index-C4tjowxs.js", "/assets/catchall-DwulxZne.js", "/assets/index-BpNPvmzu.js", "/assets/index-BGqFuT78.js", "/assets/button-BdwCQaQm.js", "/assets/utils-CDN07tui.js", "/assets/x-llPyrhA8.js", "/assets/index-CP3L_gY7.js", "/assets/AuthContext-CVIf5Sz9.js", "/assets/dropdown-menu-16LMhZFV.js", "/assets/map-BRdV3QtG.js", "/assets/plus-DQ9pYXXo.js", "/assets/separator-G_U5ctMB.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "pages/home": { "id": "pages/home", "parentId": "pages/dashboard", "path": void 0, "index": true, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasErrorBoundary": false, "module": "/assets/home-zBtyuvvt.js", "imports": ["/assets/index-C4tjowxs.js", "/assets/catchall-DwulxZne.js", "/assets/separator-G_U5ctMB.js", "/assets/button-BdwCQaQm.js", "/assets/AuthContext-CVIf5Sz9.js", "/assets/AlertDialogButton-B_A-eDf3.js", "/assets/card-7visTkmD.js", "/assets/label-CGXZxnbG.js", "/assets/utils-CDN07tui.js", "/assets/index-BpNPvmzu.js", "/assets/index-BGqFuT78.js", "/assets/map-BRdV3QtG.js", "/assets/index-BQcZugzN.js", "/assets/plus-DQ9pYXXo.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "pages/habits/layout": { "id": "pages/habits/layout", "parentId": "pages/dashboard", "path": void 0, "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasErrorBoundary": false, "module": "/assets/layout-D3gIJPMh.js", "imports": ["/assets/index-C4tjowxs.js", "/assets/catchall-DwulxZne.js", "/assets/separator-G_U5ctMB.js", "/assets/index-BGqFuT78.js", "/assets/utils-CDN07tui.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "pages/habits/overview": { "id": "pages/habits/overview", "parentId": "pages/habits/layout", "path": "habits", "index": true, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": true, "hasClientMiddleware": false, "hasErrorBoundary": false, "module": "/assets/overview-C5pY6VtN.js", "imports": ["/assets/index-C4tjowxs.js", "/assets/catchall-DwulxZne.js", "/assets/AlertDialogButton-B_A-eDf3.js", "/assets/table-CY8VXiLW.js", "/assets/AuthContext-CVIf5Sz9.js", "/assets/button-BdwCQaQm.js", "/assets/dropdown-menu-16LMhZFV.js", "/assets/index-BQcZugzN.js", "/assets/label-CGXZxnbG.js", "/assets/index-BpNPvmzu.js", "/assets/utils-CDN07tui.js", "/assets/x-llPyrhA8.js", "/assets/field-hu4poVML.js", "/assets/index-BGqFuT78.js", "/assets/plus-DQ9pYXXo.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "pages/habits/habit": { "id": "pages/habits/habit", "parentId": "pages/habits/layout", "path": "habits/:habitId", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": true, "hasClientMiddleware": false, "hasErrorBoundary": false, "module": "/assets/habit-RNWhxLfc.js", "imports": ["/assets/index-C4tjowxs.js", "/assets/catchall-DwulxZne.js", "/assets/AlertDialogButton-B_A-eDf3.js", "/assets/AuthContext-CVIf5Sz9.js", "/assets/table-CY8VXiLW.js", "/assets/button-BdwCQaQm.js", "/assets/dropdown-menu-16LMhZFV.js", "/assets/card-7visTkmD.js", "/assets/utils-CDN07tui.js", "/assets/index-BpNPvmzu.js", "/assets/index-BGqFuT78.js", "/assets/index-CP3L_gY7.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "catchall": { "id": "catchall", "parentId": "pages/dashboard", "path": "*", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasErrorBoundary": false, "module": "/assets/catchall-DwulxZne.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "pages/auth/layout": { "id": "pages/auth/layout", "parentId": "root", "path": void 0, "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasErrorBoundary": false, "module": "/assets/layout-D0u6hQKD.js", "imports": ["/assets/index-C4tjowxs.js", "/assets/catchall-DwulxZne.js", "/assets/AuthContext-CVIf5Sz9.js", "/assets/utils-CDN07tui.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "pages/auth/login": { "id": "pages/auth/login", "parentId": "pages/auth/layout", "path": "login", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasErrorBoundary": false, "module": "/assets/login-C5-QLzrU.js", "imports": ["/assets/index-C4tjowxs.js", "/assets/catchall-DwulxZne.js", "/assets/utils-CDN07tui.js", "/assets/button-BdwCQaQm.js", "/assets/card-7visTkmD.js", "/assets/field-hu4poVML.js", "/assets/label-CGXZxnbG.js", "/assets/AuthContext-CVIf5Sz9.js", "/assets/index-BGqFuT78.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "pages/auth/register": { "id": "pages/auth/register", "parentId": "pages/auth/layout", "path": "/register", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasErrorBoundary": false, "module": "/assets/register-C17sA2vm.js", "imports": ["/assets/index-C4tjowxs.js", "/assets/catchall-DwulxZne.js", "/assets/AuthContext-CVIf5Sz9.js", "/assets/button-BdwCQaQm.js", "/assets/card-7visTkmD.js", "/assets/field-hu4poVML.js", "/assets/label-CGXZxnbG.js", "/assets/utils-CDN07tui.js", "/assets/index-BGqFuT78.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 } }, "url": "/assets/manifest-23314622.js", "version": "23314622", "sri": void 0 };
 const assetsBuildDirectory = "build\\client";
 const basename = "/";
 const future = { "v8_middleware": false, "unstable_optimizeDeps": false, "unstable_splitRouteModules": false, "unstable_subResourceIntegrity": false, "unstable_viteEnvironmentApi": false };

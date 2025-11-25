@@ -92,9 +92,9 @@
     }
   },
   "reactRouterConfig": {
-    "appDirectory": "C:/Users/mbidd/OneDrive/Desktop/FitTrackPro/frontend/app",
+    "appDirectory": "C:/Users/mbidd/OneDrive/Desktop/Habit-Tracker/frontend/app",
     "basename": "/",
-    "buildDirectory": "C:/Users/mbidd/OneDrive/Desktop/FitTrackPro/frontend/build",
+    "buildDirectory": "C:/Users/mbidd/OneDrive/Desktop/Habit-Tracker/frontend/build",
     "future": {
       "v8_middleware": false,
       "unstable_optimizeDeps": false,
