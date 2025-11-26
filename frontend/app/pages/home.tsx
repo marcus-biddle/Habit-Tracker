@@ -289,12 +289,12 @@ export default function home() {
                         <>
                           {!isOpen ? 
                             <Card className='w-full shadow-lg rounded-md p-2'>
-                              <CardAction className='flex'>
+                              <CardAction className='flex w-full'>
                                 <div>
                                   <HabitCounter habitUnit={habit.unit} showActions={false} habitId={habit.id} backendValue={(backendValue.value)} goal={habit.goal ?? 1} />
                                 </div>
-                                <CardHeader className='m-0 p-0'>
-                                  <CardTitle className='p-2'>{habit.name}</CardTitle>
+                                <CardHeader className='m-0 p-0 capitalize w-full'>
+                                  <CardTitle className='p-2 w-full'>{habit.name}</CardTitle>
                                   <div>
                                     <div className='flex items-center w-full'>
                                       <Button variant={'ghost'}>
