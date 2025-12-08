@@ -24,7 +24,7 @@ export const PresenceProvider = ({ children }: { children: React.ReactNode }) =>
 
     presenceChannel.current.on('presence', { event: 'sync' }, () => {
       setPresenceState(presenceChannel.current.presenceState());
-      console.log('sync,',presenceChannel.current.presenceState())
+      // console.log('sync,',presenceChannel.current.presenceState())
     });
 
     presenceChannel.current.subscribe(async (status: string) => {

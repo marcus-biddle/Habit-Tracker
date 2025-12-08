@@ -3,7 +3,10 @@ import {
 
   GalleryVerticalEnd,
   Map,
-  Home
+  Home,
+  Group,
+  Gift,
+  Link
 } from "lucide-react"
 
 import { NavMain } from "../components/nav-main"
@@ -52,44 +55,48 @@ const data = {
         },
       ],
     },
-    // {
-    //   title: "Users",
-    //   url: "#",
-    //   icon: Bot,
-    //   items: [
-    //     {
-    //       title: "Compare",
-    //       url: "compare",
-    //     },
-    //     {
-    //       title: "Explore",
-    //       url: "explore",
-    //     },
-    //   ],
-    // },
-    // {
-    //   title: "History",
-    //   url: "#",
-    //   icon: BookOpen,
-    //   items: [
-    //     {
-    //       title: "Introduction",
-    //       url: "#",
-    //     },
-    //     {
-    //       title: "Get Started",
-    //       url: "#",
-    //     },
-    //     {
-    //       title: "Tutorials",
-    //       url: "#",
-    //     },
-    //     {
-    //       title: "Changelog",
-    //       url: "#",
-    //     },
-    //   ],
-    // },
+    {
+      title: "Group Trackers",
+      url: "#",
+      icon: Group,
+      isActive: true,
+      showItems: false,
+      items: [
+        {
+          title: "Compare",
+          url: "compare",
+        },
+        {
+          title: "Explore",
+          url: "explore",
+        },
+      ],
+    },
+    {
+      title: "Routine",
+      url: "#",
+      icon: Link,
+      isActive: true,
+      showItems: false,
+      items: [
+        {
+          title: "Introduction",
+          url: "#",
+        },
+        {
+          title: "Get Started",
+          url: "#",
+        },
+        {
+          title: "Tutorials",
+          url: "#",
+        },
+        {
+          title: "Changelog",
+          url: "#",
+        },
+      ],
+    },
     // {
     //   title: "Settings",
     //   url: "#",

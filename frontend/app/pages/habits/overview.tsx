@@ -38,12 +38,15 @@ import { TZDate } from '@date-fns/tz';
 import { toast } from 'sonner'
 import { HabitModalButton } from '../../components/Modals/Habits/HabitModalButton';
 import { AlertDialogButton } from '../../components/AlertDialogButton';
+import { Link } from 'react-router';
+import ReusableTable from '../../features/overview/table';
 
 export async function clientLoader() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
     const habits: Habit[] = await getHabitsByUserId(user.id);
+    console.log(habits)
     return habits;
 }
 
@@ -75,9 +78,11 @@ const columns: ColumnDef<Habit>[] = [
   {
     accessorKey: "name",
     header: "Name",
-    cell: ({ row }) => (
-      <div className="capitalize">{row.getValue("name")}</div>
-    ),
+    cell: ({ row }) => {
+      console.log(row)
+      return (
+      <Link to={`/dashboard/habits/${row.original.id}`} className="capitalize">{row.getValue("name")}</Link>
+    )},
   },
   {
     accessorKey: "goal",
@@ -207,89 +212,110 @@ const overview = ({ loaderData }: any) => {
 
   return (
     <div className="w-full">
-    <div className="flex items-center py-4">
-    <div className='flex ml-auto gap-2 w-full max-w-sm '>
-        <div className='w-full'>
-            <AlertDialogButton onContinue={handleBatchDelete} variant={table.getFilteredSelectedRowModel().rows.length > 0 ? "destructive" : "outline"} disabled={table.getFilteredSelectedRowModel().rows.length <= 0} dialingDesc='Action cannot be undone.' buttonText={`Delete ${table.getFilteredSelectedRowModel().rows.length > 0 ? `Batch (${table.getFilteredSelectedRowModel().rows.length} rows)` : ''}`} />
+      <div>
+        <h2 className="scroll-m-20 text-2xl font-semibold tracking-tight first:mt-0">
+          Habits
+        </h2>
+        <p className="leading-7 not-first:mt-6">Collection of all your habits created.</p>
+      </div>
+      <div className="flex items-center py-4">
+        <div className='flex ml-auto gap-2 w-full max-w-sm '>
+          <div className='w-full'>
+              <AlertDialogButton onContinue={handleBatchDelete} variant={table.getFilteredSelectedRowModel().rows.length > 0 ? "destructive" : "outline"} disabled={table.getFilteredSelectedRowModel().rows.length <= 0} dialingDesc='Action cannot be undone.' buttonText={`Delete ${table.getFilteredSelectedRowModel().rows.length > 0 ? `Batch (${table.getFilteredSelectedRowModel().rows.length} rows)` : ''}`} />
+          </div>
+          <HabitModalButton open={open} isOpen={isOpen} setHabits={setHabits} />
         </div>
-        <HabitModalButton open={open} isOpen={isOpen} setHabits={setHabits} />
-    </div>
-
-    </div>
-    <div className="overflow-hidden rounded-md border">
-    <Table>
-    <TableHeader>
-    {table.getHeaderGroups().map((headerGroup) => (
-    <TableRow key={headerGroup.id}>
-    {headerGroup.headers.map((header) => {
-    return (
-    <TableHead key={header.id}>
-    {header.isPlaceholder
-    ? null
-    : flexRender(
-    header.column.columnDef.header,
-    header.getContext()
-    )}
-    </TableHead>
-    )
-    })}
-    </TableRow>
-    ))}
-    </TableHeader>
-    <TableBody>
-    {table.getRowModel().rows?.length ? (
-    table.getRowModel().rows.map((row) => (
-    <TableRow
-    key={row.id}
-    data-state={row.getIsSelected() && "selected"}
-    >
-    {row.getVisibleCells().map((cell) => (
-    <TableCell key={cell.id}>
-    {flexRender(
-    cell.column.columnDef.cell,
-    cell.getContext()
-    )}
-    </TableCell>
-    ))}
-    </TableRow>
-    ))
-    ) : (
-    <TableRow>
-    <TableCell
-    colSpan={columns.length}
-    className="h-24 text-center"
-    >
-    No results.
-    </TableCell>
-    </TableRow>
-    )}
-    </TableBody>
-    </Table>
-    </div>
-    <div className="flex items-center justify-end space-x-2 py-4">
-    <div className="text-muted-foreground flex-1 text-sm">
-    {table.getFilteredSelectedRowModel().rows.length} of{" "}
-    {table.getFilteredRowModel().rows.length} row(s) selected.
-    </div>
-    <div className="space-x-2">
-    <Button
-    variant="outline"
-    size="sm"
-    onClick={() => table.previousPage()}
-    disabled={!table.getCanPreviousPage()}
-    >
-    Previous
-    </Button>
-    <Button
-    variant="outline"
-    size="sm"
-    onClick={() => table.nextPage()}
-    disabled={!table.getCanNextPage()}
-    >
-    Next
-    </Button>
-    </div>
-    </div>
+      </div>
+      <div className="overflow-hidden rounded-md border">
+        <Table>
+        <TableHeader>
+        {table.getHeaderGroups().map((headerGroup) => (
+        <TableRow key={headerGroup.id}>
+        {headerGroup.headers.map((header) => {
+        return (
+        <TableHead key={header.id}>
+        {header.isPlaceholder
+        ? null
+        : flexRender(
+        header.column.columnDef.header,
+        header.getContext()
+        )}
+        </TableHead>
+        )
+        })}
+        </TableRow>
+        ))}
+        </TableHeader>
+        <TableBody>
+        {table.getRowModel().rows?.length ? (
+        table.getRowModel().rows.map((row) => (
+        <TableRow
+        key={row.id}
+        data-state={row.getIsSelected() && "selected"}
+        >
+        {row.getVisibleCells().map((cell) => (
+        <TableCell key={cell.id}>
+        {flexRender(
+        cell.column.columnDef.cell,
+        cell.getContext()
+        )}
+        </TableCell>
+        ))}
+        </TableRow>
+        ))
+        ) : (
+        <TableRow>
+        <TableCell
+        colSpan={columns.length}
+        className="h-24 text-center"
+        >
+        No results.
+        </TableCell>
+        </TableRow>
+        )}
+        </TableBody>
+        </Table>
+      </div>
+      <div className="flex items-center justify-end space-x-2 py-4">
+      <div className="text-muted-foreground flex-1 text-sm">
+      {table.getFilteredSelectedRowModel().rows.length} of{" "}
+      {table.getFilteredRowModel().rows.length} row(s) selected.
+      </div>
+      <div className="space-x-2">
+      <Button
+      variant="outline"
+      size="sm"
+      onClick={() => table.previousPage()}
+      disabled={!table.getCanPreviousPage()}
+      >
+      Previous
+      </Button>
+      <Button
+      variant="outline"
+      size="sm"
+      onClick={() => table.nextPage()}
+      disabled={!table.getCanNextPage()}
+      >
+      Next
+      </Button>
+      </div>
+      </div>
+      {/* NEXT SET */}
+      <div>
+        <h2 className="scroll-m-20 text-2xl font-semibold tracking-tight first:mt-0">
+          Routines
+        </h2>
+        <p className="leading-7 not-first:mt-6">Collection of grouped habits</p>
+      </div>
+      <div className="flex items-center py-4">
+        <div className='flex ml-auto gap-2 w-full max-w-sm '>
+          <div className='w-full'>
+              <AlertDialogButton onContinue={handleBatchDelete} variant={table.getFilteredSelectedRowModel().rows.length > 0 ? "destructive" : "outline"} disabled={table.getFilteredSelectedRowModel().rows.length <= 0} dialingDesc='Action cannot be undone.' buttonText={`Delete ${table.getFilteredSelectedRowModel().rows.length > 0 ? `Batch (${table.getFilteredSelectedRowModel().rows.length} rows)` : ''}`} />
+          </div>
+          <HabitModalButton open={open} isOpen={isOpen} setHabits={setHabits} />
+        </div>
+      </div>
+      <ReusableTable data={habits} />
     </div>
   )
 }

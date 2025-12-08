@@ -43,6 +43,7 @@
     "isbot": "^5",
     "lucide-react": "^0.525.0",
     "next-themes": "^0.4.6",
+    "papaparse": "^5.5.3",
     "react": "^19.1.0",
     "react-chartjs-2": "^5.3.1",
     "react-dom": "^19.1.0",
@@ -51,11 +52,13 @@
     "recharts": "^2.15.4",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.4.0",
-    "tailwindcss": "^4.1.11"
+    "tailwindcss": "^4.1.11",
+    "vaul": "^1.1.2"
   },
   "devDependencies": {
     "@eslint/js": "^9.30.1",
     "@react-router/dev": "^7.9.5",
+    "@types/papaparse": "^5.5.1",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "@vitejs/plugin-react": "^4.6.0",
