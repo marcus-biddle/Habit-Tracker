@@ -3,6 +3,7 @@ import { route, layout, index, type RouteConfig, prefix } from "@react-router/de
 export default [
   route("/dashboard?", "./pages/dashboard.tsx", [
     index("./pages/home.tsx"),
+    route("analytics", "./pages/home-analytics.tsx"),
     // ...prefix("analytics", [
     //   layout("./pages/analytics/layout.tsx", [
     //     route("overview", "./pages/analytics/overview.tsx"),

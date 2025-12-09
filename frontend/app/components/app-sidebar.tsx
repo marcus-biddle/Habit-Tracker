@@ -1,12 +1,10 @@
 import * as React from "react"
 import {
-
   GalleryVerticalEnd,
-  Map,
   Home,
-  Group,
-  Gift,
-  Link
+  BarChart3,
+  Settings2,
+  Target,
 } from "lucide-react"
 
 import { NavMain } from "../components/nav-main"
@@ -30,113 +28,62 @@ const data = {
   },
   navMain: [
     {
-      title: "Home",
+      title: "Dashboard",
       url: "/dashboard",
       icon: Home,
       isActive: true,
       showItems: false,
-      items: [
-        {
-          title: "Overview",
-          url: "overview",
-        },
-      ],
+      items: [],
+    },
+    {
+      title: "Analytics",
+      url: "/dashboard/analytics",
+      icon: BarChart3,
+      isActive: true,
+      showItems: false,
+      items: [],
     },
     {
       title: "Habits",
       url: "/dashboard/habits",
-      icon: Map,
+      icon: Target,
       isActive: true,
       showItems: false,
-      items: [
-        {
-          title: "Overview",
-          url: "overview",
-        },
-      ],
+      items: [],
     },
     {
-      title: "Group Trackers",
+      title: "Settings",
       url: "#",
-      icon: Group,
+      icon: Settings2,
       isActive: true,
       showItems: false,
       items: [
         {
-          title: "Compare",
-          url: "compare",
-        },
-        {
-          title: "Explore",
-          url: "explore",
-        },
-      ],
-    },
-    {
-      title: "Routine",
-      url: "#",
-      icon: Link,
-      isActive: true,
-      showItems: false,
-      items: [
-        {
-          title: "Introduction",
+          title: "Profile",
           url: "#",
         },
         {
-          title: "Get Started",
+          title: "Preferences",
           url: "#",
         },
         {
-          title: "Tutorials",
-          url: "#",
-        },
-        {
-          title: "Changelog",
+          title: "Notifications",
           url: "#",
         },
       ],
     },
-    // {
-    //   title: "Settings",
-    //   url: "#",
-    //   icon: Settings2,
-    //   items: [
-    //     {
-    //       title: "General",
-    //       url: "general",
-    //     },
-    //     {
-    //       title: "Team",
-    //       url: "team",
-    //     },
-    //     {
-    //       title: "Billing",
-    //       url: "#",
-    //     },
-    //     {
-    //       title: "Limits",
-    //       url: "#",
-    //     },
-    //   ],
-    // },
   ],
   projects: [
     {
-      name: "Home",
-      url: "/",
+      name: "Dashboard",
+      url: "/dashboard",
       icon: Home,
     },
     {
       name: "Habits",
-      url: "/habits",
-      icon: Map,
+      url: "/dashboard/habits",
+      icon: Target,
     },
-    // {
-    //   name: "Travel",
-    //   url: "#",
-    //   icon: Map,
-    // },
   ],
 }
 

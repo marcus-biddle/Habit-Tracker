@@ -1,13 +1,11 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState, useMemo } from 'react'
 import { Separator } from "../components/ui/separator"
 import { type Habit } from '../components/Tables/Habits/columns'
 import { Button } from '../components/ui/button'
-import { Calendar, Forward, Map, Plus, TrendingUp } from 'lucide-react'
-import { useAuth } from '../context/AuthContext'
+import { Forward, Plus, CheckCircle2, Flame, Target } from 'lucide-react'
 import { addHabitEntry, getHabitsByUserId } from '../api/supabase'
 import { motion } from 'framer-motion'
-import { Card, CardAction, CardDescription, CardFooter, CardHeader, CardTitle } from '../components/ui/card'
-import { CardContent } from '@mui/material'
+import { Card, CardDescription, CardFooter, CardHeader, CardTitle, CardContent } from '../components/ui/card'
 import { Label } from '../components/ui/label'
 import { Input } from '../components/ui/input'
 import { Combobox } from '../components/ComboBox'
@@ -17,12 +15,13 @@ import { Link } from 'react-router'
 import { toast } from 'sonner'
 import { TZDate } from '@date-fns/tz';
 import { EmptyHabitState } from '../components/EmptyHabitState'
-import { HabitCounter } from '../components/HabitCounter'
 import { Carousel } from '../components/ui/carousel'
 import { CarouselContent } from '../components/ui/carousel'
 import { CarouselItem } from '../components/ui/carousel'
+import { CircularProgress } from '../components/CircularProgressBar'
 import ReusableTable from '../features/overview/table'
 import CSVImporter from '../features/CSVImporter'
+import type { DashboardHabit } from '../features/overview/table'
 
 export const fakeHabits: Habit[] = [
   {
@@ -123,12 +122,25 @@ export async function clientLoader() {
     if (!user) return;
 
     const habits: Habit[] = await getHabitsByUserId(user.id);
-    const { data, error } = await supabase.rpc('get_habit_dashboard_stats', { 
-    p_user_id: user.id 
-  });
+    const { data } = await supabase.rpc('get_habit_dashboard_stats', { 
+      p_user_id: user.id 
+    });
 
-    console.log(data, error)
-    return {user: user, habits: habits ?? [], stats: data ?? []};
+    // Get daily sums for today
+    const dailySumsPromises = habits.map(habit =>
+      supabase.rpc('get_daily_habit_sum', {
+        p_user_id: user.id,
+        p_habit_id: habit.id,
+        p_date: today
+      })
+    );
+    const dailySumsResults = await Promise.all(dailySumsPromises);
+    const dailySums = habits.map((habit, idx) => ({
+      id: habit.id,
+      value: dailySumsResults[idx].data ?? 0,
+    }));
+
+    return {user: user, habits: habits ?? [], stats: data ?? [], dailySums: dailySums};
 }
 
 export default function home({ loaderData }: any) {
@@ -136,12 +148,58 @@ export default function home({ loaderData }: any) {
   const [update, setUpdate] = useState(false);
   const [habit, selectHabit] = useState<string>('');
   const [value, selectValue] = useState<number>(0);
-  const [data, setData] = useState<Habit[] | []>(loaderData.habits)
-  const [dailySums, setDailySums] = useState<{ id: string; value: 0 }[]>([]);
+  const [data, setData] = useState<Habit[] | []>(loaderData.habits ?? [])
+  const [dailySums, setDailySums] = useState<{ id: string; value: number }[]>(loaderData.dailySums ?? []);
   const [expanded, setExpanded] = useState<string[]>([]);
   const formRef = useRef<HTMLFormElement>(null);
 
-  
+  const activeHabits = useMemo(() => {
+    return data.filter((h: Habit) => h.status === 'active' && !h.is_archived);
+  }, [data]);
+
+  // Calculate today's summary stats
+  const todayStats = useMemo(() => {
+    const habitsWithEntriesToday = dailySums.filter((ds: { id: string; value: number }) => ds.value > 0).length;
+    const totalActive = activeHabits.length;
+    const todayCompletionRate = totalActive > 0 
+      ? Math.round((habitsWithEntriesToday / totalActive) * 100) 
+      : 0;
+    const remaining = totalActive - habitsWithEntriesToday;
+
+    const stats = loaderData.stats ?? [];
+    const currentLongestStreak = stats.length > 0
+      ? Math.max(...stats.map((s: DashboardHabit) => s.current_streak ?? 0))
+      : 0;
+
+    // Calculate total entries today
+    const totalEntriesToday = dailySums.reduce((sum: number, ds: { id: string; value: number }) => sum + ds.value, 0);
+
+    // Calculate habits at risk (no entry today and streak > 0)
+    const atRisk = stats.filter((s: DashboardHabit) => {
+      const hasEntryToday = dailySums.find((ds: { id: string; value: number }) => ds.id === s.habit_id)?.value ?? 0;
+      return hasEntryToday === 0 && (s.current_streak ?? 0) > 0;
+    }).length;
+
+    // Calculate habits not started today (no entry at all)
+    const notStarted = totalActive - habitsWithEntriesToday;
+
+    // Calculate week completion rate
+    const weekCompletion = stats.length > 0
+      ? Math.round(stats.reduce((sum: number, s: DashboardHabit) => sum + (s.week_completion ?? 0), 0) / stats.length)
+      : 0;
+
+    return {
+      completed: habitsWithEntriesToday,
+      total: totalActive,
+      remaining: remaining,
+      completionRate: todayCompletionRate,
+      currentStreak: currentLongestStreak,
+      totalEntries: totalEntriesToday,
+      atRisk: atRisk,
+      notStarted: notStarted,
+      weekCompletion: weekCompletion
+    };
+  }, [dailySums, activeHabits, loaderData.stats]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -156,14 +214,22 @@ export default function home({ loaderData }: any) {
       });
       
       setUpdate(false);
-      toast.success("Successfully updated habit.")
+      selectHabit('');
+      selectValue(0);
+      toast.success("Successfully updated habit.");
+      
+      // Refresh data
+      const res = await getHabitsByUserId(user.id);
+      setData(res);
+      await fetchAllSums(res);
     } catch (err) {
       console.error("Failed to add habit entry", err);
+      toast.error("Failed to update habit. Please try again.");
     }
   };
 
   const fetchHabitDailySum = async (habitId: string) => {
-    if (!user) return;
+    if (!user) return 0;
 
     const { data, error } = await supabase.rpc('get_daily_habit_sum', {
       p_user_id: user.id,
@@ -176,34 +242,28 @@ export default function home({ loaderData }: any) {
       return 0;
     }
 
-    return data;
+    return data ?? 0;
   }
 
   const fetchAllSums = async (res: Habit[] | null) => {
-  if (!res) return;
+    if (!res) return;
 
-  const sums = await Promise.all(
-    res.map(habit => fetchHabitDailySum(habit.id))
-  );
-  const dailySums = res.map((habit, idx) => ({
-    id: habit.id,
-    value: sums[idx],
-  }));
+    const sums = await Promise.all(
+      res.map(habit => fetchHabitDailySum(habit.id))
+    );
+    const newDailySums = res.map((habit, idx) => ({
+      id: habit.id,
+      value: sums[idx],
+    }));
 
-  setDailySums(dailySums);
-};
+    setDailySums(newDailySums);
+  };
 
   const fetchData = async() => {
-    
     if (!user) return;
     const res = await getHabitsByUserId(user.id);
-    // setData(res)
-    fetchAllSums(res);
-  }
-
-  const setDate = (habitDate: string) => {
-    const date = new TZDate(habitDate);
-    return date.toLocaleString();
+    setData(res);
+    await fetchAllSums(res);
   }
 
   const handleCardExpansion = (id: string) => {
@@ -217,166 +277,399 @@ export default function home({ loaderData }: any) {
   }, [user, update]);
 
   return (
-    <div className="relative h-full flex flex-1 flex-col gap-4 p-4 pt-0 ">
+    <div className="relative h-full flex flex-1 flex-col gap-6 p-4 pt-0">
+      {/* Header */}
       <div className="md:min-h-min">
         <div className="space-y-1">
-        <h4 className="text-sm leading-none font-medium">Home</h4>
-        <p className="text-muted-foreground text-sm">
-          View your habits and daily activity.
-        </p>
-      </div>
+          <h4 className="text-sm leading-none font-medium">Dashboard</h4>
+          <p className="text-muted-foreground text-sm">
+            Track your habits and log your daily progress.
+          </p>
+        </div>
         <Separator className="my-4" />
       </div>
-      {/* Action Buttons */}
-      <div className='w-full flex justify-end gap-2'>
-        {/* <Link to={'habits'}>
-          <Button size={'sm'}>
-            <Map />
-            Habits
-          </Button>
-        </Link> */}
-        <Button disabled={data?.length === 0} size={'sm'} onClick={() => setUpdate(!update)}>
-          <Plus />
-          Update
-        </Button>
-        <CSVImporter habits={data} />
-      </div>
-      {/* {update && (
-        <motion.div 
-          initial={{ opacity: 0, scale: 0 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.95 }}
-          transition={{ duration: 0.3, ease: "easeInOut" }}
-          className="bg-slate-300/50 min-h-[100vh] flex-1 rounded-xl md:min-h-min"
+
+      {/* Today's Summary Stats */}
+      <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-3">
+        {/* Today's Status Card - Focus on what's done vs remaining */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+          className="h-full"
         >
-          <Card className="w-full h-full">
-          <CardHeader>
-            <CardTitle>Update your habits</CardTitle>
-            <CardDescription>
-              Select your habit and new score below. Hit save to complete the process.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form ref={formRef} onSubmit={handleSubmit}>
-              <div className="flex flex-col gap-6">
-                <div className="grid gap-2">
-                  <Label htmlFor="habit">Your Habits</Label>
-                  <div className='relative w-full'>
-                    <Combobox onSelect={selectHabit} />
+          <Link to="/dashboard">
+            <Card className="group cursor-pointer hover:border-primary/50 transition-all duration-200 hover:shadow-lg h-full flex flex-col">
+              <div className="flex items-center justify-between px-3 pt-2 pb-1">
+                <CardTitle className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Today's Status</CardTitle>
+                <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
+              </div>
+              <div className="px-3 pb-2.5 flex-1 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-2xl font-bold text-primary">{todayStats.completed}</span>
+                    <span className="text-sm text-muted-foreground">/</span>
+                    <span className="text-xl font-semibold">{todayStats.total}</span>
                   </div>
-                  
+                  <div className="flex items-center gap-2 mt-1.5">
+                    <div className="flex-1 h-1.5 bg-secondary rounded-full overflow-hidden">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${todayStats.completionRate}%` }}
+                        transition={{ duration: 0.8, delay: 0.2 }}
+                        className={`h-full rounded-full ${
+                          todayStats.completionRate >= 75 ? 'bg-primary' :
+                          todayStats.completionRate >= 50 ? 'bg-accent' :
+                          'bg-muted-foreground'
+                        }`}
+                      />
+                    </div>
+                    <span className="text-xs font-semibold min-w-10 text-right">
+                      {todayStats.completionRate}%
+                    </span>
+                  </div>
                 </div>
-                <div className="grid gap-2">
-                  <div className="flex items-center">
-                    <Label htmlFor="value">How many units did you complete today?</Label>
+                <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-border/50">
+                  <div>
+                    <span className="text-[10px] text-muted-foreground block">Remaining</span>
+                    <span className="text-xs font-semibold">{todayStats.remaining}</span>
                   </div>
-                  <Input id="value" type="number" min={0} onChange={(e) => selectValue(Number(e.target.value) ?? 0)} required />
+                  <div className="text-right">
+                    <span className="text-[10px] text-muted-foreground block">This week</span>
+                    <span className="text-xs font-semibold">{todayStats.weekCompletion}%</span>
+                  </div>
                 </div>
               </div>
-            </form>
-          </CardContent>
-          <CardFooter className="flex-col gap-2">
-            <AlertDialogButton buttonText='Update' type='submit' onContinue={() => formRef && formRef.current?.requestSubmit()} dialingDesc='Performing this cannot be undone.' />
-            <Button variant="outline" className="w-full" onClick={() => setUpdate(false)}>
-              Cancel
-            </Button>
-          </CardFooter>
-        </Card>
+            </Card>
+          </Link>
         </motion.div>
-      )} */}
-      {/* Daily Habit Progression */}
-      {/* <div className="">
-        {data && data.length > 0 ? 
-          <Carousel opts={{
-            align: "start",
+
+        {/* Habits Overview Card - Show status breakdown */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.1 }}
+          className="h-full"
+        >
+          <Link to="/dashboard/habits">
+            <Card className="group cursor-pointer hover:border-primary/50 transition-all duration-200 hover:shadow-lg h-full flex flex-col">
+              <div className="flex items-center justify-between px-3 pt-2 pb-1">
+                <CardTitle className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Habits Overview</CardTitle>
+                <Target className="h-3.5 w-3.5 text-accent" />
+              </div>
+              <div className="px-3 pb-2.5 flex-1 flex flex-col justify-between">
+                <div>
+                  <div className="text-2xl font-bold">{todayStats.total}</div>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">
+                    {todayStats.total === 1 ? 'Active habit' : 'Active habits'}
+                  </p>
+                </div>
+                <div className="space-y-1.5 mt-2 pt-2 border-t border-border/50">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <div className="h-2 w-2 rounded-full bg-primary" />
+                      <span className="text-[10px] text-muted-foreground">Completed</span>
+                    </div>
+                    <span className="text-xs font-semibold">{todayStats.completed}</span>
+                  </div>
+                  {todayStats.atRisk > 0 && (
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <div className="h-2 w-2 rounded-full bg-chart-4" />
+                        <span className="text-[10px] text-muted-foreground">At risk</span>
+                      </div>
+                      <span className="text-xs font-semibold text-chart-4">{todayStats.atRisk}</span>
+                    </div>
+                  )}
+                  {todayStats.notStarted > 0 && (
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <div className="h-2 w-2 rounded-full bg-muted-foreground" />
+                        <span className="text-[10px] text-muted-foreground">Not started</span>
+                      </div>
+                      <span className="text-xs font-semibold">{todayStats.notStarted}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </Card>
+          </Link>
+        </motion.div>
+
+        {/* Streak & Momentum Card - Focus on maintaining momentum */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.2 }}
+          className="h-full"
+        >
+          <Link to="/dashboard/analytics">
+            <Card className="group cursor-pointer hover:border-primary/50 transition-all duration-200 hover:shadow-lg h-full flex flex-col">
+              <div className="flex items-center justify-between px-3 pt-2 pb-1">
+                <CardTitle className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Streak & Momentum</CardTitle>
+                <Flame className="h-3.5 w-3.5 text-chart-4" />
+              </div>
+              <div className="px-3 pb-2.5 flex-1 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-2xl font-bold">{todayStats.currentStreak}</span>
+                    {todayStats.currentStreak > 0 && (
+                      <Flame className="h-4 w-4 text-chart-4 animate-pulse" />
+                    )}
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">
+                    {todayStats.currentStreak === 0 
+                      ? 'Start your streak today!' 
+                      : todayStats.currentStreak === 1 
+                      ? 'day streak - keep going!' 
+                      : 'days streak - keep going!'}
+                  </p>
+                </div>
+                <div className="mt-2 pt-2 border-t border-border/50">
+                  {todayStats.atRisk > 0 ? (
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] text-muted-foreground">Streaks at risk</span>
+                      <span className="text-xs font-semibold text-chart-4">{todayStats.atRisk}</span>
+                    </div>
+                  ) : todayStats.currentStreak > 0 ? (
+                    <div className="flex items-center gap-1">
+                      <CheckCircle2 className="h-3 w-3 text-primary" />
+                      <span className="text-[10px] text-muted-foreground">All streaks safe</span>
+                    </div>
+                  ) : (
+                    <span className="text-[10px] text-muted-foreground">Log entries to build streaks</span>
+                  )}
+                </div>
+              </div>
+            </Card>
+          </Link>
+        </motion.div>
+      </div>
+
+      {/* Quick Actions */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.3 }}
+      >
+        <Card className="group hover:border-primary/50 transition-all duration-200 hover:shadow-lg">
+          <div className="flex flex-row items-center justify-between px-4 py-2.5">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Quick Actions</CardTitle>
+            <div className="flex gap-2">
+              <Button 
+                size="sm" 
+                onClick={() => setUpdate(!update)}
+                className="h-8 px-3 flex items-center gap-1.5"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                <span className="text-xs">Log Entry</span>
+              </Button>
+              <Link to="/dashboard/habits">
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  className="h-8 px-3 flex items-center gap-1.5"
+                >
+                  <Target className="h-3.5 w-3.5" />
+                  <span className="text-xs">View All</span>
+                </Button>
+              </Link>
+              <Link to="/dashboard/analytics">
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  className="h-8 px-3 flex items-center gap-1.5"
+                >
+                  <Forward className="h-3.5 w-3.5" />
+                  <span className="text-xs">Analytics</span>
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </Card>
+      </motion.div>
+
+      {/* Quick Entry Form */}
+      {update && (
+        <motion.div 
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: 'auto' }}
+          exit={{ opacity: 0, height: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          <Card>
+            <CardHeader>
+              <CardTitle>Log Habit Entry</CardTitle>
+              <CardDescription>
+                Select your habit and enter the value you completed today.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form ref={formRef} onSubmit={handleSubmit}>
+                <div className="flex flex-col gap-6">
+                  <div className="grid gap-2">
+                    <Label htmlFor="habit">Select Habit</Label>
+                    <div className='relative w-full'>
+                      <Combobox onSelect={selectHabit} />
+                    </div>
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="value">How many units did you complete today?</Label>
+                    <Input 
+                      id="value" 
+                      type="number" 
+                      min={0} 
+                      value={value || ''}
+                      onChange={(e) => selectValue(Number(e.target.value) || 0)} 
+                      required 
+                      placeholder="Enter value"
+                    />
+                  </div>
+                </div>
+              </form>
+            </CardContent>
+            <CardFooter className="flex gap-2">
+              <AlertDialogButton 
+                buttonText='Save Entry' 
+                type='submit' 
+                onContinue={() => formRef.current?.requestSubmit()} 
+                dialingDesc='This will add an entry for today.' 
+              />
+              <Button variant="outline" onClick={() => {
+                setUpdate(false);
+                selectHabit('');
+                selectValue(0);
+              }}>
+                Cancel
+              </Button>
+            </CardFooter>
+          </Card>
+        </motion.div>
+      )}
+
+      {/* Today's Progress - Habit Cards */}
+      {activeHabits.length > 0 ? (
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold">Today's Habits</h3>
+            <div className="flex gap-2">
+              <CSVImporter habits={data} />
+              <Link to="/dashboard/analytics">
+                <Button variant="outline" size="sm">
+                  View Analytics
+                  <Forward className="ml-2 h-4 w-4" />
+                </Button>
+              </Link>
+            </div>
+          </div>
+          <Carousel
+            opts={{
+              align: "start",
             }}
             className="w-full"
           >
             <CarouselContent className="p-3">
-              {data.map((habit, index) => {
-              const backendValue = dailySums.find(s => s.id === habit.id)
-              const isOpen = expanded.includes(habit.id)
-              return (
-                <CarouselItem key={habit.id} className={`${isOpen ? 'basis-6/7 lg:basis-1/3' : 'basis-7/8 lg:basis-1/3' }`}>
-                    {backendValue && 
-                    <>
-                      {!isOpen ? 
-                        <Card className='w-full shadow-lg rounded-md p-2' onClick={() => handleCardExpansion(habit.id)}>
-                          <CardAction className='flex w-full'>
-                            <div>
-                              <HabitCounter habitUnit={habit.unit} showActions={false} habitId={habit.id} backendValue={(backendValue.value)} goal={habit.goal ?? 1} />
-                            </div>
-                            <CardHeader className='m-0 p-0 capitalize w-full'>
-                              <CardTitle className='p-2 w-full'>{habit.name}</CardTitle>
-                              <div>
-                                <div className='flex items-center w-full'>
-                                  <Button variant={'ghost'}>
-                                    <TrendingUp />
-                                  </Button>
-                                  <span>{habit.frequency}</span>
-                                </div>
-                            
-                                <div className='flex items-center w-full truncate'>
-                                  <Button variant={'ghost'}>
-                                    <Calendar />
-                                  </Button>
-                                  <span>{formatHabitDate(habit.updated_at)}</span>
-                                </div>
-                              </div>
-                            </CardHeader>
-                          </CardAction>
-                        </Card> :
-                        <Card className="relative capitalize shadow-lg">
-                        <CardHeader onClick={() => handleCardExpansion(habit.id)}>
-                          <CardTitle>{habit.name}</CardTitle>
-                          <CardDescription>
-                            {habit.description === ''? `${habit.frequency} ${habit.goal} ${habit.unit}` : habit.description}
-                          </CardDescription>
-                          <CardAction>
-                            <Link to={`habits/${habit.id}`}>
-                              <Button variant="secondary">
-                                <Forward />
+              {activeHabits.map((habit: Habit) => {
+                const backendValue = dailySums.find((s: { id: string; value: number }) => s.id === habit.id);
+                const isOpen = expanded.includes(habit.id);
+                const progress = backendValue && habit.goal 
+                  ? Math.min((backendValue.value / habit.goal) * 100, 100)
+                  : 0;
+                
+                return (
+                  <CarouselItem key={habit.id} className={`${isOpen ? 'basis-full lg:basis-1/2' : 'basis-full lg:basis-1/3'}`}>
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <Card 
+                        className={`w-full shadow-lg cursor-pointer transition-all ${
+                          progress >= 100 ? 'border-primary' : 
+                          progress >= 50 ? 'border-accent' : 
+                          'border-border'
+                        }`}
+                        onClick={() => handleCardExpansion(habit.id)}
+                      >
+                        <CardHeader>
+                          <div className="flex items-center justify-between">
+                            <CardTitle className="capitalize">{habit.name}</CardTitle>
+                            <Link to={`/dashboard/habits/${habit.id}`} onClick={(e) => e.stopPropagation()}>
+                              <Button variant="ghost" size="sm">
+                                <Forward className="h-4 w-4" />
                               </Button>
                             </Link>
-                          </CardAction>
+                          </div>
+                          <CardDescription>
+                            {habit.description || `${habit.frequency} ${habit.goal} ${habit.unit}`}
+                          </CardDescription>
                         </CardHeader>
-                        <Separator />
-                        <CardContent className='flex flex-col gap-4 justify-center items-center'>
-                          {backendValue && <HabitCounter habitUnit={habit.unit} habitId={habit.id} backendValue={(backendValue.value)} goal={habit.goal ?? 1} />}
+                        <CardContent className="flex flex-col items-center gap-4">
+                          {backendValue && (
+                            <CircularProgress
+                              value={backendValue.value}
+                              goal={habit.goal ?? 1}
+                              unit={habit.unit}
+                              showGoal={true}
+                              size={120}
+                            />
+                          )}
+                          <div className="w-full">
+                            <div className="flex justify-between text-sm mb-1">
+                              <span className="text-muted-foreground">Progress</span>
+                              <span className="font-medium">{Math.round(progress)}%</span>
+                            </div>
+                            <div className="w-full bg-secondary rounded-full h-2">
+                              <div
+                                className={`h-2 rounded-full transition-all ${
+                                  progress >= 100 ? 'bg-primary' :
+                                  progress >= 50 ? 'bg-accent' :
+                                  'bg-muted'
+                                }`}
+                                style={{ width: `${progress}%` }}
+                              />
+                            </div>
+                          </div>
                         </CardContent>
-                        <CardFooter className="flex flex-row justify-around items-center">
-                            <div className='flex flex-col items-center w-full'>
-                              <Button variant={'ghost'}>
-                                <TrendingUp />
-                              </Button>
-                              <p className="text-muted-foreground text-sm font-light">Frequency</p>
-                              <span>{habit.frequency}</span>
+                        {isOpen && (
+                          <CardFooter className="flex flex-col gap-2">
+                            <div className="grid grid-cols-2 gap-4 w-full text-sm">
+                              <div className="flex flex-col">
+                                <span className="text-muted-foreground">Frequency</span>
+                                <span className="font-medium capitalize">{habit.frequency}</span>
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="text-muted-foreground">Last Updated</span>
+                                <span className="font-medium">{formatHabitDate(habit.updated_at)}</span>
+                              </div>
                             </div>
-                            
-                            <div className='flex flex-col items-center w-full'>
-                              <Button variant={'ghost'}>
-                                <Calendar />
+                            <Link to={`/dashboard/habits/${habit.id}`} className="w-full">
+                              <Button variant="secondary" className="w-full">
+                                View Details
+                                <Forward className="ml-2 h-4 w-4" />
                               </Button>
-                              <p className="text-muted-foreground text-sm font-light">Last Updated</p>
-                              <span>{formatHabitDate(habit.updated_at)}</span>
-                            </div>
-                            
-
-                        </CardFooter>
-                        </Card>
-                      }
-                    </>}
-                </CarouselItem>
-              )
-            })}
+                            </Link>
+                          </CardFooter>
+                        )}
+                      </Card>
+                    </motion.div>
+                  </CarouselItem>
+                );
+              })}
             </CarouselContent>
           </Carousel>
-          :
-          <EmptyHabitState />
-      }
-      </div> */}
-      {/* Habit Table */}
-      <ReusableTable data={loaderData.stats} />
+        </div>
+      ) : (
+        <EmptyHabitState />
+      )}
+
+      {/* Habit Overview Table */}
+      {loaderData.stats && loaderData.stats.length > 0 && (
+        <div>
+          <h3 className="text-lg font-semibold mb-4">All Habits Overview</h3>
+          <ReusableTable data={loaderData.stats} />
+        </div>
+      )}
     </div>
   )
 }
