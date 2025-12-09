@@ -5,10 +5,10 @@ import { ServerRouter, UNSAFE_withComponentProps, Outlet, Meta, Links, ScrollRes
 import { isbot } from "isbot";
 import { renderToPipeableStream } from "react-dom/server";
 import * as React from "react";
-import React__default, { createContext, useState, useEffect, useContext, useRef } from "react";
+import React__default, { createContext, useState, useEffect, useContext, useRef, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { createClient } from "@supabase/supabase-js";
-import { Loader2Icon, OctagonXIcon, TriangleAlertIcon, InfoIcon, CircleCheckIcon, XIcon, PanelLeftIcon, ChevronRight, ChevronsUpDown, LogOut, Plus, GalleryVerticalEnd, Home, Map, SearchIcon, Check, Projector, Minus, Forward, TrendingUp, Calendar, CheckIcon, CircleIcon, MoreHorizontal, ChevronDownIcon, ChevronUpIcon, ArrowUpDown } from "lucide-react";
+import { Loader2Icon, OctagonXIcon, TriangleAlertIcon, InfoIcon, CircleCheckIcon, XIcon, PanelLeftIcon, ChevronRight, ChevronsUpDown, LogOut, Plus, GalleryVerticalEnd, Home, BarChart3, Target, Settings2, SearchIcon, Check, Projector, CheckIcon, Unlock, Lock, MoreHorizontal, CircleCheckBig, CircleAlert, NotebookPenIcon, SquareCheck, SquareChevronRightIcon, CheckCircle2, Flame, Forward, Minus, Edit2, ChevronDownIcon, ChevronUpIcon, Activity, TrendingUp, AlertCircle, CircleIcon, Search, X, Filter, List, LayoutGrid, Play, Pause, Archive, ArchiveRestore, Calendar, ArrowUpDown } from "lucide-react";
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { toast, Toaster as Toaster$1 } from "sonner";
@@ -22,7 +22,6 @@ import * as AvatarPrimitive from "@radix-ui/react-avatar";
 import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu";
 import * as SeparatorPrimitive from "@radix-ui/react-separator";
 import { motion } from "framer-motion";
-import { CardContent as CardContent$1 } from "@mui/material";
 import * as LabelPrimitive from "@radix-ui/react-label";
 import { Command as Command$1 } from "cmdk";
 import * as PopoverPrimitive from "@radix-ui/react-popover";
@@ -31,10 +30,13 @@ import { TZDate } from "@date-fns/tz";
 import useEmblaCarousel from "embla-carousel-react";
 import { useReactTable, getFilteredRowModel, getSortedRowModel, getPaginationRowModel, getCoreRowModel, flexRender } from "@tanstack/react-table";
 import * as CheckboxPrimitive from "@radix-ui/react-checkbox";
-import * as RadioGroupPrimitive from "@radix-ui/react-radio-group";
+import Papa from "papaparse";
 import * as RechartsPrimitive from "recharts";
 import { AreaChart, CartesianGrid, XAxis, Area } from "recharts";
 import * as SelectPrimitive from "@radix-ui/react-select";
+import { Bar } from "react-chartjs-2";
+import { Chart, CategoryScale, BarElement, LinearScale, Title, Tooltip as Tooltip$1, Legend } from "chart.js";
+import * as RadioGroupPrimitive from "@radix-ui/react-radio-group";
 const streamTimeout = 5e3;
 function handleRequest(request, responseStatusCode, responseHeaders, routerContext, loadContext) {
   if (request.method.toUpperCase() === "HEAD") {
@@ -246,7 +248,6 @@ const PresenceProvider = ({ children }) => {
     });
     presenceChannel.current.on("presence", { event: "sync" }, () => {
       setPresenceState(presenceChannel.current.presenceState());
-      console.log("sync,", presenceChannel.current.presenceState());
     });
     presenceChannel.current.subscribe(async (status) => {
       if (status === "SUBSCRIBED") {
@@ -363,6 +364,16 @@ function Separator({
 }
 function Sheet({ ...props }) {
   return /* @__PURE__ */ jsx(SheetPrimitive.Root, { "data-slot": "sheet", ...props });
+}
+function SheetTrigger({
+  ...props
+}) {
+  return /* @__PURE__ */ jsx(SheetPrimitive.Trigger, { "data-slot": "sheet-trigger", ...props });
+}
+function SheetClose({
+  ...props
+}) {
+  return /* @__PURE__ */ jsx(SheetPrimitive.Close, { "data-slot": "sheet-close", ...props });
 }
 function SheetPortal({
   ...props
@@ -1313,92 +1324,50 @@ function TeamSwitcher({
 const data = {
   navMain: [
     {
-      title: "Home",
+      title: "Dashboard",
       url: "/dashboard",
       icon: Home,
       isActive: true,
       showItems: false,
-      items: [
-        {
-          title: "Overview",
-          url: "overview"
-        }
-      ]
+      items: []
+    },
+    {
+      title: "Analytics",
+      url: "/dashboard/analytics",
+      icon: BarChart3,
+      isActive: true,
+      showItems: false,
+      items: []
     },
     {
       title: "Habits",
       url: "/dashboard/habits",
-      icon: Map,
+      icon: Target,
+      isActive: true,
+      showItems: false,
+      items: []
+    },
+    {
+      title: "Settings",
+      url: "#",
+      icon: Settings2,
       isActive: true,
       showItems: false,
       items: [
         {
-          title: "Overview",
-          url: "overview"
+          title: "Profile",
+          url: "#"
+        },
+        {
+          title: "Preferences",
+          url: "#"
+        },
+        {
+          title: "Notifications",
+          url: "#"
         }
       ]
     }
-    // {
-    //   title: "Users",
-    //   url: "#",
-    //   icon: Bot,
-    //   items: [
-    //     {
-    //       title: "Compare",
-    //       url: "compare",
-    //     },
-    //     {
-    //       title: "Explore",
-    //       url: "explore",
-    //     },
-    //   ],
-    // },
-    // {
-    //   title: "History",
-    //   url: "#",
-    //   icon: BookOpen,
-    //   items: [
-    //     {
-    //       title: "Introduction",
-    //       url: "#",
-    //     },
-    //     {
-    //       title: "Get Started",
-    //       url: "#",
-    //     },
-    //     {
-    //       title: "Tutorials",
-    //       url: "#",
-    //     },
-    //     {
-    //       title: "Changelog",
-    //       url: "#",
-    //     },
-    //   ],
-    // },
-    // {
-    //   title: "Settings",
-    //   url: "#",
-    //   icon: Settings2,
-    //   items: [
-    //     {
-    //       title: "General",
-    //       url: "general",
-    //     },
-    //     {
-    //       title: "Team",
-    //       url: "team",
-    //     },
-    //     {
-    //       title: "Billing",
-    //       url: "#",
-    //     },
-    //     {
-    //       title: "Limits",
-    //       url: "#",
-    //     },
-    //   ],
-    // },
   ]
 };
 const teams = [
@@ -1550,6 +1519,22 @@ async function fetchHabitNameById(habitId) {
   if (error) {
     console.error("Error fetching habit name:", error.message);
     return null;
+  }
+  return data2;
+}
+async function updateHabit(habitId, updates) {
+  const { data: data2, error } = await supabase.from("habits").update(updates).eq("id", habitId).select();
+  if (error) {
+    console.error("Error updating habit:", error.message);
+    throw error;
+  }
+  return data2?.[0];
+}
+async function updateHabitsBatch(habitIds, updates) {
+  const { data: data2, error } = await supabase.from("habits").update(updates).in("id", habitIds).select();
+  if (error) {
+    console.error("Error updating habits:", error.message);
+    throw error;
   }
   return data2;
 }
@@ -2217,120 +2202,6 @@ function EmptyHabitState() {
     ] }) })
   ] });
 }
-function CircularProgress({
-  value,
-  goal,
-  unit,
-  size = 175,
-  strokeWidth = 6,
-  showGoal,
-  className
-}) {
-  const radius = (size - strokeWidth) / 2;
-  const circumference = 2 * Math.PI * radius;
-  const clamped = Math.min(goal, Math.max(0, value));
-  const offset = circumference - clamped / goal * circumference;
-  return /* @__PURE__ */ jsxs(
-    "div",
-    {
-      className: cn("inline-flex items-center justify-center", className),
-      style: { width: size, height: size },
-      children: [
-        /* @__PURE__ */ jsxs("svg", { className: "rotate-[-90deg]", width: size, height: size, children: [
-          /* @__PURE__ */ jsx(
-            "circle",
-            {
-              className: "text-slate-500/20 stroke-current",
-              strokeWidth,
-              fill: "transparent",
-              r: radius,
-              cx: size / 2,
-              cy: size / 2,
-              style: {
-                strokeDasharray: circumference
-              }
-            }
-          ),
-          /* @__PURE__ */ jsx(
-            "circle",
-            {
-              className: "text-primary stroke-current transition-[stroke-dashoffset] duration-300 ease-out",
-              strokeWidth,
-              fill: "transparent",
-              r: radius,
-              cx: size / 2,
-              cy: size / 2,
-              style: {
-                strokeDasharray: circumference,
-                strokeDashoffset: offset,
-                strokeLinecap: "round"
-              }
-            }
-          )
-        ] }),
-        /* @__PURE__ */ jsxs("div", { className: "absolute text-sm font-medium flex flex-col justify-center items-center", children: [
-          /* @__PURE__ */ jsx("p", { className: "text-4xl font-bold text-black mb-1", children: value }),
-          showGoal ? /* @__PURE__ */ jsxs("p", { className: "text-gray-400 text-sm font-medium", children: [
-            "/ ",
-            goal,
-            " ",
-            unit
-          ] }) : /* @__PURE__ */ jsx("p", { className: "text-gray-400 text-sm font-medium", children: unit })
-        ] })
-      ]
-    }
-  );
-}
-const HabitCounter = ({
-  backendValue,
-  goal,
-  habitId,
-  habitUnit,
-  showActions = true
-}) => {
-  const { user } = useAuth();
-  const [value, setValue] = useState(backendValue);
-  const [isSaving, setSaving] = useState(false);
-  const [hasChanges, setChanges] = useState(backendValue !== value);
-  const incrementValue = () => {
-    if (value < goal) {
-      setValue((prev) => Math.min(prev + 1, goal));
-    }
-    setChanges(value + 1 === backendValue ? false : true);
-  };
-  const decrementValue = () => {
-    if (value > 0) {
-      setValue((prev) => Math.max(prev - 1, 0));
-    }
-    setChanges(value - 1 === backendValue ? false : true);
-  };
-  const handleUpdate = async () => {
-    if (!user) return;
-    setSaving(true);
-    const newEntry = {
-      user_id: user.id,
-      habit_id: habitId,
-      value: value - backendValue,
-      entry_date: today,
-      notes: "quick add by increment/decrement button"
-    };
-    try {
-      await addHabitEntry(newEntry);
-      setSaving(false);
-      setChanges(false);
-    } catch (err) {
-      toast.error("Failed to update. Please refresh or try again later.");
-    }
-  };
-  return /* @__PURE__ */ jsxs(Fragment, { children: [
-    /* @__PURE__ */ jsx(CircularProgress, { showGoal: false, unit: habitUnit, size: !showActions ? 130 : 175, value, goal }),
-    showActions && /* @__PURE__ */ jsxs("div", { className: "flex gap-6", children: [
-      /* @__PURE__ */ jsx(Button, { onClick: decrementValue, disabled: isSaving || value <= 0, children: /* @__PURE__ */ jsx(Minus, {}) }),
-      /* @__PURE__ */ jsx(Button, { onClick: incrementValue, disabled: isSaving || value >= goal, children: /* @__PURE__ */ jsx(Plus, {}) })
-    ] }),
-    /* @__PURE__ */ jsx("div", { className: "w-full", children: hasChanges && /* @__PURE__ */ jsx(Button, { className: "w-full", onClick: handleUpdate, children: "Update" }) })
-  ] });
-};
 const CarouselContext = React.createContext(null);
 function useCarousel() {
   const context = React.useContext(CarouselContext);
@@ -2460,375 +2331,62 @@ function CarouselItem({ className, ...props }) {
     }
   );
 }
-const fakeHabits = [{
-  id: "a68f1e3f-9c4e-4a7d-b8fa-2f8dcb7a4a01",
-  user_id: "43d6791c-829a-46fd-8baf-1ff73eea35e7",
-  name: "Drink Water",
-  description: "Drink at least 8 glasses of water daily.",
-  status: "active",
-  unit: "glasses",
-  frequency: "daily",
-  goal: 8,
-  reminder_time: "08:00:00",
-  is_archived: false,
-  created_at: "2025-11-01T07:30:00.000Z",
-  updated_at: "2025-11-15T12:00:00.000Z"
-}, {
-  id: "f72e3b7c-8a7f-434d-91bc-8749f789fa4d",
-  user_id: "43d6791c-829a-46fd-8baf-1ff73eea35e7",
-  name: "Morning Jog",
-  description: null,
-  status: "active",
-  unit: "minutes",
-  frequency: "daily",
-  goal: 30,
-  reminder_time: null,
-  is_archived: false,
-  created_at: "2025-10-25T06:00:00.000Z",
-  updated_at: "2025-11-14T09:00:00.000Z"
-}, {
-  id: "c3f8bcf1-23a0-4174-ae29-425d6bc4c6b2",
-  user_id: "7e38dbf1-012e-43de-8c92-f6517421b314",
-  name: "Read Books",
-  description: "Read for at least 20 minutes a day.",
-  status: "inactive",
-  unit: "minutes",
-  frequency: "daily",
-  goal: 20,
-  reminder_time: "20:00:00",
-  is_archived: false,
-  created_at: "2025-09-10T21:00:00.000Z",
-  updated_at: "2025-10-01T11:30:00.000Z"
-}, {
-  id: "7d120b8a-564d-44cb-9f39-70e1336cb78e",
-  user_id: "7e38dbf1-012e-43de-8c92-f6517421b314",
-  name: "Meditation",
-  description: "Meditate daily to improve focus and reduce stress.",
-  status: "active",
-  unit: "minutes",
-  frequency: "daily",
-  goal: 15,
-  reminder_time: "07:30:00",
-  is_archived: false,
-  created_at: "2025-11-10T06:00:00.000Z",
-  updated_at: "2025-11-15T08:45:00.000Z"
-}, {
-  id: "6c1a7d9b-63a6-4a2b-9043-94d7e7b9c953",
-  user_id: "43d6791c-829a-46fd-8baf-1ff73eea35e7",
-  name: "No Sugar",
-  description: "Avoid sugary snacks and drinks.",
-  status: "active",
-  unit: "days",
-  frequency: "weekly",
-  goal: 7,
-  reminder_time: null,
-  is_archived: true,
-  created_at: "2025-08-01T10:00:00.000Z",
-  updated_at: "2025-09-01T15:00:00.000Z"
-}];
-const today = new TZDate().toISOString().split("T")[0];
-function formatHabitDate(habitDate) {
-  const date = new TZDate(habitDate);
-  const now = new TZDate();
-  const startOfToday = new TZDate(now.getFullYear(), now.getMonth(), now.getDate());
-  const startOfTarget = new TZDate(date.getFullYear(), date.getMonth(), date.getDate());
-  const diffMs = startOfToday.getTime() - startOfTarget.getTime();
-  const diffDays = Math.round(diffMs / (1e3 * 60 * 60 * 24));
-  if (diffDays === 0) return "Today";
-  if (diffDays === 1) return "Yesterday";
-  if (diffDays > 1 && diffDays < 7) return `${diffDays} days ago`;
-  return date.toLocaleString();
+function CircularProgress({
+  value,
+  goal,
+  unit,
+  size = 175,
+  strokeWidth = 6,
+  showGoal,
+  className
+}) {
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const clamped = Math.min(goal, Math.max(0, value));
+  const offset = circumference - clamped / goal * circumference;
+  return /* @__PURE__ */ jsxs(
+    "div",
+    {
+      className: cn("inline-flex items-center justify-center", className),
+      style: { width: size, height: size },
+      children: [
+        /* @__PURE__ */ jsxs("svg", { className: "rotate-[-90deg]", width: size, height: size, children: [
+          /* @__PURE__ */ jsx(
+            "circle",
+            {
+              className: "text-slate-500/20 stroke-current",
+              strokeWidth,
+              fill: "transparent",
+              r: radius,
+              cx: size / 2,
+              cy: size / 2,
+              style: {
+                strokeDasharray: circumference
+              }
+            }
+          ),
+          /* @__PURE__ */ jsx(
+            "circle",
+            {
+              className: "text-primary stroke-current transition-[stroke-dashoffset] duration-300 ease-out",
+              strokeWidth,
+              fill: "transparent",
+              r: radius,
+              cx: size / 2,
+              cy: size / 2,
+              style: {
+                strokeDasharray: circumference,
+                strokeDashoffset: offset,
+                strokeLinecap: "round"
+              }
+            }
+          )
+        ] }),
+        /* @__PURE__ */ jsx("div", { className: "absolute text-sm font-medium flex flex-col justify-center items-center", children: /* @__PURE__ */ jsx("p", { className: "text-4xl font-bold text-slate-500 mb-1", children: value }) })
+      ]
+    }
+  );
 }
-const home = UNSAFE_withComponentProps(function home2() {
-  const {
-    user
-  } = useAuth();
-  const [update, setUpdate] = useState(false);
-  const [habit2, selectHabit] = useState("");
-  const [value, selectValue] = useState(0);
-  const [data2, setData] = useState([]);
-  const [dailySums, setDailySums] = useState([]);
-  const [expanded, setExpanded] = useState([]);
-  const formRef = useRef(null);
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!user) return;
-    try {
-      await addHabitEntry({
-        user_id: user.id,
-        habit_id: habit2,
-        value,
-        entry_date: today
-      });
-      setUpdate(false);
-      toast.success("Successfully updated habit.");
-    } catch (err) {
-      console.error("Failed to add habit entry", err);
-    }
-  };
-  const fetchHabitDailySum = async (habitId) => {
-    if (!user) return;
-    const {
-      data: data22,
-      error
-    } = await supabase.rpc("get_daily_habit_sum", {
-      p_user_id: user.id,
-      p_habit_id: habitId,
-      p_date: today
-    });
-    if (error) {
-      console.error("RPC call failed:", error);
-      return 0;
-    }
-    return data22;
-  };
-  const fetchAllSums = async (res) => {
-    if (!res) return;
-    const sums = await Promise.all(res.map((habit22) => fetchHabitDailySum(habit22.id)));
-    const dailySums2 = res.map((habit22, idx) => ({
-      id: habit22.id,
-      value: sums[idx]
-    }));
-    setDailySums(dailySums2);
-  };
-  const fetchData = async () => {
-    if (!user) return;
-    const res = await getHabitsByUserId(user.id);
-    setData(res);
-    fetchAllSums(res);
-  };
-  const handleCardExpansion = (id) => {
-    if (expanded.includes(id)) ;
-    else {
-      setExpanded((prev) => [...prev, id]);
-    }
-  };
-  useEffect(() => {
-    fetchData();
-  }, [user, update]);
-  console.log(expanded);
-  return /* @__PURE__ */ jsxs("div", {
-    className: "relative h-full flex flex-1 flex-col gap-4 p-4 pt-0 ",
-    children: [/* @__PURE__ */ jsxs("div", {
-      className: "md:min-h-min",
-      children: [/* @__PURE__ */ jsxs("div", {
-        className: "space-y-1",
-        children: [/* @__PURE__ */ jsx("h4", {
-          className: "text-sm leading-none font-medium",
-          children: "Home"
-        }), /* @__PURE__ */ jsx("p", {
-          className: "text-muted-foreground text-sm",
-          children: "View your habits and daily activity."
-        })]
-      }), /* @__PURE__ */ jsx(Separator, {
-        className: "my-4"
-      })]
-    }), /* @__PURE__ */ jsxs("div", {
-      className: "w-full flex justify-end gap-2",
-      children: [/* @__PURE__ */ jsx(Link, {
-        to: "habits",
-        children: /* @__PURE__ */ jsxs(Button, {
-          size: "sm",
-          children: [/* @__PURE__ */ jsx(Map, {}), "Habits"]
-        })
-      }), /* @__PURE__ */ jsxs(Button, {
-        disabled: data2?.length === 0,
-        size: "sm",
-        onClick: () => setUpdate(!update),
-        children: [/* @__PURE__ */ jsx(Plus, {}), "Update"]
-      })]
-    }), update && /* @__PURE__ */ jsx(motion.div, {
-      initial: {
-        opacity: 0,
-        scale: 0
-      },
-      animate: {
-        opacity: 1,
-        scale: 1
-      },
-      exit: {
-        opacity: 0,
-        scale: 0.95
-      },
-      transition: {
-        duration: 0.3,
-        ease: "easeInOut"
-      },
-      className: "bg-slate-300/50 min-h-[100vh] flex-1 rounded-xl md:min-h-min",
-      children: /* @__PURE__ */ jsxs(Card, {
-        className: "w-full h-full",
-        children: [/* @__PURE__ */ jsxs(CardHeader, {
-          children: [/* @__PURE__ */ jsx(CardTitle, {
-            children: "Update your habits"
-          }), /* @__PURE__ */ jsx(CardDescription, {
-            children: "Select your habit and new score below. Hit save to complete the process."
-          })]
-        }), /* @__PURE__ */ jsx(CardContent$1, {
-          children: /* @__PURE__ */ jsx("form", {
-            ref: formRef,
-            onSubmit: handleSubmit,
-            children: /* @__PURE__ */ jsxs("div", {
-              className: "flex flex-col gap-6",
-              children: [/* @__PURE__ */ jsxs("div", {
-                className: "grid gap-2",
-                children: [/* @__PURE__ */ jsx(Label, {
-                  htmlFor: "habit",
-                  children: "Your Habits"
-                }), /* @__PURE__ */ jsx("div", {
-                  className: "relative w-full",
-                  children: /* @__PURE__ */ jsx(Combobox, {
-                    onSelect: selectHabit
-                  })
-                })]
-              }), /* @__PURE__ */ jsxs("div", {
-                className: "grid gap-2",
-                children: [/* @__PURE__ */ jsx("div", {
-                  className: "flex items-center",
-                  children: /* @__PURE__ */ jsx(Label, {
-                    htmlFor: "value",
-                    children: "How many units did you complete today?"
-                  })
-                }), /* @__PURE__ */ jsx(Input, {
-                  id: "value",
-                  type: "number",
-                  min: 0,
-                  onChange: (e) => selectValue(Number(e.target.value) ?? 0),
-                  required: true
-                })]
-              })]
-            })
-          })
-        }), /* @__PURE__ */ jsxs(CardFooter, {
-          className: "flex-col gap-2",
-          children: [/* @__PURE__ */ jsx(AlertDialogButton, {
-            buttonText: "Update",
-            type: "submit",
-            onContinue: () => formRef && formRef.current?.requestSubmit(),
-            dialingDesc: "Performing this cannot be undone."
-          }), /* @__PURE__ */ jsx(Button, {
-            variant: "outline",
-            className: "w-full",
-            onClick: () => setUpdate(false),
-            children: "Cancel"
-          })]
-        })]
-      })
-    }), /* @__PURE__ */ jsx("div", {
-      className: "",
-      children: data2 && data2.length > 0 ? /* @__PURE__ */ jsx(Carousel, {
-        opts: {
-          align: "start"
-        },
-        className: "w-full",
-        children: /* @__PURE__ */ jsx(CarouselContent, {
-          className: "",
-          children: data2.map((habit22, index) => {
-            const backendValue = dailySums.find((s) => s.id === habit22.id);
-            const isOpen = expanded.includes(habit22.id);
-            return /* @__PURE__ */ jsx(CarouselItem, {
-              onClick: () => handleCardExpansion(habit22.id),
-              className: `${isOpen ? "basis-9/10 lg:basis-1/3" : "basis-6/15 lg:basis-1/3"}`,
-              children: backendValue && /* @__PURE__ */ jsx(Fragment, {
-                children: !isOpen ? /* @__PURE__ */ jsx("div", {
-                  className: "w-full ",
-                  children: /* @__PURE__ */ jsx(HabitCounter, {
-                    habitUnit: habit22.unit,
-                    showActions: false,
-                    habitId: habit22.id,
-                    backendValue: backendValue.value,
-                    goal: habit22.goal ?? 1
-                  })
-                }) : /* @__PURE__ */ jsxs(Card, {
-                  className: "relative capitalize",
-                  children: [/* @__PURE__ */ jsxs(CardHeader, {
-                    children: [/* @__PURE__ */ jsx(CardTitle, {
-                      children: habit22.name
-                    }), /* @__PURE__ */ jsx(CardDescription, {
-                      children: habit22.description === "" ? `${habit22.frequency} ${habit22.goal} ${habit22.unit}` : habit22.description
-                    }), /* @__PURE__ */ jsx(CardAction, {
-                      children: /* @__PURE__ */ jsx(Link, {
-                        to: `habits/${habit22.id}`,
-                        children: /* @__PURE__ */ jsx(Button, {
-                          variant: "secondary",
-                          children: /* @__PURE__ */ jsx(Forward, {})
-                        })
-                      })
-                    })]
-                  }), /* @__PURE__ */ jsx(Separator, {}), /* @__PURE__ */ jsx(CardContent$1, {
-                    className: "flex flex-col gap-4 justify-center items-center",
-                    children: backendValue && /* @__PURE__ */ jsx(HabitCounter, {
-                      habitUnit: habit22.unit,
-                      habitId: habit22.id,
-                      backendValue: backendValue.value,
-                      goal: habit22.goal ?? 1
-                    })
-                  }), /* @__PURE__ */ jsxs(CardFooter, {
-                    className: "flex flex-row justify-around items-center",
-                    children: [/* @__PURE__ */ jsxs("div", {
-                      className: "flex flex-col items-center w-full",
-                      children: [/* @__PURE__ */ jsx(Button, {
-                        variant: "ghost",
-                        children: /* @__PURE__ */ jsx(TrendingUp, {})
-                      }), /* @__PURE__ */ jsx("p", {
-                        className: "text-muted-foreground text-sm font-light",
-                        children: "Frequency"
-                      }), /* @__PURE__ */ jsx("span", {
-                        children: habit22.frequency
-                      })]
-                    }), /* @__PURE__ */ jsxs("div", {
-                      className: "flex flex-col items-center w-full",
-                      children: [/* @__PURE__ */ jsx(Button, {
-                        variant: "ghost",
-                        children: /* @__PURE__ */ jsx(Calendar, {})
-                      }), /* @__PURE__ */ jsx("p", {
-                        className: "text-muted-foreground text-sm font-light",
-                        children: "Last Updated"
-                      }), /* @__PURE__ */ jsx("span", {
-                        children: formatHabitDate(habit22.updated_at)
-                      })]
-                    })]
-                  })]
-                })
-              })
-            }, index);
-          })
-        })
-      }) : /* @__PURE__ */ jsx(EmptyHabitState, {})
-    })]
-  });
-});
-const route2 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
-  __proto__: null,
-  default: home,
-  fakeHabits,
-  formatHabitDate,
-  today
-}, Symbol.toStringTag, { value: "Module" }));
-const layout$1 = () => {
-  return /* @__PURE__ */ jsxs("div", {
-    className: "relative flex flex-1 flex-col gap-4 p-4 pt-0 h-full",
-    children: [/* @__PURE__ */ jsxs("div", {
-      className: "md:min-h-min",
-      children: [/* @__PURE__ */ jsxs("div", {
-        className: "space-y-1",
-        children: [/* @__PURE__ */ jsx("h4", {
-          className: "text-sm leading-none font-medium",
-          children: "Habits"
-        }), /* @__PURE__ */ jsx("p", {
-          className: "text-muted-foreground text-sm",
-          children: "View activities and charts."
-        })]
-      }), /* @__PURE__ */ jsx(Separator, {
-        className: "my-4"
-      })]
-    }), /* @__PURE__ */ jsx(Outlet, {})]
-  });
-};
-const layout_default = UNSAFE_withComponentProps(layout$1);
-const route3 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
-  __proto__: null,
-  default: layout_default
-}, Symbol.toStringTag, { value: "Module" }));
 function Checkbox({
   className,
   ...props
@@ -2929,331 +2487,73 @@ function TableCell({ className, ...props }) {
     }
   );
 }
-function FieldSet({ className, ...props }) {
-  return /* @__PURE__ */ jsx(
-    "fieldset",
-    {
-      "data-slot": "field-set",
-      className: cn(
-        "flex flex-col gap-6",
-        "has-[>[data-slot=checkbox-group]]:gap-3 has-[>[data-slot=radio-group]]:gap-3",
-        className
-      ),
-      ...props
-    }
-  );
-}
-function FieldGroup({ className, ...props }) {
-  return /* @__PURE__ */ jsx(
-    "div",
-    {
-      "data-slot": "field-group",
-      className: cn(
-        "group/field-group @container/field-group flex w-full flex-col gap-7 data-[slot=checkbox-group]:gap-3 [&>[data-slot=field-group]]:gap-4",
-        className
-      ),
-      ...props
-    }
-  );
-}
-const fieldVariants = cva(
-  "group/field flex w-full gap-3 data-[invalid=true]:text-destructive",
-  {
-    variants: {
-      orientation: {
-        vertical: ["flex-col [&>*]:w-full [&>.sr-only]:w-auto"],
-        horizontal: [
-          "flex-row items-center",
-          "[&>[data-slot=field-label]]:flex-auto",
-          "has-[>[data-slot=field-content]]:items-start has-[>[data-slot=field-content]]:[&>[role=checkbox],[role=radio]]:mt-px"
-        ],
-        responsive: [
-          "flex-col [&>*]:w-full [&>.sr-only]:w-auto @md/field-group:flex-row @md/field-group:items-center @md/field-group:[&>*]:w-auto",
-          "@md/field-group:[&>[data-slot=field-label]]:flex-auto",
-          "@md/field-group:has-[>[data-slot=field-content]]:items-start @md/field-group:has-[>[data-slot=field-content]]:[&>[role=checkbox],[role=radio]]:mt-px"
-        ]
-      }
-    },
-    defaultVariants: {
-      orientation: "vertical"
-    }
-  }
-);
-function Field({
-  className,
-  orientation = "vertical",
-  ...props
-}) {
-  return /* @__PURE__ */ jsx(
-    "div",
-    {
-      role: "group",
-      "data-slot": "field",
-      "data-orientation": orientation,
-      className: cn(fieldVariants({ orientation }), className),
-      ...props
-    }
-  );
-}
-function FieldLabel({
-  className,
-  ...props
-}) {
-  return /* @__PURE__ */ jsx(
-    Label,
-    {
-      "data-slot": "field-label",
-      className: cn(
-        "group/field-label peer/field-label flex w-fit gap-2 leading-snug group-data-[disabled=true]/field:opacity-50",
-        "has-[>[data-slot=field]]:w-full has-[>[data-slot=field]]:flex-col has-[>[data-slot=field]]:rounded-md has-[>[data-slot=field]]:border [&>*]:data-[slot=field]:p-4",
-        "has-data-[state=checked]:bg-primary/5 has-data-[state=checked]:border-primary dark:has-data-[state=checked]:bg-primary/10",
-        className
-      ),
-      ...props
-    }
-  );
-}
-function FieldDescription({ className, ...props }) {
-  return /* @__PURE__ */ jsx(
-    "p",
-    {
-      "data-slot": "field-description",
-      className: cn(
-        "text-muted-foreground text-sm leading-normal font-normal group-has-[[data-orientation=horizontal]]/field:text-balance",
-        "last:mt-0 nth-last-2:-mt-1 [[data-variant=legend]+&]:-mt-1.5",
-        "[&>a:hover]:text-primary [&>a]:underline [&>a]:underline-offset-4",
-        className
-      ),
-      ...props
-    }
-  );
-}
-function RadioGroup({
-  className,
-  ...props
-}) {
-  return /* @__PURE__ */ jsx(
-    RadioGroupPrimitive.Root,
-    {
-      "data-slot": "radio-group",
-      className: cn("grid gap-3", className),
-      ...props
-    }
-  );
-}
-function RadioGroupItem({
-  className,
-  ...props
-}) {
-  return /* @__PURE__ */ jsx(
-    RadioGroupPrimitive.Item,
-    {
-      "data-slot": "radio-group-item",
-      className: cn(
-        "border-input text-primary focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 aspect-square size-4 shrink-0 rounded-full border shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50",
-        className
-      ),
-      ...props,
-      children: /* @__PURE__ */ jsx(
-        RadioGroupPrimitive.Indicator,
-        {
-          "data-slot": "radio-group-indicator",
-          className: "relative flex items-center justify-center",
-          children: /* @__PURE__ */ jsx(CircleIcon, { className: "fill-primary absolute top-1/2 left-1/2 size-2 -translate-x-1/2 -translate-y-1/2" })
-        }
-      )
-    }
-  );
-}
-function Textarea({ className, ...props }) {
-  return /* @__PURE__ */ jsx(
-    "textarea",
-    {
-      "data-slot": "textarea",
-      className: cn(
-        "border-input placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 flex field-sizing-content min-h-16 w-full rounded-md border bg-transparent px-3 py-2 text-base shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
-        className
-      ),
-      ...props
-    }
-  );
-}
-const formTemplate = {
-  name: "ex. drink more water",
-  description: "Optionally include a brief description...",
-  status: "active",
-  unit: "unit",
-  frequency: "daily",
-  goal: 0,
-  reminder_time: null,
-  is_archived: false
-};
-function HabitModalButton({ isOpen, open, setHabits }) {
-  const { user } = useAuth();
-  const [form, setForm] = useState(formTemplate);
-  const handleFrequencyChange = (value) => {
-    setForm((prev) => ({
-      ...prev,
-      frequency: value
-    }));
-  };
-  const handleChange = (e) => {
-    const { name, value, type } = e.target;
-    setForm((prev) => ({
-      ...prev,
-      [name]: name === "goal" ? Number(value) : value
-    }));
-  };
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!user) return;
-    if (form === formTemplate) return;
-    const today2 = new TZDate().toISOString().split("T")[0];
-    try {
-      await addHabit({
-        user_id: user.id,
-        name: form.name,
-        description: form.description === "Optionally include a brief description..." ? "" : form.description,
-        status: "active",
-        unit: form.unit,
-        frequency: form.frequency,
-        goal: form.goal,
-        reminder_time: null,
-        is_archived: false
-      });
-      setHabits((prev) => [...prev, { ...form, created_at: today2 }]);
-      isOpen(false);
-      toast.success("Successfully added a new habit.");
-    } catch {
-      toast.error("Failed to create.");
-    }
-  };
-  return /* @__PURE__ */ jsx(Fragment, { children: /* @__PURE__ */ jsx(Dialog, { open, onOpenChange: isOpen, children: /* @__PURE__ */ jsxs("form", { children: [
-    /* @__PURE__ */ jsx(DialogTrigger, { asChild: true, children: /* @__PURE__ */ jsxs(Button, { variant: "outline", children: [
-      /* @__PURE__ */ jsx(Plus, {}),
-      " Habit"
-    ] }) }),
-    /* @__PURE__ */ jsxs(DialogContent, { className: "sm:max-w-[425px]", children: [
-      /* @__PURE__ */ jsxs(DialogHeader, { children: [
-        /* @__PURE__ */ jsx(DialogTitle, { children: "Create a new Habit." }),
-        /* @__PURE__ */ jsx(DialogDescription, { children: "Fill out the form here. Click create when you're done." })
-      ] }),
-      /* @__PURE__ */ jsx("div", { className: "w-full max-w-md", children: /* @__PURE__ */ jsx(FieldSet, { children: /* @__PURE__ */ jsxs(FieldGroup, { children: [
-        /* @__PURE__ */ jsxs(Field, { children: [
-          /* @__PURE__ */ jsx(FieldLabel, { htmlFor: "name", children: "Habit Name" }),
-          /* @__PURE__ */ jsx(Input, { id: "name", name: "name", type: "text", placeholder: "ex. drink more water", onChange: handleChange, required: true }),
-          /* @__PURE__ */ jsx(FieldDescription, { children: "Choose the name of your new habit." })
-        ] }),
-        /* @__PURE__ */ jsxs(Field, { children: [
-          /* @__PURE__ */ jsx(FieldLabel, { htmlFor: "feedback", children: "Description" }),
-          /* @__PURE__ */ jsx(
-            Textarea,
-            {
-              id: "description",
-              name: "description",
-              placeholder: "Optionally include a brief description...",
-              rows: 4,
-              onChange: handleChange
-            }
-          )
-        ] }),
-        /* @__PURE__ */ jsxs(FieldSet, { children: [
-          /* @__PURE__ */ jsx(FieldLabel, { children: "Frequency Plan" }),
-          /* @__PURE__ */ jsx(FieldDescription, { children: "Select how frequent you plan to perform this habit." }),
-          /* @__PURE__ */ jsxs(RadioGroup, { name: "frequency", defaultValue: "daily", onValueChange: handleFrequencyChange, required: true, children: [
-            /* @__PURE__ */ jsxs(Field, { orientation: "horizontal", children: [
-              /* @__PURE__ */ jsx(RadioGroupItem, { value: "daily", id: "plan-daily" }),
-              /* @__PURE__ */ jsx(FieldLabel, { htmlFor: "plan-daily", className: "font-normal", children: "Daily" })
-            ] }),
-            /* @__PURE__ */ jsxs(Field, { orientation: "horizontal", children: [
-              /* @__PURE__ */ jsx(RadioGroupItem, { value: "weekly", id: "plan-weekly" }),
-              /* @__PURE__ */ jsx(FieldLabel, { htmlFor: "plan-weekly", className: "font-normal", children: "Weekly" })
-            ] }),
-            /* @__PURE__ */ jsxs(Field, { orientation: "horizontal", children: [
-              /* @__PURE__ */ jsx(RadioGroupItem, { value: "monthly", id: "plan-monthly" }),
-              /* @__PURE__ */ jsx(FieldLabel, { htmlFor: "plan-monthly", className: "font-normal", children: "Monthly" })
-            ] })
-          ] })
-        ] }),
-        /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-2 gap-4", children: [
-          /* @__PURE__ */ jsxs(Field, { children: [
-            /* @__PURE__ */ jsx(FieldLabel, { htmlFor: "city", children: "Frequency Goal" }),
-            /* @__PURE__ */ jsx(Input, { id: "goal", name: "goal", type: "number", min: 0, placeholder: "0", onChange: handleChange, required: true })
-          ] }),
-          /* @__PURE__ */ jsxs(Field, { children: [
-            /* @__PURE__ */ jsx(FieldLabel, { htmlFor: "unit", children: "Unit To Measure" }),
-            /* @__PURE__ */ jsx(Input, { id: "unit", name: "unit", type: "text", placeholder: "ex. ounces or oz", onChange: handleChange, required: true })
-          ] })
-        ] })
-      ] }) }) }),
-      /* @__PURE__ */ jsxs(DialogFooter, { children: [
-        /* @__PURE__ */ jsx(DialogClose, { asChild: true, children: /* @__PURE__ */ jsx(Button, { variant: "outline", children: "Cancel" }) }),
-        /* @__PURE__ */ jsx(Button, { type: "submit", onClick: handleSubmit, children: "Create Habit" })
-      ] })
-    ] })
-  ] }) }) });
-}
-async function clientLoader$1() {
-  const {
-    data: {
-      user
-    }
-  } = await supabase.auth.getUser();
-  if (!user) return;
-  const habits = await getHabitsByUserId(user.id);
-  return habits;
-}
 const columns$1 = [
   {
     id: "select",
-    header: ({
-      table
-    }) => /* @__PURE__ */ jsx(Checkbox, {
-      checked: table.getIsAllPageRowsSelected() || table.getIsSomePageRowsSelected() && "indeterminate",
-      onCheckedChange: (value) => table.toggleAllPageRowsSelected(!!value),
-      "aria-label": "Select all"
-    }),
-    cell: ({
-      row
-    }) => /* @__PURE__ */ jsx(Checkbox, {
-      checked: row.getIsSelected(),
-      onCheckedChange: (value) => {
-        row.toggleSelected(!!value);
-      },
-      "aria-label": "Select row"
-    }),
+    header: ({ table }) => /* @__PURE__ */ jsx(
+      Checkbox,
+      {
+        checked: table.getIsAllPageRowsSelected() || table.getIsSomePageRowsSelected() && "indeterminate",
+        onCheckedChange: (value) => table.toggleAllPageRowsSelected(!!value),
+        "aria-label": "Select all"
+      }
+    ),
+    cell: ({ row }) => /* @__PURE__ */ jsx(
+      Checkbox,
+      {
+        checked: row.getIsSelected(),
+        onCheckedChange: (value) => {
+          row.toggleSelected(!!value);
+        },
+        "aria-label": "Select row"
+      }
+    ),
     enableSorting: false,
     enableHiding: false
   },
   {
     accessorKey: "name",
     header: "Name",
-    cell: ({
-      row
-    }) => /* @__PURE__ */ jsx("div", {
-      className: "capitalize",
-      children: row.getValue("name")
-    })
+    cell: ({ row }) => {
+      return /* @__PURE__ */ jsx(Link, { to: `/dashboard/habits/${row.original.habit_id}`, className: "capitalize", children: row.original.habit_name });
+    }
   },
   {
-    accessorKey: "goal",
-    header: "Frequency Goal",
-    cell: ({
-      row
-    }) => /* @__PURE__ */ jsx("div", {
-      className: "capitalize",
-      children: row.getValue("goal")
-    })
+    accessorKey: "longest_streak",
+    header: "Longest Streak",
+    cell: ({ row }) => /* @__PURE__ */ jsx("div", { className: "capitalize", children: row.original.longest_streak })
   },
   {
-    accessorKey: "frequency",
-    header: "Frequency",
-    cell: ({
-      row
-    }) => /* @__PURE__ */ jsx("div", {
-      className: "capitalize",
-      children: row.getValue("frequency")
-    })
+    accessorKey: "current_streak",
+    header: "Current Streak",
+    cell: ({ row }) => /* @__PURE__ */ jsx("div", { className: "capitalize", children: row.original.current_streak })
+  },
+  //   {
+  //     accessorKey: "completion_rate",
+  //     header: "Completion Rate",
+  //     cell: ({ row }) => (
+  //       <div className="capitalize">{row.getValue("frequency")}</div>
+  //     ),
+  //   },
+  {
+    accessorKey: "last_entry_date",
+    header: "Last Updated",
+    cell: ({ row }) => /* @__PURE__ */ jsx("div", { className: "capitalize", children: row.original.last_entry_date })
+  },
+  {
+    accessorKey: "today_value",
+    header: "Today's Amount",
+    cell: ({ row }) => /* @__PURE__ */ jsx("div", { className: "capitalize", children: row.original.today_value ? row.original.today_value : 0 })
+  },
+  {
+    accessorKey: "join_count",
+    header: "Users Joined",
+    cell: ({ row }) => /* @__PURE__ */ jsx("div", { className: "capitalize", children: row.original.join_count })
+  },
+  {
+    accessorKey: "is_public",
+    header: "Public",
+    cell: ({ row }) => /* @__PURE__ */ jsx("div", { className: "capitalize", children: row.original.is_public ? /* @__PURE__ */ jsx(Unlock, { className: "size-4" }) : /* @__PURE__ */ jsx(Lock, { className: "size-4" }) })
   },
   //   {
   //     accessorKey: "value",
@@ -3270,194 +2570,1140 @@ const columns$1 = [
   //     },
   //     cell: ({ row }) => <div className="lowercase pl-8">{row.getValue("value")}</div>,
   //   },
-  {
-    accessorKey: "unit",
-    header: () => /* @__PURE__ */ jsx("div", {
-      className: "capitalize",
-      children: "Unit Type"
-    }),
-    cell: ({
-      row
-    }) => {
-      return /* @__PURE__ */ jsx("div", {
-        className: " font-semibold text-slate-500",
-        children: row.getValue("unit")
-      });
-    }
-  },
-  {
-    accessorKey: "status",
-    header: "Status",
-    cell: ({
-      row
-    }) => /* @__PURE__ */ jsx("div", {
-      className: "capitalize",
-      children: row.getValue("status")
-    })
-  },
-  {
-    accessorKey: "created_at",
-    header: "Created At",
-    cell: ({
-      row
-    }) => {
-      const date = new TZDate(row.getValue("created_at")).toISOString().split("T")[0];
-      return /* @__PURE__ */ jsx("div", {
-        className: "capitalize",
-        children: date
-      });
-    }
-  },
+  //   {
+  //     accessorKey: "unit",
+  //     header: () => <div className="capitalize">Unit Type</div>,
+  //     cell: ({ row }) => {
+  //       return <div className=" font-semibold text-slate-500">{row.getValue("unit")}</div>
+  //     },
+  //   },
+  //   {
+  //     accessorKey: "status",
+  //     header: "Status",
+  //     cell: ({ row }) => (
+  //       <div className="capitalize">{row.getValue("status")}</div>
+  //     ),
+  //   },
+  //   {
+  //     accessorKey: "created_at",
+  //     header: "Created At",
+  //     cell: ({ row }) => {
+  //         const date = new TZDate(row.getValue("created_at")).toISOString().split('T')[0];
+  //         return <div className="capitalize">{date}</div>
+  //     },
+  //   },
   {
     id: "actions",
     enableHiding: false,
-    cell: ({
-      row
-    }) => {
-      const entry2 = row.original;
-      return /* @__PURE__ */ jsxs(DropdownMenu, {
-        children: [/* @__PURE__ */ jsx(DropdownMenuTrigger, {
-          asChild: true,
-          children: /* @__PURE__ */ jsxs(Button, {
-            variant: "ghost",
-            className: "h-8 w-8 p-0",
-            children: [/* @__PURE__ */ jsx("span", {
-              className: "sr-only",
-              children: "Open menu"
-            }), /* @__PURE__ */ jsx(MoreHorizontal, {})]
-          })
-        }), /* @__PURE__ */ jsxs(DropdownMenuContent, {
-          align: "end",
-          children: [/* @__PURE__ */ jsx(DropdownMenuLabel, {
-            children: "Actions"
-          }), /* @__PURE__ */ jsx(DropdownMenuItem, {
-            onClick: () => navigator.clipboard.writeText(entry2.id),
-            children: "Copy Entry ID"
-          }), /* @__PURE__ */ jsx(DropdownMenuSeparator, {})]
-        })]
-      });
+    cell: ({ row }) => {
+      row.original;
+      return /* @__PURE__ */ jsxs(DropdownMenu, { children: [
+        /* @__PURE__ */ jsx(DropdownMenuTrigger, { asChild: true, children: /* @__PURE__ */ jsxs(Button, { variant: "ghost", className: "h-8 w-8 p-0", children: [
+          /* @__PURE__ */ jsx("span", { className: "sr-only", children: "Open menu" }),
+          /* @__PURE__ */ jsx(MoreHorizontal, {})
+        ] }) }),
+        /* @__PURE__ */ jsxs(DropdownMenuContent, { align: "end", children: [
+          /* @__PURE__ */ jsx(DropdownMenuLabel, { children: "Actions" }),
+          /* @__PURE__ */ jsx(
+            DropdownMenuItem,
+            {
+              children: "Copy Entry ID"
+            }
+          ),
+          /* @__PURE__ */ jsx(DropdownMenuSeparator, {})
+        ] })
+      ] });
     }
   }
 ];
-const overview = ({
-  loaderData
-}) => {
-  const {
-    user
-  } = useAuth();
-  const [open, isOpen] = useState(false);
-  const [habits, setHabits] = useState(loaderData);
-  const [sorting, setSorting] = useState([]);
-  const [columnFilters, setColumnFilters] = useState([]);
-  const [columnVisibility, setColumnVisibility] = useState({});
+const ReusableTable = ({ data: data2 }) => {
   const [rowSelection, setRowSelection] = useState({});
   const table = useReactTable({
-    data: habits,
+    data: data2,
     columns: columns$1,
-    onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
+    // onSortingChange: setSorting,
+    // onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
-    onColumnVisibilityChange: setColumnVisibility,
+    // onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
     state: {
-      sorting,
-      columnFilters,
-      columnVisibility,
+      // sorting,
+      // columnFilters,
+      // columnVisibility,
       rowSelection
     }
   });
-  const handleBatchDelete = async () => {
+  return /* @__PURE__ */ jsxs("div", { children: [
+    /* @__PURE__ */ jsx("div", { className: "overflow-hidden rounded-md border", children: /* @__PURE__ */ jsxs(Table, { children: [
+      /* @__PURE__ */ jsx(TableHeader, { children: table.getHeaderGroups().map((headerGroup) => /* @__PURE__ */ jsx(TableRow, { children: headerGroup.headers.map((header) => {
+        return /* @__PURE__ */ jsx(TableHead, { children: header.isPlaceholder ? null : flexRender(
+          header.column.columnDef.header,
+          header.getContext()
+        ) }, header.id);
+      }) }, headerGroup.id)) }),
+      /* @__PURE__ */ jsx(TableBody, { children: table.getRowModel().rows?.length ? table.getRowModel().rows.map((row) => /* @__PURE__ */ jsx(
+        TableRow,
+        {
+          "data-state": row.getIsSelected() && "selected",
+          children: row.getVisibleCells().map((cell) => /* @__PURE__ */ jsx(TableCell, { children: flexRender(
+            cell.column.columnDef.cell,
+            cell.getContext()
+          ) }, cell.id))
+        },
+        row.id
+      )) : /* @__PURE__ */ jsx(TableRow, { children: /* @__PURE__ */ jsx(
+        TableCell,
+        {
+          colSpan: columns$1.length,
+          className: "h-24 text-center",
+          children: "No results."
+        }
+      ) }) })
+    ] }) }),
+    /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-end space-x-2 py-4", children: [
+      /* @__PURE__ */ jsxs("div", { className: "text-muted-foreground flex-1 text-sm", children: [
+        table.getFilteredSelectedRowModel().rows.length,
+        " of",
+        " ",
+        table.getFilteredRowModel().rows.length,
+        " row(s) selected."
+      ] }),
+      /* @__PURE__ */ jsxs("div", { className: "space-x-2", children: [
+        /* @__PURE__ */ jsx(
+          Button,
+          {
+            variant: "outline",
+            size: "sm",
+            onClick: () => table.previousPage(),
+            disabled: !table.getCanPreviousPage(),
+            children: "Previous"
+          }
+        ),
+        /* @__PURE__ */ jsx(
+          Button,
+          {
+            variant: "outline",
+            size: "sm",
+            onClick: () => table.nextPage(),
+            disabled: !table.getCanNextPage(),
+            children: "Next"
+          }
+        )
+      ] })
+    ] })
+  ] });
+};
+const CSVImporter = ({ habits }) => {
+  const { user } = useAuth();
+  const [activeHabit, setActiveHabit] = useState(null);
+  const [userInput, setUserInput] = useState("");
+  const importHabitEntries = async (csvData) => {
     if (!user) return;
-    const idBatch = table.getFilteredSelectedRowModel().rows.map((row) => row.original.id);
-    await deleteHabits(idBatch);
-    setHabits((prevHabits) => prevHabits.filter((e) => !idBatch.find((id) => id === e.id)));
-    setRowSelection({});
-    toast.success("Habit(s) deleted");
+    const validEntries = csvData.map((row) => {
+      const value = Number(row.value);
+      if (isNaN(value) || value <= 0) {
+        console.warn(`Skipping invalid value: ${row.value}`);
+        return null;
+      }
+      return {
+        date: row.date,
+        habit_name: activeHabit ? activeHabit.name : userInput,
+        value,
+        notes: `CSV Import`
+      };
+    }).filter((entry2) => entry2 !== null);
+    const { data: data2, error } = await supabase.rpc("import_habit_entries", {
+      p_user_id: user.id,
+      p_entries: validEntries
+    });
+    console.log(data2, error);
+  };
+  const handleFileUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    Papa.parse(file, {
+      header: true,
+      complete: async (results) => {
+        const csvData = results.data;
+        await importHabitEntries(csvData);
+      }
+    });
+  };
+  return /* @__PURE__ */ jsxs(Sheet, { children: [
+    /* @__PURE__ */ jsx(SheetTrigger, { children: "Import" }),
+    /* @__PURE__ */ jsx(SheetContent, { className: " w-xl max-w-full", children: /* @__PURE__ */ jsxs(SheetHeader, { children: [
+      /* @__PURE__ */ jsx(SheetTitle, { children: "Import your CSV." }),
+      /* @__PURE__ */ jsx(Separator, {}),
+      /* @__PURE__ */ jsxs("div", { className: "space-y-8 mt-4", children: [
+        /* @__PURE__ */ jsxs("div", { className: "space-y-2", children: [
+          /* @__PURE__ */ jsx(Label, { children: "Habit Name" }),
+          /* @__PURE__ */ jsxs("div", { className: "flex w-full items-center gap-2", children: [
+            activeHabit || userInput !== "" ? /* @__PURE__ */ jsx(CircleCheckBig, { className: "text-green-500" }) : /* @__PURE__ */ jsx(CircleAlert, {}),
+            /* @__PURE__ */ jsxs("div", { className: "relative w-full", children: [
+              /* @__PURE__ */ jsx(Input, { placeholder: "Habit name", value: activeHabit ? activeHabit.name : userInput, onChange: (e) => {
+                setActiveHabit(null);
+                setUserInput(e.target.value);
+              }, className: "" }),
+              /* @__PURE__ */ jsxs(Sheet, { children: [
+                /* @__PURE__ */ jsx(SheetTrigger, { children: /* @__PURE__ */ jsx("div", { className: "absolute right-1 size-7 top-1/2 -translate-y-1/2 bg-slate-900 rounded-md text-white items-center flex justify-center", children: /* @__PURE__ */ jsx(NotebookPenIcon, { className: "size-5" }) }) }),
+                /* @__PURE__ */ jsx(SheetContent, { className: "", children: /* @__PURE__ */ jsxs(SheetHeader, { children: [
+                  /* @__PURE__ */ jsx(SheetTitle, { children: "Select a habit to reference your import." }),
+                  /* @__PURE__ */ jsx(Separator, {}),
+                  /* @__PURE__ */ jsx(SheetClose, { asChild: true, children: /* @__PURE__ */ jsx("div", { className: "space-y-4", children: habits && habits.map((habit2, index) => /* @__PURE__ */ jsx(Card, { className: "p-2", onClick: () => setActiveHabit(habit2), children: /* @__PURE__ */ jsxs(CardHeader, { className: "", children: [
+                    /* @__PURE__ */ jsx(CardTitle, { children: habit2.name }),
+                    /* @__PURE__ */ jsx(CardDescription, { className: "text-xs", children: habit2.id }),
+                    /* @__PURE__ */ jsx(CardAction, { className: "h-full flex justify-center items-center", children: activeHabit && activeHabit.id === habit2.id ? /* @__PURE__ */ jsx(SquareCheck, { className: "text-green-500" }) : /* @__PURE__ */ jsx(SquareChevronRightIcon, { className: "text-slate-700" }) })
+                  ] }) }, habit2.id)) }) })
+                ] }) })
+              ] })
+            ] })
+          ] })
+        ] }),
+        /* @__PURE__ */ jsxs("div", { className: "grid w-full max-w-sm items-center gap-3", children: [
+          /* @__PURE__ */ jsx(Label, { htmlFor: "csv", children: "CSV File" }),
+          /* @__PURE__ */ jsx(
+            Input,
+            {
+              id: "csv",
+              type: "file",
+              accept: ".csv",
+              disabled: !activeHabit && userInput === "",
+              onChange: handleFileUpload,
+              className: "file-input"
+            }
+          )
+        ] })
+      ] })
+    ] }) })
+  ] });
+};
+const fakeHabits = [{
+  id: "a68f1e3f-9c4e-4a7d-b8fa-2f8dcb7a4a01",
+  user_id: "43d6791c-829a-46fd-8baf-1ff73eea35e7",
+  name: "Drink Water",
+  description: "Drink at least 8 glasses of water daily.",
+  status: "active",
+  unit: "glasses",
+  frequency: "daily",
+  goal: 8,
+  reminder_time: "08:00:00",
+  is_archived: false,
+  created_at: "2025-11-01T07:30:00.000Z",
+  updated_at: "2025-11-15T12:00:00.000Z"
+}, {
+  id: "f72e3b7c-8a7f-434d-91bc-8749f789fa4d",
+  user_id: "43d6791c-829a-46fd-8baf-1ff73eea35e7",
+  name: "Morning Jog",
+  description: null,
+  status: "active",
+  unit: "minutes",
+  frequency: "daily",
+  goal: 30,
+  reminder_time: null,
+  is_archived: false,
+  created_at: "2025-10-25T06:00:00.000Z",
+  updated_at: "2025-11-14T09:00:00.000Z"
+}, {
+  id: "c3f8bcf1-23a0-4174-ae29-425d6bc4c6b2",
+  user_id: "7e38dbf1-012e-43de-8c92-f6517421b314",
+  name: "Read Books",
+  description: "Read for at least 20 minutes a day.",
+  status: "inactive",
+  unit: "minutes",
+  frequency: "daily",
+  goal: 20,
+  reminder_time: "20:00:00",
+  is_archived: false,
+  created_at: "2025-09-10T21:00:00.000Z",
+  updated_at: "2025-10-01T11:30:00.000Z"
+}, {
+  id: "7d120b8a-564d-44cb-9f39-70e1336cb78e",
+  user_id: "7e38dbf1-012e-43de-8c92-f6517421b314",
+  name: "Meditation",
+  description: "Meditate daily to improve focus and reduce stress.",
+  status: "active",
+  unit: "minutes",
+  frequency: "daily",
+  goal: 15,
+  reminder_time: "07:30:00",
+  is_archived: false,
+  created_at: "2025-11-10T06:00:00.000Z",
+  updated_at: "2025-11-15T08:45:00.000Z"
+}, {
+  id: "6c1a7d9b-63a6-4a2b-9043-94d7e7b9c953",
+  user_id: "43d6791c-829a-46fd-8baf-1ff73eea35e7",
+  name: "No Sugar",
+  description: "Avoid sugary snacks and drinks.",
+  status: "active",
+  unit: "days",
+  frequency: "weekly",
+  goal: 7,
+  reminder_time: null,
+  is_archived: true,
+  created_at: "2025-08-01T10:00:00.000Z",
+  updated_at: "2025-09-01T15:00:00.000Z"
+}];
+const today$1 = new TZDate().toISOString().split("T")[0];
+function formatHabitDate$1(habitDate) {
+  const date = new TZDate(habitDate);
+  const now = new TZDate();
+  const startOfToday = new TZDate(now.getFullYear(), now.getMonth(), now.getDate());
+  const startOfTarget = new TZDate(date.getFullYear(), date.getMonth(), date.getDate());
+  const diffMs = startOfToday.getTime() - startOfTarget.getTime();
+  const diffDays = Math.round(diffMs / (1e3 * 60 * 60 * 24));
+  if (diffDays === 0) return "Today";
+  if (diffDays === 1) return "Yesterday";
+  if (diffDays > 1 && diffDays < 7) return `${diffDays} days ago`;
+  return date.toLocaleString();
+}
+async function clientLoader$3() {
+  const {
+    data: {
+      user
+    }
+  } = await supabase.auth.getUser();
+  if (!user) return;
+  const habits = await getHabitsByUserId(user.id);
+  const {
+    data: data2
+  } = await supabase.rpc("get_habit_dashboard_stats", {
+    p_user_id: user.id
+  });
+  const dailySumsPromises = habits.map((habit2) => supabase.rpc("get_daily_habit_sum", {
+    p_user_id: user.id,
+    p_habit_id: habit2.id,
+    p_date: today$1
+  }));
+  const dailySumsResults = await Promise.all(dailySumsPromises);
+  const dailySums = habits.map((habit2, idx) => ({
+    id: habit2.id,
+    value: dailySumsResults[idx].data ?? 0
+  }));
+  return {
+    user,
+    habits: habits ?? [],
+    stats: data2 ?? [],
+    dailySums
+  };
+}
+const home = UNSAFE_withComponentProps(function home2({
+  loaderData
+}) {
+  const user = loaderData.user;
+  const [update, setUpdate] = useState(false);
+  const [habit2, selectHabit] = useState("");
+  const [value, selectValue] = useState(0);
+  const [data2, setData] = useState(loaderData.habits ?? []);
+  const [dailySums, setDailySums] = useState(loaderData.dailySums ?? []);
+  const [editingHabit, setEditingHabit] = useState(null);
+  const [editValue, setEditValue] = useState(0);
+  const formRef = useRef(null);
+  const activeHabits = useMemo(() => {
+    return data2.filter((h) => h.status === "active" && !h.is_archived);
+  }, [data2]);
+  const todayStats = useMemo(() => {
+    const habitsWithEntriesToday = dailySums.filter((ds) => ds.value > 0).length;
+    const totalActive = activeHabits.length;
+    const todayCompletionRate = totalActive > 0 ? Math.round(habitsWithEntriesToday / totalActive * 100) : 0;
+    const remaining = totalActive - habitsWithEntriesToday;
+    const stats = loaderData.stats ?? [];
+    const currentLongestStreak = stats.length > 0 ? Math.max(...stats.map((s) => s.current_streak ?? 0)) : 0;
+    const totalEntriesToday = dailySums.reduce((sum, ds) => sum + ds.value, 0);
+    const atRisk = stats.filter((s) => {
+      const hasEntryToday = dailySums.find((ds) => ds.id === s.habit_id)?.value ?? 0;
+      return hasEntryToday === 0 && (s.current_streak ?? 0) > 0;
+    }).length;
+    const notStarted = totalActive - habitsWithEntriesToday;
+    const weekCompletion = stats.length > 0 ? Math.round(stats.reduce((sum, s) => sum + (s.week_completion ?? 0), 0) / stats.length) : 0;
+    return {
+      completed: habitsWithEntriesToday,
+      total: totalActive,
+      remaining,
+      completionRate: todayCompletionRate,
+      currentStreak: currentLongestStreak,
+      totalEntries: totalEntriesToday,
+      atRisk,
+      notStarted,
+      weekCompletion
+    };
+  }, [dailySums, activeHabits, loaderData.stats]);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!user) return;
+    try {
+      await addHabitEntry({
+        user_id: user.id,
+        habit_id: habit2,
+        value,
+        entry_date: today$1
+      });
+      setUpdate(false);
+      selectHabit("");
+      selectValue(0);
+      toast.success("Successfully updated habit.");
+      const res = await getHabitsByUserId(user.id);
+      setData(res);
+      await fetchAllSums(res);
+    } catch (err) {
+      console.error("Failed to add habit entry", err);
+      toast.error("Failed to update habit. Please try again.");
+    }
+  };
+  const fetchHabitDailySum = async (habitId) => {
+    if (!user) return 0;
+    const {
+      data: data22,
+      error
+    } = await supabase.rpc("get_daily_habit_sum", {
+      p_user_id: user.id,
+      p_habit_id: habitId,
+      p_date: today$1
+    });
+    if (error) {
+      console.error("RPC call failed:", error);
+      return 0;
+    }
+    return data22 ?? 0;
+  };
+  const fetchAllSums = async (res) => {
+    if (!res) return;
+    const sums = await Promise.all(res.map((habit22) => fetchHabitDailySum(habit22.id)));
+    const newDailySums = res.map((habit22, idx) => ({
+      id: habit22.id,
+      value: sums[idx]
+    }));
+    setDailySums(newDailySums);
+  };
+  const fetchData = async () => {
+    if (!user) return;
+    const res = await getHabitsByUserId(user.id);
+    setData(res);
+    await fetchAllSums(res);
+  };
+  const handleQuickUpdate = async (habitId, increment) => {
+    if (!user) return;
+    try {
+      await addHabitEntry({
+        user_id: user.id,
+        habit_id: habitId,
+        value: increment,
+        entry_date: today$1
+      });
+      toast.success(`Updated habit entry.`);
+      const res = await getHabitsByUserId(user.id);
+      setData(res);
+      await fetchAllSums(res);
+    } catch (err) {
+      console.error("Failed to update habit entry", err);
+      toast.error("Failed to update habit. Please try again.");
+    }
+  };
+  const handleManualUpdate = async (habitId) => {
+    if (!user || editValue < 0) return;
+    try {
+      await addHabitEntry({
+        user_id: user.id,
+        habit_id: habitId,
+        value: editValue,
+        entry_date: today$1
+      });
+      toast.success("Successfully updated habit.");
+      setEditingHabit(null);
+      setEditValue(0);
+      const res = await getHabitsByUserId(user.id);
+      setData(res);
+      await fetchAllSums(res);
+    } catch (err) {
+      console.error("Failed to update habit entry", err);
+      toast.error("Failed to update habit. Please try again.");
+    }
   };
   useEffect(() => {
-    if (habits.length === 0) {
-      isOpen(true);
-    }
-  }, []);
+    fetchData();
+  }, [user, update]);
   return /* @__PURE__ */ jsxs("div", {
-    className: "w-full",
-    children: [/* @__PURE__ */ jsx("div", {
-      className: "flex items-center py-4",
-      children: /* @__PURE__ */ jsxs("div", {
-        className: "flex ml-auto gap-2 w-full max-w-sm ",
-        children: [/* @__PURE__ */ jsx("div", {
-          className: "w-full",
-          children: /* @__PURE__ */ jsx(AlertDialogButton, {
-            onContinue: handleBatchDelete,
-            variant: table.getFilteredSelectedRowModel().rows.length > 0 ? "destructive" : "outline",
-            disabled: table.getFilteredSelectedRowModel().rows.length <= 0,
-            dialingDesc: "Action cannot be undone.",
-            buttonText: `Delete ${table.getFilteredSelectedRowModel().rows.length > 0 ? `Batch (${table.getFilteredSelectedRowModel().rows.length} rows)` : ""}`
-          })
-        }), /* @__PURE__ */ jsx(HabitModalButton, {
-          open,
-          isOpen,
-          setHabits
-        })]
-      })
-    }), /* @__PURE__ */ jsx("div", {
-      className: "overflow-hidden rounded-md border",
-      children: /* @__PURE__ */ jsxs(Table, {
-        children: [/* @__PURE__ */ jsx(TableHeader, {
-          children: table.getHeaderGroups().map((headerGroup) => /* @__PURE__ */ jsx(TableRow, {
-            children: headerGroup.headers.map((header) => {
-              return /* @__PURE__ */ jsx(TableHead, {
-                children: header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())
-              }, header.id);
-            })
-          }, headerGroup.id))
-        }), /* @__PURE__ */ jsx(TableBody, {
-          children: table.getRowModel().rows?.length ? table.getRowModel().rows.map((row) => /* @__PURE__ */ jsx(TableRow, {
-            "data-state": row.getIsSelected() && "selected",
-            children: row.getVisibleCells().map((cell) => /* @__PURE__ */ jsx(TableCell, {
-              children: flexRender(cell.column.columnDef.cell, cell.getContext())
-            }, cell.id))
-          }, row.id)) : /* @__PURE__ */ jsx(TableRow, {
-            children: /* @__PURE__ */ jsx(TableCell, {
-              colSpan: columns$1.length,
-              className: "h-24 text-center",
-              children: "No results."
-            })
-          })
-        })]
-      })
-    }), /* @__PURE__ */ jsxs("div", {
-      className: "flex items-center justify-end space-x-2 py-4",
+    className: "relative h-full flex flex-1 flex-col gap-6 p-4 pt-0",
+    children: [/* @__PURE__ */ jsxs("div", {
+      className: "md:min-h-min",
       children: [/* @__PURE__ */ jsxs("div", {
-        className: "text-muted-foreground flex-1 text-sm",
-        children: [table.getFilteredSelectedRowModel().rows.length, " of", " ", table.getFilteredRowModel().rows.length, " row(s) selected."]
-      }), /* @__PURE__ */ jsxs("div", {
-        className: "space-x-2",
-        children: [/* @__PURE__ */ jsx(Button, {
-          variant: "outline",
-          size: "sm",
-          onClick: () => table.previousPage(),
-          disabled: !table.getCanPreviousPage(),
-          children: "Previous"
-        }), /* @__PURE__ */ jsx(Button, {
-          variant: "outline",
-          size: "sm",
-          onClick: () => table.nextPage(),
-          disabled: !table.getCanNextPage(),
-          children: "Next"
+        className: "space-y-1",
+        children: [/* @__PURE__ */ jsx("h4", {
+          className: "text-sm leading-none font-medium",
+          children: "Dashboard"
+        }), /* @__PURE__ */ jsx("p", {
+          className: "text-muted-foreground text-sm",
+          children: "Track your habits and log your daily progress."
         })]
+      }), /* @__PURE__ */ jsx(Separator, {
+        className: "my-4"
+      })]
+    }), /* @__PURE__ */ jsxs("div", {
+      className: "grid gap-2 md:grid-cols-2 lg:grid-cols-3",
+      children: [/* @__PURE__ */ jsx(motion.div, {
+        initial: {
+          opacity: 0,
+          y: 20
+        },
+        animate: {
+          opacity: 1,
+          y: 0
+        },
+        transition: {
+          duration: 0.3
+        },
+        className: "h-full",
+        children: /* @__PURE__ */ jsx(Link, {
+          to: "/dashboard",
+          children: /* @__PURE__ */ jsxs(Card, {
+            className: "group cursor-pointer hover:border-primary/50 transition-all duration-200 hover:shadow-lg h-full flex flex-col",
+            children: [/* @__PURE__ */ jsxs("div", {
+              className: "flex items-center justify-between px-3 pt-2 pb-1",
+              children: [/* @__PURE__ */ jsx(CardTitle, {
+                className: "text-[10px] font-medium text-muted-foreground uppercase tracking-wide",
+                children: "Today's Status"
+              }), /* @__PURE__ */ jsx(CheckCircle2, {
+                className: "h-3.5 w-3.5 text-primary"
+              })]
+            }), /* @__PURE__ */ jsxs("div", {
+              className: "px-3 pb-2.5 flex-1 flex flex-col justify-between",
+              children: [/* @__PURE__ */ jsxs("div", {
+                children: [/* @__PURE__ */ jsxs("div", {
+                  className: "flex items-baseline gap-2",
+                  children: [/* @__PURE__ */ jsx("span", {
+                    className: "text-2xl font-bold text-primary",
+                    children: todayStats.completed
+                  }), /* @__PURE__ */ jsx("span", {
+                    className: "text-sm text-muted-foreground",
+                    children: "/"
+                  }), /* @__PURE__ */ jsx("span", {
+                    className: "text-xl font-semibold",
+                    children: todayStats.total
+                  })]
+                }), /* @__PURE__ */ jsxs("div", {
+                  className: "flex items-center gap-2 mt-1.5",
+                  children: [/* @__PURE__ */ jsx("div", {
+                    className: "flex-1 h-1.5 bg-secondary rounded-full overflow-hidden",
+                    children: /* @__PURE__ */ jsx(motion.div, {
+                      initial: {
+                        width: 0
+                      },
+                      animate: {
+                        width: `${todayStats.completionRate}%`
+                      },
+                      transition: {
+                        duration: 0.8,
+                        delay: 0.2
+                      },
+                      className: `h-full rounded-full ${todayStats.completionRate >= 75 ? "bg-primary" : todayStats.completionRate >= 50 ? "bg-accent" : "bg-muted-foreground"}`
+                    })
+                  }), /* @__PURE__ */ jsxs("span", {
+                    className: "text-xs font-semibold min-w-10 text-right",
+                    children: [todayStats.completionRate, "%"]
+                  })]
+                })]
+              }), /* @__PURE__ */ jsxs("div", {
+                className: "grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-border/50",
+                children: [/* @__PURE__ */ jsxs("div", {
+                  children: [/* @__PURE__ */ jsx("span", {
+                    className: "text-[10px] text-muted-foreground block",
+                    children: "Remaining"
+                  }), /* @__PURE__ */ jsx("span", {
+                    className: "text-xs font-semibold",
+                    children: todayStats.remaining
+                  })]
+                }), /* @__PURE__ */ jsxs("div", {
+                  className: "text-right",
+                  children: [/* @__PURE__ */ jsx("span", {
+                    className: "text-[10px] text-muted-foreground block",
+                    children: "This week"
+                  }), /* @__PURE__ */ jsxs("span", {
+                    className: "text-xs font-semibold",
+                    children: [todayStats.weekCompletion, "%"]
+                  })]
+                })]
+              })]
+            })]
+          })
+        })
+      }), /* @__PURE__ */ jsx(motion.div, {
+        initial: {
+          opacity: 0,
+          y: 20
+        },
+        animate: {
+          opacity: 1,
+          y: 0
+        },
+        transition: {
+          duration: 0.3,
+          delay: 0.1
+        },
+        className: "h-full",
+        children: /* @__PURE__ */ jsx(Link, {
+          to: "/dashboard/habits",
+          children: /* @__PURE__ */ jsxs(Card, {
+            className: "group cursor-pointer hover:border-primary/50 transition-all duration-200 hover:shadow-lg h-full flex flex-col",
+            children: [/* @__PURE__ */ jsxs("div", {
+              className: "flex items-center justify-between px-3 pt-2 pb-1",
+              children: [/* @__PURE__ */ jsx(CardTitle, {
+                className: "text-[10px] font-medium text-muted-foreground uppercase tracking-wide",
+                children: "Habits Overview"
+              }), /* @__PURE__ */ jsx(Target, {
+                className: "h-3.5 w-3.5 text-accent"
+              })]
+            }), /* @__PURE__ */ jsxs("div", {
+              className: "px-3 pb-2.5 flex-1 flex flex-col justify-between",
+              children: [/* @__PURE__ */ jsxs("div", {
+                children: [/* @__PURE__ */ jsx("div", {
+                  className: "text-2xl font-bold",
+                  children: todayStats.total
+                }), /* @__PURE__ */ jsx("p", {
+                  className: "text-[10px] text-muted-foreground mt-0.5",
+                  children: todayStats.total === 1 ? "Active habit" : "Active habits"
+                })]
+              }), /* @__PURE__ */ jsxs("div", {
+                className: "space-y-1.5 mt-2 pt-2 border-t border-border/50",
+                children: [/* @__PURE__ */ jsxs("div", {
+                  className: "flex items-center justify-between",
+                  children: [/* @__PURE__ */ jsxs("div", {
+                    className: "flex items-center gap-1.5",
+                    children: [/* @__PURE__ */ jsx("div", {
+                      className: "h-2 w-2 rounded-full bg-primary"
+                    }), /* @__PURE__ */ jsx("span", {
+                      className: "text-[10px] text-muted-foreground",
+                      children: "Completed"
+                    })]
+                  }), /* @__PURE__ */ jsx("span", {
+                    className: "text-xs font-semibold",
+                    children: todayStats.completed
+                  })]
+                }), todayStats.atRisk > 0 && /* @__PURE__ */ jsxs("div", {
+                  className: "flex items-center justify-between",
+                  children: [/* @__PURE__ */ jsxs("div", {
+                    className: "flex items-center gap-1.5",
+                    children: [/* @__PURE__ */ jsx("div", {
+                      className: "h-2 w-2 rounded-full bg-chart-4"
+                    }), /* @__PURE__ */ jsx("span", {
+                      className: "text-[10px] text-muted-foreground",
+                      children: "At risk"
+                    })]
+                  }), /* @__PURE__ */ jsx("span", {
+                    className: "text-xs font-semibold text-chart-4",
+                    children: todayStats.atRisk
+                  })]
+                }), todayStats.notStarted > 0 && /* @__PURE__ */ jsxs("div", {
+                  className: "flex items-center justify-between",
+                  children: [/* @__PURE__ */ jsxs("div", {
+                    className: "flex items-center gap-1.5",
+                    children: [/* @__PURE__ */ jsx("div", {
+                      className: "h-2 w-2 rounded-full bg-muted-foreground"
+                    }), /* @__PURE__ */ jsx("span", {
+                      className: "text-[10px] text-muted-foreground",
+                      children: "Not started"
+                    })]
+                  }), /* @__PURE__ */ jsx("span", {
+                    className: "text-xs font-semibold",
+                    children: todayStats.notStarted
+                  })]
+                })]
+              })]
+            })]
+          })
+        })
+      }), /* @__PURE__ */ jsx(motion.div, {
+        initial: {
+          opacity: 0,
+          y: 20
+        },
+        animate: {
+          opacity: 1,
+          y: 0
+        },
+        transition: {
+          duration: 0.3,
+          delay: 0.2
+        },
+        className: "h-full",
+        children: /* @__PURE__ */ jsx(Link, {
+          to: "/dashboard/analytics",
+          children: /* @__PURE__ */ jsxs(Card, {
+            className: "group cursor-pointer hover:border-primary/50 transition-all duration-200 hover:shadow-lg h-full flex flex-col",
+            children: [/* @__PURE__ */ jsxs("div", {
+              className: "flex items-center justify-between px-3 pt-2 pb-1",
+              children: [/* @__PURE__ */ jsx(CardTitle, {
+                className: "text-[10px] font-medium text-muted-foreground uppercase tracking-wide",
+                children: "Streak & Momentum"
+              }), /* @__PURE__ */ jsx(Flame, {
+                className: "h-3.5 w-3.5 text-chart-4"
+              })]
+            }), /* @__PURE__ */ jsxs("div", {
+              className: "px-3 pb-2.5 flex-1 flex flex-col justify-between",
+              children: [/* @__PURE__ */ jsxs("div", {
+                children: [/* @__PURE__ */ jsxs("div", {
+                  className: "flex items-center gap-1.5",
+                  children: [/* @__PURE__ */ jsx("span", {
+                    className: "text-2xl font-bold",
+                    children: todayStats.currentStreak
+                  }), todayStats.currentStreak > 0 && /* @__PURE__ */ jsx(Flame, {
+                    className: "h-4 w-4 text-chart-4 animate-pulse"
+                  })]
+                }), /* @__PURE__ */ jsx("p", {
+                  className: "text-[10px] text-muted-foreground mt-0.5",
+                  children: todayStats.currentStreak === 0 ? "Start your streak today!" : todayStats.currentStreak === 1 ? "day streak - keep going!" : "days streak - keep going!"
+                })]
+              }), /* @__PURE__ */ jsx("div", {
+                className: "mt-2 pt-2 border-t border-border/50",
+                children: todayStats.atRisk > 0 ? /* @__PURE__ */ jsxs("div", {
+                  className: "flex items-center justify-between",
+                  children: [/* @__PURE__ */ jsx("span", {
+                    className: "text-[10px] text-muted-foreground",
+                    children: "Streaks at risk"
+                  }), /* @__PURE__ */ jsx("span", {
+                    className: "text-xs font-semibold text-chart-4",
+                    children: todayStats.atRisk
+                  })]
+                }) : todayStats.currentStreak > 0 ? /* @__PURE__ */ jsxs("div", {
+                  className: "flex items-center gap-1",
+                  children: [/* @__PURE__ */ jsx(CheckCircle2, {
+                    className: "h-3 w-3 text-primary"
+                  }), /* @__PURE__ */ jsx("span", {
+                    className: "text-[10px] text-muted-foreground",
+                    children: "All streaks safe"
+                  })]
+                }) : /* @__PURE__ */ jsx("span", {
+                  className: "text-[10px] text-muted-foreground",
+                  children: "Log entries to build streaks"
+                })
+              })]
+            })]
+          })
+        })
+      })]
+    }), /* @__PURE__ */ jsx(motion.div, {
+      initial: {
+        opacity: 0,
+        y: 20
+      },
+      animate: {
+        opacity: 1,
+        y: 0
+      },
+      transition: {
+        duration: 0.3,
+        delay: 0.3
+      },
+      children: /* @__PURE__ */ jsx(Card, {
+        className: "group hover:border-primary/50 transition-all duration-200 hover:shadow-lg",
+        children: /* @__PURE__ */ jsxs("div", {
+          className: "flex flex-row items-center justify-between px-4 py-2.5",
+          children: [/* @__PURE__ */ jsx(CardTitle, {
+            className: "text-sm font-medium text-muted-foreground",
+            children: "Quick Actions"
+          }), /* @__PURE__ */ jsxs("div", {
+            className: "flex gap-2",
+            children: [/* @__PURE__ */ jsxs(Button, {
+              size: "sm",
+              onClick: () => setUpdate(!update),
+              className: "h-8 px-3 flex items-center gap-1.5",
+              children: [/* @__PURE__ */ jsx(Plus, {
+                className: "h-3.5 w-3.5"
+              }), /* @__PURE__ */ jsx("span", {
+                className: "text-xs",
+                children: "Log Entry"
+              })]
+            }), /* @__PURE__ */ jsx(Link, {
+              to: "/dashboard/habits",
+              children: /* @__PURE__ */ jsxs(Button, {
+                size: "sm",
+                variant: "outline",
+                className: "h-8 px-3 flex items-center gap-1.5",
+                children: [/* @__PURE__ */ jsx(Target, {
+                  className: "h-3.5 w-3.5"
+                }), /* @__PURE__ */ jsx("span", {
+                  className: "text-xs",
+                  children: "View All"
+                })]
+              })
+            }), /* @__PURE__ */ jsx(Link, {
+              to: "/dashboard/analytics",
+              children: /* @__PURE__ */ jsxs(Button, {
+                size: "sm",
+                variant: "outline",
+                className: "h-8 px-3 flex items-center gap-1.5",
+                children: [/* @__PURE__ */ jsx(Forward, {
+                  className: "h-3.5 w-3.5"
+                }), /* @__PURE__ */ jsx("span", {
+                  className: "text-xs",
+                  children: "Analytics"
+                })]
+              })
+            })]
+          })]
+        })
+      })
+    }), update && /* @__PURE__ */ jsx(motion.div, {
+      initial: {
+        opacity: 0,
+        height: 0
+      },
+      animate: {
+        opacity: 1,
+        height: "auto"
+      },
+      exit: {
+        opacity: 0,
+        height: 0
+      },
+      transition: {
+        duration: 0.3
+      },
+      children: /* @__PURE__ */ jsxs(Card, {
+        children: [/* @__PURE__ */ jsxs(CardHeader, {
+          children: [/* @__PURE__ */ jsx(CardTitle, {
+            children: "Log Habit Entry"
+          }), /* @__PURE__ */ jsx(CardDescription, {
+            children: "Select your habit and enter the value you completed today."
+          })]
+        }), /* @__PURE__ */ jsx(CardContent, {
+          children: /* @__PURE__ */ jsx("form", {
+            ref: formRef,
+            onSubmit: handleSubmit,
+            children: /* @__PURE__ */ jsxs("div", {
+              className: "flex flex-col gap-6",
+              children: [/* @__PURE__ */ jsxs("div", {
+                className: "grid gap-2",
+                children: [/* @__PURE__ */ jsx(Label, {
+                  htmlFor: "habit",
+                  children: "Select Habit"
+                }), /* @__PURE__ */ jsx("div", {
+                  className: "relative w-full",
+                  children: /* @__PURE__ */ jsx(Combobox, {
+                    onSelect: selectHabit
+                  })
+                })]
+              }), /* @__PURE__ */ jsxs("div", {
+                className: "grid gap-2",
+                children: [/* @__PURE__ */ jsx(Label, {
+                  htmlFor: "value",
+                  children: "How many units did you complete today?"
+                }), /* @__PURE__ */ jsx(Input, {
+                  id: "value",
+                  type: "number",
+                  min: 0,
+                  value: value || "",
+                  onChange: (e) => selectValue(Number(e.target.value) || 0),
+                  required: true,
+                  placeholder: "Enter value"
+                })]
+              })]
+            })
+          })
+        }), /* @__PURE__ */ jsxs(CardFooter, {
+          className: "flex gap-2",
+          children: [/* @__PURE__ */ jsx(AlertDialogButton, {
+            buttonText: "Save Entry",
+            type: "submit",
+            onContinue: () => formRef.current?.requestSubmit(),
+            dialingDesc: "This will add an entry for today."
+          }), /* @__PURE__ */ jsx(Button, {
+            variant: "outline",
+            onClick: () => {
+              setUpdate(false);
+              selectHabit("");
+              selectValue(0);
+            },
+            children: "Cancel"
+          })]
+        })]
+      })
+    }), activeHabits.length > 0 ? /* @__PURE__ */ jsxs("div", {
+      children: [/* @__PURE__ */ jsxs("div", {
+        className: "flex items-center justify-between mb-4",
+        children: [/* @__PURE__ */ jsx("h3", {
+          className: "text-lg font-semibold",
+          children: "Today's Habits"
+        }), /* @__PURE__ */ jsxs("div", {
+          className: "flex gap-2",
+          children: [/* @__PURE__ */ jsx(CSVImporter, {
+            habits: data2
+          }), /* @__PURE__ */ jsx(Link, {
+            to: "/dashboard/analytics",
+            children: /* @__PURE__ */ jsxs(Button, {
+              variant: "outline",
+              size: "sm",
+              children: ["View Analytics", /* @__PURE__ */ jsx(Forward, {
+                className: "ml-2 h-4 w-4"
+              })]
+            })
+          })]
+        })]
+      }), /* @__PURE__ */ jsx(Carousel, {
+        opts: {
+          align: "start"
+        },
+        className: "w-full",
+        children: /* @__PURE__ */ jsx(CarouselContent, {
+          className: "p-3",
+          children: activeHabits.map((habit22) => {
+            const backendValue = dailySums.find((s) => s.id === habit22.id);
+            const currentValue = backendValue?.value ?? 0;
+            const progress = habit22.goal ? Math.min(currentValue / habit22.goal * 100, 100) : 0;
+            const habitStats = loaderData.stats?.find((s) => s.habit_id === habit22.id);
+            const streak = habitStats?.current_streak ?? 0;
+            return /* @__PURE__ */ jsx(CarouselItem, {
+              className: "basis-full lg:basis-1/3",
+              children: /* @__PURE__ */ jsx(motion.div, {
+                initial: {
+                  opacity: 0,
+                  scale: 0.95
+                },
+                animate: {
+                  opacity: 1,
+                  scale: 1
+                },
+                transition: {
+                  duration: 0.2
+                },
+                children: /* @__PURE__ */ jsxs(Card, {
+                  className: `w-full transition-all hover:shadow-lg ${progress >= 100 ? "border-primary border-2" : progress >= 50 ? "border-accent" : "border-border"}`,
+                  children: [/* @__PURE__ */ jsx(CardHeader, {
+                    className: "pb-3",
+                    children: /* @__PURE__ */ jsxs("div", {
+                      className: "flex items-start justify-between",
+                      children: [/* @__PURE__ */ jsxs("div", {
+                        className: "flex-1",
+                        children: [/* @__PURE__ */ jsx(CardTitle, {
+                          className: "text-lg capitalize mb-1",
+                          children: habit22.name
+                        }), /* @__PURE__ */ jsx(CardDescription, {
+                          className: "text-xs",
+                          children: habit22.description || `Goal: ${habit22.goal} ${habit22.unit} ${habit22.frequency}`
+                        })]
+                      }), /* @__PURE__ */ jsx(Link, {
+                        to: `/dashboard/habits/${habit22.id}`,
+                        onClick: (e) => e.stopPropagation(),
+                        children: /* @__PURE__ */ jsx(Button, {
+                          variant: "ghost",
+                          size: "icon",
+                          className: "h-8 w-8",
+                          children: /* @__PURE__ */ jsx(Forward, {
+                            className: "h-4 w-4"
+                          })
+                        })
+                      })]
+                    })
+                  }), /* @__PURE__ */ jsxs(CardContent, {
+                    className: "space-y-4",
+                    children: [/* @__PURE__ */ jsxs("div", {
+                      className: "flex items-center gap-4",
+                      children: [/* @__PURE__ */ jsx("div", {
+                        className: "shrink-0",
+                        children: /* @__PURE__ */ jsx(CircularProgress, {
+                          value: currentValue,
+                          goal: habit22.goal ?? 1,
+                          unit: habit22.unit,
+                          showGoal: false,
+                          size: 80
+                        })
+                      }), /* @__PURE__ */ jsxs("div", {
+                        className: "flex-1 space-y-2",
+                        children: [/* @__PURE__ */ jsxs("div", {
+                          className: "flex items-center justify-between",
+                          children: [/* @__PURE__ */ jsx("span", {
+                            className: "text-sm text-muted-foreground",
+                            children: "Progress"
+                          }), /* @__PURE__ */ jsxs("span", {
+                            className: "text-sm font-semibold",
+                            children: [Math.round(progress), "%"]
+                          })]
+                        }), /* @__PURE__ */ jsx("div", {
+                          className: "w-full bg-secondary rounded-full h-2",
+                          children: /* @__PURE__ */ jsx(motion.div, {
+                            initial: {
+                              width: 0
+                            },
+                            animate: {
+                              width: `${progress}%`
+                            },
+                            transition: {
+                              duration: 0.5
+                            },
+                            className: `h-2 rounded-full ${progress >= 100 ? "bg-primary" : progress >= 50 ? "bg-accent" : "bg-muted-foreground"}`
+                          })
+                        }), streak > 0 && /* @__PURE__ */ jsxs("div", {
+                          className: "flex items-center gap-1 text-xs text-muted-foreground",
+                          children: [/* @__PURE__ */ jsx(Flame, {
+                            className: "h-3 w-3 text-chart-4"
+                          }), /* @__PURE__ */ jsxs("span", {
+                            children: [streak, " day", streak !== 1 ? "s" : "", " streak"]
+                          })]
+                        })]
+                      })]
+                    }), /* @__PURE__ */ jsxs("div", {
+                      className: "flex items-center gap-2 pt-2 border-t",
+                      children: [/* @__PURE__ */ jsx(TooltipProvider, {
+                        children: /* @__PURE__ */ jsxs(Tooltip, {
+                          children: [/* @__PURE__ */ jsx(TooltipTrigger, {
+                            asChild: true,
+                            children: /* @__PURE__ */ jsx(Button, {
+                              variant: "outline",
+                              size: "icon",
+                              className: "h-9 w-9",
+                              onClick: (e) => {
+                                e.stopPropagation();
+                                handleQuickUpdate(habit22.id, -1);
+                              },
+                              children: /* @__PURE__ */ jsx(Minus, {
+                                className: "h-4 w-4"
+                              })
+                            })
+                          }), /* @__PURE__ */ jsx(TooltipContent, {
+                            children: /* @__PURE__ */ jsx("p", {
+                              children: "Decrease by 1"
+                            })
+                          })]
+                        })
+                      }), /* @__PURE__ */ jsxs("div", {
+                        className: "flex-1 flex items-center justify-center gap-1",
+                        children: [/* @__PURE__ */ jsx("span", {
+                          className: "text-lg font-semibold",
+                          children: currentValue
+                        }), /* @__PURE__ */ jsxs("span", {
+                          className: "text-sm text-muted-foreground",
+                          children: ["/ ", habit22.goal]
+                        }), /* @__PURE__ */ jsx("span", {
+                          className: "text-xs text-muted-foreground ml-1",
+                          children: habit22.unit
+                        })]
+                      }), /* @__PURE__ */ jsx(TooltipProvider, {
+                        children: /* @__PURE__ */ jsxs(Tooltip, {
+                          children: [/* @__PURE__ */ jsx(TooltipTrigger, {
+                            asChild: true,
+                            children: /* @__PURE__ */ jsx(Button, {
+                              variant: "outline",
+                              size: "icon",
+                              className: "h-9 w-9",
+                              onClick: (e) => {
+                                e.stopPropagation();
+                                handleQuickUpdate(habit22.id, 1);
+                              },
+                              children: /* @__PURE__ */ jsx(Plus, {
+                                className: "h-4 w-4"
+                              })
+                            })
+                          }), /* @__PURE__ */ jsx(TooltipContent, {
+                            children: /* @__PURE__ */ jsx("p", {
+                              children: "Increase by 1"
+                            })
+                          })]
+                        })
+                      }), /* @__PURE__ */ jsxs(Popover, {
+                        open: editingHabit === habit22.id,
+                        onOpenChange: (open) => {
+                          if (!open) {
+                            setEditingHabit(null);
+                            setEditValue(0);
+                          } else {
+                            setEditingHabit(habit22.id);
+                            setEditValue(currentValue);
+                          }
+                        },
+                        children: [/* @__PURE__ */ jsx(PopoverTrigger, {
+                          asChild: true,
+                          children: /* @__PURE__ */ jsx(Button, {
+                            variant: "outline",
+                            size: "icon",
+                            className: "h-9 w-9",
+                            onClick: (e) => e.stopPropagation(),
+                            children: /* @__PURE__ */ jsx(Edit2, {
+                              className: "h-4 w-4"
+                            })
+                          })
+                        }), /* @__PURE__ */ jsx(PopoverContent, {
+                          className: "w-64",
+                          onClick: (e) => e.stopPropagation(),
+                          children: /* @__PURE__ */ jsxs("div", {
+                            className: "space-y-4",
+                            children: [/* @__PURE__ */ jsxs("div", {
+                              children: [/* @__PURE__ */ jsxs(Label, {
+                                htmlFor: `edit-${habit22.id}`,
+                                className: "text-sm font-medium",
+                                children: ["Update ", habit22.name]
+                              }), /* @__PURE__ */ jsx("p", {
+                                className: "text-xs text-muted-foreground mt-1",
+                                children: "Enter the total value for today"
+                              })]
+                            }), /* @__PURE__ */ jsxs("div", {
+                              className: "space-y-2",
+                              children: [/* @__PURE__ */ jsxs("div", {
+                                className: "flex items-center gap-2",
+                                children: [/* @__PURE__ */ jsx(Input, {
+                                  id: `edit-${habit22.id}`,
+                                  type: "number",
+                                  min: 0,
+                                  value: editValue || "",
+                                  onChange: (e) => setEditValue(Number(e.target.value) || 0),
+                                  placeholder: "Enter value",
+                                  className: "flex-1",
+                                  onKeyDown: (e) => {
+                                    if (e.key === "Enter") {
+                                      handleManualUpdate(habit22.id);
+                                    }
+                                  }
+                                }), /* @__PURE__ */ jsx("span", {
+                                  className: "text-sm text-muted-foreground",
+                                  children: habit22.unit
+                                })]
+                              }), /* @__PURE__ */ jsxs("div", {
+                                className: "flex gap-2",
+                                children: [/* @__PURE__ */ jsx(Button, {
+                                  size: "sm",
+                                  className: "flex-1",
+                                  onClick: () => handleManualUpdate(habit22.id),
+                                  children: "Update"
+                                }), /* @__PURE__ */ jsx(Button, {
+                                  size: "sm",
+                                  variant: "outline",
+                                  className: "flex-1",
+                                  onClick: () => {
+                                    setEditingHabit(null);
+                                    setEditValue(0);
+                                  },
+                                  children: "Cancel"
+                                })]
+                              })]
+                            })]
+                          })
+                        })]
+                      })]
+                    })]
+                  })]
+                })
+              })
+            }, habit22.id);
+          })
+        })
+      })]
+    }) : /* @__PURE__ */ jsx(EmptyHabitState, {}), loaderData.stats && loaderData.stats.length > 0 && /* @__PURE__ */ jsxs("div", {
+      children: [/* @__PURE__ */ jsx("h3", {
+        className: "text-lg font-semibold mb-4",
+        children: "All Habits Overview"
+      }), /* @__PURE__ */ jsx(ReusableTable, {
+        data: loaderData.stats
       })]
     })]
   });
-};
-const overview_default = UNSAFE_withComponentProps(overview);
-const route4 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+});
+const route2 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  clientLoader: clientLoader$1,
-  default: overview_default
+  clientLoader: clientLoader$3,
+  default: home,
+  fakeHabits,
+  formatHabitDate: formatHabitDate$1,
+  today: today$1
 }, Symbol.toStringTag, { value: "Module" }));
 const THEMES = { light: "", dark: ".dark" };
 const ChartContext = React.createContext(null);
@@ -3966,6 +4212,1819 @@ function ChartAreaInteractive({ chartData }) {
     ) })
   ] });
 }
+const Container = ({ children }) => {
+  return /* @__PURE__ */ jsx("div", { className: "bg-slate-800/50 backdrop-blur-sm rounded-2xl p-6 shadow-2xl border border-slate-700/50 w-full h-full", children });
+};
+Chart.register(CategoryScale, BarElement, LinearScale, Title, Tooltip$1, Legend);
+const getWeekDates = () => {
+  const today2 = /* @__PURE__ */ new Date();
+  const dayOfWeek = today2.getDay();
+  const weekDates = [...Array(7).keys()].map((offset) => {
+    const d = new Date(today2);
+    d.setDate(today2.getDate() - dayOfWeek + offset);
+    return d.toISOString().slice(0, 10);
+  });
+  return weekDates;
+};
+const WeeklyWorkoutFrequencyChart = ({ workoutDates }) => {
+  const weekDates = getWeekDates();
+  const counts = weekDates.map(
+    (date) => workoutDates.filter((d) => d.startsWith(date)).length
+  );
+  const data2 = {
+    labels: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+    datasets: [
+      {
+        label: "Workouts",
+        data: counts,
+        backgroundColor: "rgba(75, 192, 192, 0.7)",
+        borderColor: "rgba(75, 192, 192, 1)",
+        borderWidth: 1
+      }
+    ]
+  };
+  const options = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: true, position: "top" },
+      title: {
+        display: true,
+        text: "Weekly Workout Frequency"
+      }
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        stepSize: 1,
+        ticks: { precision: 0 }
+      }
+    }
+  };
+  return /* @__PURE__ */ jsx(Container, { children: /* @__PURE__ */ jsx(Bar, { data: data2, options }) });
+};
+const getDaysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
+const ConsistencyStreaksChart = ({ workoutDates }) => {
+  const today2 = /* @__PURE__ */ new Date();
+  const year = today2.getFullYear();
+  const month = today2.getMonth();
+  const daysInMonth = getDaysInMonth(year, month);
+  const workoutSet = new Set(workoutDates.map((d) => d.slice(0, 10)));
+  const days = [...Array(daysInMonth).keys()].map((d) => {
+    const dayStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(
+      d + 1
+    ).padStart(2, "0")}`;
+    return { day: d + 1, workedOut: workoutSet.has(dayStr) };
+  });
+  return /* @__PURE__ */ jsx(Container, { children: /* @__PURE__ */ jsx("div", { style: { display: "flex", gap: "4px", flexWrap: "wrap", maxWidth: 280 }, children: days.map(({ day, workedOut }) => /* @__PURE__ */ jsx(
+    "div",
+    {
+      title: `Day ${day}: ${workedOut ? "Workout ✅" : "Rest"}`,
+      style: {
+        width: 30,
+        height: 30,
+        backgroundColor: workedOut ? "#4caf50" : "#ddd",
+        borderRadius: 4,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        color: workedOut ? "white" : "#555",
+        fontWeight: "bold"
+      },
+      children: day
+    },
+    day
+  )) }) });
+};
+const today = new TZDate().toISOString().split("T")[0];
+function formatHabitDate(habitDate) {
+  const date = new TZDate(habitDate);
+  const now = new TZDate();
+  const startOfToday = new TZDate(now.getFullYear(), now.getMonth(), now.getDate());
+  const startOfTarget = new TZDate(date.getFullYear(), date.getMonth(), date.getDate());
+  const diffMs = startOfToday.getTime() - startOfTarget.getTime();
+  const diffDays = Math.round(diffMs / (1e3 * 60 * 60 * 24));
+  if (diffDays === 0) return "Today";
+  if (diffDays === 1) return "Yesterday";
+  if (diffDays > 1 && diffDays < 7) return `${diffDays} days ago`;
+  return date.toLocaleString();
+}
+async function clientLoader$2() {
+  const {
+    data: {
+      user
+    }
+  } = await supabase.auth.getUser();
+  if (!user) return;
+  const habits = await getHabitsByUserId(user.id);
+  const {
+    data: stats
+  } = await supabase.rpc("get_habit_dashboard_stats", {
+    p_user_id: user.id
+  });
+  const entriesPromises = habits.map((habit2) => fetchHabitEntriesFor(user.id, habit2.id));
+  const allEntries = await Promise.all(entriesPromises);
+  const dailySumsPromises = habits.map((habit2) => supabase.rpc("get_daily_habit_sum", {
+    p_user_id: user.id,
+    p_habit_id: habit2.id,
+    p_date: today
+  }));
+  const dailySumsResults = await Promise.all(dailySumsPromises);
+  const dailySums = habits.map((habit2, idx) => ({
+    id: habit2.id,
+    value: dailySumsResults[idx].data ?? 0
+  }));
+  return {
+    user,
+    habits: habits ?? [],
+    stats: stats ?? [],
+    entries: allEntries,
+    dailySums
+  };
+}
+const homeAnalytics = UNSAFE_withComponentProps(function HomeAnalytics({
+  loaderData
+}) {
+  if (!loaderData) {
+    return /* @__PURE__ */ jsx("div", {
+      className: "flex items-center justify-center h-full",
+      children: /* @__PURE__ */ jsx("p", {
+        className: "text-muted-foreground",
+        children: "Loading..."
+      })
+    });
+  }
+  const habits = loaderData?.habits ?? [];
+  const stats = loaderData?.stats ?? [];
+  const dailySums = loaderData?.dailySums ?? [];
+  const kpis = useMemo(() => {
+    const activeHabits = habits.filter((h) => h.status === "active" && !h.is_archived);
+    const totalActive = activeHabits.length;
+    const habitsWithEntriesToday = dailySums.filter((ds) => ds.value > 0).length;
+    const todayCompletionRate = totalActive > 0 ? Math.round(habitsWithEntriesToday / totalActive * 100) : 0;
+    const longestStreak = stats.length > 0 ? Math.max(...stats.map((s) => s.longest_streak ?? 0)) : 0;
+    const currentLongestStreak = stats.length > 0 ? Math.max(...stats.map((s) => s.current_streak ?? 0)) : 0;
+    const weekAgo = new TZDate();
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    const weekEntries = loaderData?.entries?.flat()?.filter((entry2) => {
+      const entryDate = new TZDate(entry2.entry_date);
+      return entryDate >= weekAgo;
+    }).length ?? 0;
+    const avgCompletionRate = stats.length > 0 ? Math.round(stats.reduce((sum, s) => sum + (s.week_completion ?? 0), 0) / stats.length) : 0;
+    return {
+      totalActive,
+      todayCompletionRate,
+      longestStreak,
+      currentLongestStreak,
+      weekEntries,
+      avgCompletionRate
+    };
+  }, [habits, dailySums, stats, loaderData?.entries]);
+  const chartData = useMemo(() => {
+    if (!loaderData?.entries) return [];
+    const allEntries = loaderData.entries.flat();
+    const entriesByDate = {};
+    allEntries.forEach((entry2) => {
+      const date = entry2.entry_date?.split("T")[0];
+      if (date) {
+        entriesByDate[date] = (entriesByDate[date] || 0) + entry2.value;
+      }
+    });
+    return Object.entries(entriesByDate).map(([date, value]) => ({
+      date,
+      value
+    })).sort((a, b) => a.date.localeCompare(b.date));
+  }, [loaderData?.entries]);
+  const weeklyData = useMemo(() => {
+    if (!loaderData?.entries) return [];
+    const allEntries = loaderData.entries.flat();
+    return allEntries.map((entry2) => entry2.entry_date);
+  }, [loaderData?.entries]);
+  const consistencyData = useMemo(() => {
+    if (!loaderData?.entries) return [];
+    const allEntries = loaderData.entries.flat();
+    return allEntries.map((entry2) => entry2.entry_date?.split("T")[0]).filter(Boolean);
+  }, [loaderData?.entries]);
+  const topPerformers = useMemo(() => {
+    return [...stats].sort((a, b) => (b.current_streak ?? 0) - (a.current_streak ?? 0)).slice(0, 3);
+  }, [stats]);
+  const needsAttention = useMemo(() => {
+    return stats.filter((stat) => {
+      const hasEntryToday = dailySums.find((ds) => ds.id === stat.habit_id)?.value ?? 0;
+      return (stat.current_streak ?? 0) === 0 || hasEntryToday === 0;
+    }).slice(0, 3);
+  }, [stats, dailySums]);
+  return /* @__PURE__ */ jsxs("div", {
+    className: "relative h-full flex flex-1 flex-col gap-6 p-4 pt-0",
+    children: [/* @__PURE__ */ jsxs("div", {
+      className: "md:min-h-min",
+      children: [/* @__PURE__ */ jsxs("div", {
+        className: "space-y-1",
+        children: [/* @__PURE__ */ jsx("h4", {
+          className: "text-sm leading-none font-medium",
+          children: "Analytics Dashboard"
+        }), /* @__PURE__ */ jsx("p", {
+          className: "text-muted-foreground text-sm",
+          children: "Comprehensive view of your habit tracking and progress."
+        })]
+      }), /* @__PURE__ */ jsx(Separator, {
+        className: "my-4"
+      })]
+    }), /* @__PURE__ */ jsxs("div", {
+      className: "grid gap-4 md:grid-cols-2 lg:grid-cols-4",
+      children: [/* @__PURE__ */ jsx(motion.div, {
+        initial: {
+          opacity: 0,
+          y: 20
+        },
+        animate: {
+          opacity: 1,
+          y: 0
+        },
+        transition: {
+          duration: 0.3
+        },
+        children: /* @__PURE__ */ jsxs(Card, {
+          children: [/* @__PURE__ */ jsxs(CardHeader, {
+            className: "flex flex-row items-center justify-between space-y-0 pb-2",
+            children: [/* @__PURE__ */ jsx(CardTitle, {
+              className: "text-sm font-medium",
+              children: "Active Habits"
+            }), /* @__PURE__ */ jsx(Target, {
+              className: "h-4 w-4 text-muted-foreground"
+            })]
+          }), /* @__PURE__ */ jsxs(CardContent, {
+            children: [/* @__PURE__ */ jsx("div", {
+              className: "text-2xl font-bold",
+              children: kpis.totalActive
+            }), /* @__PURE__ */ jsx("p", {
+              className: "text-xs text-muted-foreground",
+              children: "Total habits being tracked"
+            })]
+          })]
+        })
+      }), /* @__PURE__ */ jsx(motion.div, {
+        initial: {
+          opacity: 0,
+          y: 20
+        },
+        animate: {
+          opacity: 1,
+          y: 0
+        },
+        transition: {
+          duration: 0.3,
+          delay: 0.1
+        },
+        children: /* @__PURE__ */ jsxs(Card, {
+          children: [/* @__PURE__ */ jsxs(CardHeader, {
+            className: "flex flex-row items-center justify-between space-y-0 pb-2",
+            children: [/* @__PURE__ */ jsx(CardTitle, {
+              className: "text-sm font-medium",
+              children: "Today's Progress"
+            }), /* @__PURE__ */ jsx(CheckCircle2, {
+              className: "h-4 w-4 text-muted-foreground"
+            })]
+          }), /* @__PURE__ */ jsxs(CardContent, {
+            children: [/* @__PURE__ */ jsxs("div", {
+              className: "text-2xl font-bold",
+              children: [kpis.todayCompletionRate, "%"]
+            }), /* @__PURE__ */ jsx("p", {
+              className: "text-xs text-muted-foreground",
+              children: "Habits completed today"
+            })]
+          })]
+        })
+      }), /* @__PURE__ */ jsx(motion.div, {
+        initial: {
+          opacity: 0,
+          y: 20
+        },
+        animate: {
+          opacity: 1,
+          y: 0
+        },
+        transition: {
+          duration: 0.3,
+          delay: 0.2
+        },
+        children: /* @__PURE__ */ jsxs(Card, {
+          children: [/* @__PURE__ */ jsxs(CardHeader, {
+            className: "flex flex-row items-center justify-between space-y-0 pb-2",
+            children: [/* @__PURE__ */ jsx(CardTitle, {
+              className: "text-sm font-medium",
+              children: "Current Streak"
+            }), /* @__PURE__ */ jsx(Flame, {
+              className: "h-4 w-4 text-muted-foreground"
+            })]
+          }), /* @__PURE__ */ jsxs(CardContent, {
+            children: [/* @__PURE__ */ jsx("div", {
+              className: "text-2xl font-bold",
+              children: kpis.currentLongestStreak
+            }), /* @__PURE__ */ jsx("p", {
+              className: "text-xs text-muted-foreground",
+              children: "Longest active streak"
+            })]
+          })]
+        })
+      }), /* @__PURE__ */ jsx(motion.div, {
+        initial: {
+          opacity: 0,
+          y: 20
+        },
+        animate: {
+          opacity: 1,
+          y: 0
+        },
+        transition: {
+          duration: 0.3,
+          delay: 0.3
+        },
+        children: /* @__PURE__ */ jsxs(Card, {
+          children: [/* @__PURE__ */ jsxs(CardHeader, {
+            className: "flex flex-row items-center justify-between space-y-0 pb-2",
+            children: [/* @__PURE__ */ jsx(CardTitle, {
+              className: "text-sm font-medium",
+              children: "This Week"
+            }), /* @__PURE__ */ jsx(Activity, {
+              className: "h-4 w-4 text-muted-foreground"
+            })]
+          }), /* @__PURE__ */ jsxs(CardContent, {
+            children: [/* @__PURE__ */ jsx("div", {
+              className: "text-2xl font-bold",
+              children: kpis.weekEntries
+            }), /* @__PURE__ */ jsx("p", {
+              className: "text-xs text-muted-foreground",
+              children: "Total entries logged"
+            })]
+          })]
+        })
+      })]
+    }), /* @__PURE__ */ jsxs("div", {
+      className: "grid gap-4 md:grid-cols-2",
+      children: [chartData.length > 0 && /* @__PURE__ */ jsx(motion.div, {
+        initial: {
+          opacity: 0,
+          y: 20
+        },
+        animate: {
+          opacity: 1,
+          y: 0
+        },
+        transition: {
+          duration: 0.4
+        },
+        children: /* @__PURE__ */ jsx(ChartAreaInteractive, {
+          chartData
+        })
+      }), weeklyData.length > 0 && /* @__PURE__ */ jsx(motion.div, {
+        initial: {
+          opacity: 0,
+          y: 20
+        },
+        animate: {
+          opacity: 1,
+          y: 0
+        },
+        transition: {
+          duration: 0.4,
+          delay: 0.1
+        },
+        children: /* @__PURE__ */ jsxs(Card, {
+          children: [/* @__PURE__ */ jsxs(CardHeader, {
+            children: [/* @__PURE__ */ jsx(CardTitle, {
+              children: "Weekly Activity"
+            }), /* @__PURE__ */ jsx(CardDescription, {
+              children: "Your habit completion frequency by day of the week"
+            })]
+          }), /* @__PURE__ */ jsx(CardContent, {
+            children: /* @__PURE__ */ jsx(WeeklyWorkoutFrequencyChart, {
+              workoutDates: weeklyData
+            })
+          })]
+        })
+      })]
+    }), consistencyData.length > 0 && /* @__PURE__ */ jsx(motion.div, {
+      initial: {
+        opacity: 0,
+        y: 20
+      },
+      animate: {
+        opacity: 1,
+        y: 0
+      },
+      transition: {
+        duration: 0.4,
+        delay: 0.2
+      },
+      children: /* @__PURE__ */ jsxs(Card, {
+        children: [/* @__PURE__ */ jsxs(CardHeader, {
+          children: [/* @__PURE__ */ jsx(CardTitle, {
+            children: "Consistency Calendar"
+          }), /* @__PURE__ */ jsx(CardDescription, {
+            children: "Days you've logged entries this month"
+          })]
+        }), /* @__PURE__ */ jsx(CardContent, {
+          children: /* @__PURE__ */ jsx(ConsistencyStreaksChart, {
+            workoutDates: consistencyData
+          })
+        })]
+      })
+    }), /* @__PURE__ */ jsxs("div", {
+      className: "grid gap-4 md:grid-cols-2",
+      children: [topPerformers.length > 0 && /* @__PURE__ */ jsx(motion.div, {
+        initial: {
+          opacity: 0,
+          y: 20
+        },
+        animate: {
+          opacity: 1,
+          y: 0
+        },
+        transition: {
+          duration: 0.4,
+          delay: 0.3
+        },
+        children: /* @__PURE__ */ jsxs(Card, {
+          children: [/* @__PURE__ */ jsxs(CardHeader, {
+            children: [/* @__PURE__ */ jsxs(CardTitle, {
+              className: "flex items-center gap-2",
+              children: [/* @__PURE__ */ jsx(TrendingUp, {
+                className: "h-5 w-5 text-green-500"
+              }), "Top Performers"]
+            }), /* @__PURE__ */ jsx(CardDescription, {
+              children: "Your most consistent habits"
+            })]
+          }), /* @__PURE__ */ jsx(CardContent, {
+            children: /* @__PURE__ */ jsx("div", {
+              className: "space-y-3",
+              children: topPerformers.map((stat, idx) => /* @__PURE__ */ jsxs("div", {
+                className: "flex items-center justify-between p-3 rounded-lg bg-secondary",
+                children: [/* @__PURE__ */ jsxs("div", {
+                  className: "flex items-center gap-3",
+                  children: [/* @__PURE__ */ jsx("div", {
+                    className: "flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground font-bold",
+                    children: idx + 1
+                  }), /* @__PURE__ */ jsxs("div", {
+                    children: [/* @__PURE__ */ jsx("p", {
+                      className: "font-medium capitalize",
+                      children: stat.habit_name
+                    }), /* @__PURE__ */ jsxs("p", {
+                      className: "text-sm text-muted-foreground",
+                      children: [stat.current_streak, " day streak"]
+                    })]
+                  })]
+                }), /* @__PURE__ */ jsxs("div", {
+                  className: "flex items-center gap-2",
+                  children: [/* @__PURE__ */ jsx(Flame, {
+                    className: "h-4 w-4 text-orange-500"
+                  }), /* @__PURE__ */ jsx("span", {
+                    className: "font-semibold",
+                    children: stat.current_streak
+                  })]
+                })]
+              }, stat.habit_id))
+            })
+          })]
+        })
+      }), needsAttention.length > 0 && /* @__PURE__ */ jsx(motion.div, {
+        initial: {
+          opacity: 0,
+          y: 20
+        },
+        animate: {
+          opacity: 1,
+          y: 0
+        },
+        transition: {
+          duration: 0.4,
+          delay: 0.4
+        },
+        children: /* @__PURE__ */ jsxs(Card, {
+          children: [/* @__PURE__ */ jsxs(CardHeader, {
+            children: [/* @__PURE__ */ jsxs(CardTitle, {
+              className: "flex items-center gap-2",
+              children: [/* @__PURE__ */ jsx(AlertCircle, {
+                className: "h-5 w-5 text-yellow-500"
+              }), "Needs Attention"]
+            }), /* @__PURE__ */ jsx(CardDescription, {
+              children: "Habits that need your focus"
+            })]
+          }), /* @__PURE__ */ jsx(CardContent, {
+            children: /* @__PURE__ */ jsx("div", {
+              className: "space-y-3",
+              children: needsAttention.map((stat) => {
+                const hasEntryToday = dailySums.find((ds) => ds.id === stat.habit_id)?.value ?? 0;
+                return /* @__PURE__ */ jsxs("div", {
+                  className: "flex items-center justify-between p-3 rounded-lg bg-secondary",
+                  children: [/* @__PURE__ */ jsxs("div", {
+                    className: "flex items-center gap-3",
+                    children: [/* @__PURE__ */ jsx(AlertCircle, {
+                      className: "h-5 w-5 text-yellow-500"
+                    }), /* @__PURE__ */ jsxs("div", {
+                      children: [/* @__PURE__ */ jsx("p", {
+                        className: "font-medium capitalize",
+                        children: stat.habit_name
+                      }), /* @__PURE__ */ jsx("p", {
+                        className: "text-sm text-muted-foreground",
+                        children: hasEntryToday === 0 ? "No entry today" : "Streak broken"
+                      })]
+                    })]
+                  }), /* @__PURE__ */ jsx(Link, {
+                    to: `/dashboard/habits/${stat.habit_id}`,
+                    children: /* @__PURE__ */ jsx(Button, {
+                      variant: "outline",
+                      size: "sm",
+                      children: "Log Entry"
+                    })
+                  })]
+                }, stat.habit_id);
+              })
+            })
+          })]
+        })
+      })]
+    }), stats.length > 0 && /* @__PURE__ */ jsx(motion.div, {
+      initial: {
+        opacity: 0,
+        y: 20
+      },
+      animate: {
+        opacity: 1,
+        y: 0
+      },
+      transition: {
+        duration: 0.4,
+        delay: 0.5
+      },
+      children: /* @__PURE__ */ jsxs(Card, {
+        children: [/* @__PURE__ */ jsxs(CardHeader, {
+          children: [/* @__PURE__ */ jsxs(CardTitle, {
+            className: "flex items-center gap-2",
+            children: [/* @__PURE__ */ jsx(BarChart3, {
+              className: "h-5 w-5"
+            }), "Streak Leaderboard"]
+          }), /* @__PURE__ */ jsx(CardDescription, {
+            children: "All your habits ranked by current streak"
+          })]
+        }), /* @__PURE__ */ jsx(CardContent, {
+          children: /* @__PURE__ */ jsx("div", {
+            className: "space-y-2",
+            children: [...stats].sort((a, b) => (b.current_streak ?? 0) - (a.current_streak ?? 0)).map((stat, idx) => /* @__PURE__ */ jsxs("div", {
+              className: "flex items-center justify-between p-3 rounded-lg border hover:bg-secondary transition-colors",
+              children: [/* @__PURE__ */ jsxs("div", {
+                className: "flex items-center gap-4",
+                children: [/* @__PURE__ */ jsx("div", {
+                  className: `flex items-center justify-center w-10 h-10 rounded-full font-bold ${idx === 0 ? "bg-primary text-primary-foreground" : idx === 1 ? "bg-accent text-accent-foreground" : idx === 2 ? "bg-chart-4 text-white" : "bg-secondary text-secondary-foreground"}`,
+                  children: idx + 1
+                }), /* @__PURE__ */ jsxs("div", {
+                  children: [/* @__PURE__ */ jsx(Link, {
+                    to: `/dashboard/habits/${stat.habit_id}`,
+                    className: "font-medium capitalize hover:underline",
+                    children: stat.habit_name
+                  }), /* @__PURE__ */ jsxs("p", {
+                    className: "text-sm text-muted-foreground",
+                    children: ["Longest: ", stat.longest_streak, " days"]
+                  })]
+                })]
+              }), /* @__PURE__ */ jsxs("div", {
+                className: "flex items-center gap-4",
+                children: [/* @__PURE__ */ jsxs("div", {
+                  className: "text-right",
+                  children: [/* @__PURE__ */ jsx("p", {
+                    className: "font-semibold text-lg",
+                    children: stat.current_streak
+                  }), /* @__PURE__ */ jsx("p", {
+                    className: "text-xs text-muted-foreground",
+                    children: "days"
+                  })]
+                }), /* @__PURE__ */ jsx(Flame, {
+                  className: `h-5 w-5 ${stat.current_streak > 0 ? "text-orange-500" : "text-muted-foreground"}`
+                })]
+              })]
+            }, stat.habit_id))
+          })
+        })]
+      })
+    }), habits.filter((h) => h.status === "active" && !h.is_archived).length === 0 && /* @__PURE__ */ jsx(Card, {
+      children: /* @__PURE__ */ jsxs(CardContent, {
+        className: "flex flex-col items-center justify-center py-12",
+        children: [/* @__PURE__ */ jsx(Target, {
+          className: "h-12 w-12 text-muted-foreground mb-4"
+        }), /* @__PURE__ */ jsx("h3", {
+          className: "text-lg font-semibold mb-2",
+          children: "No Active Habits"
+        }), /* @__PURE__ */ jsx("p", {
+          className: "text-muted-foreground text-center mb-4",
+          children: "Start tracking your habits to see analytics and insights here."
+        }), /* @__PURE__ */ jsx(Link, {
+          to: "/dashboard/habits",
+          children: /* @__PURE__ */ jsx(Button, {
+            children: "Create Your First Habit"
+          })
+        })]
+      })
+    })]
+  });
+});
+const route3 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+  __proto__: null,
+  clientLoader: clientLoader$2,
+  default: homeAnalytics,
+  formatHabitDate,
+  today
+}, Symbol.toStringTag, { value: "Module" }));
+const layout$1 = () => {
+  return /* @__PURE__ */ jsxs("div", {
+    className: "relative flex flex-1 flex-col gap-4 p-4 pt-0 h-full",
+    children: [/* @__PURE__ */ jsxs("div", {
+      className: "md:min-h-min",
+      children: [/* @__PURE__ */ jsxs("div", {
+        className: "space-y-1",
+        children: [/* @__PURE__ */ jsx("h4", {
+          className: "text-sm leading-none font-medium",
+          children: "Habits"
+        }), /* @__PURE__ */ jsx("p", {
+          className: "text-muted-foreground text-sm",
+          children: "View activities and charts."
+        })]
+      }), /* @__PURE__ */ jsx(Separator, {
+        className: "my-4"
+      })]
+    }), /* @__PURE__ */ jsx(Outlet, {})]
+  });
+};
+const layout_default = UNSAFE_withComponentProps(layout$1);
+const route4 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+  __proto__: null,
+  default: layout_default
+}, Symbol.toStringTag, { value: "Module" }));
+const badgeVariants = cva(
+  "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+  {
+    variants: {
+      variant: {
+        default: "border-transparent bg-primary text-primary-foreground hover:bg-primary/80",
+        secondary: "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
+        destructive: "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
+        outline: "text-foreground"
+      }
+    },
+    defaultVariants: {
+      variant: "default"
+    }
+  }
+);
+function Badge({ className, variant, ...props }) {
+  return /* @__PURE__ */ jsx("div", { className: cn(badgeVariants({ variant }), className), ...props });
+}
+function FieldSet({ className, ...props }) {
+  return /* @__PURE__ */ jsx(
+    "fieldset",
+    {
+      "data-slot": "field-set",
+      className: cn(
+        "flex flex-col gap-6",
+        "has-[>[data-slot=checkbox-group]]:gap-3 has-[>[data-slot=radio-group]]:gap-3",
+        className
+      ),
+      ...props
+    }
+  );
+}
+function FieldGroup({ className, ...props }) {
+  return /* @__PURE__ */ jsx(
+    "div",
+    {
+      "data-slot": "field-group",
+      className: cn(
+        "group/field-group @container/field-group flex w-full flex-col gap-7 data-[slot=checkbox-group]:gap-3 [&>[data-slot=field-group]]:gap-4",
+        className
+      ),
+      ...props
+    }
+  );
+}
+const fieldVariants = cva(
+  "group/field flex w-full gap-3 data-[invalid=true]:text-destructive",
+  {
+    variants: {
+      orientation: {
+        vertical: ["flex-col [&>*]:w-full [&>.sr-only]:w-auto"],
+        horizontal: [
+          "flex-row items-center",
+          "[&>[data-slot=field-label]]:flex-auto",
+          "has-[>[data-slot=field-content]]:items-start has-[>[data-slot=field-content]]:[&>[role=checkbox],[role=radio]]:mt-px"
+        ],
+        responsive: [
+          "flex-col [&>*]:w-full [&>.sr-only]:w-auto @md/field-group:flex-row @md/field-group:items-center @md/field-group:[&>*]:w-auto",
+          "@md/field-group:[&>[data-slot=field-label]]:flex-auto",
+          "@md/field-group:has-[>[data-slot=field-content]]:items-start @md/field-group:has-[>[data-slot=field-content]]:[&>[role=checkbox],[role=radio]]:mt-px"
+        ]
+      }
+    },
+    defaultVariants: {
+      orientation: "vertical"
+    }
+  }
+);
+function Field({
+  className,
+  orientation = "vertical",
+  ...props
+}) {
+  return /* @__PURE__ */ jsx(
+    "div",
+    {
+      role: "group",
+      "data-slot": "field",
+      "data-orientation": orientation,
+      className: cn(fieldVariants({ orientation }), className),
+      ...props
+    }
+  );
+}
+function FieldLabel({
+  className,
+  ...props
+}) {
+  return /* @__PURE__ */ jsx(
+    Label,
+    {
+      "data-slot": "field-label",
+      className: cn(
+        "group/field-label peer/field-label flex w-fit gap-2 leading-snug group-data-[disabled=true]/field:opacity-50",
+        "has-[>[data-slot=field]]:w-full has-[>[data-slot=field]]:flex-col has-[>[data-slot=field]]:rounded-md has-[>[data-slot=field]]:border [&>*]:data-[slot=field]:p-4",
+        "has-data-[state=checked]:bg-primary/5 has-data-[state=checked]:border-primary dark:has-data-[state=checked]:bg-primary/10",
+        className
+      ),
+      ...props
+    }
+  );
+}
+function FieldDescription({ className, ...props }) {
+  return /* @__PURE__ */ jsx(
+    "p",
+    {
+      "data-slot": "field-description",
+      className: cn(
+        "text-muted-foreground text-sm leading-normal font-normal group-has-[[data-orientation=horizontal]]/field:text-balance",
+        "last:mt-0 nth-last-2:-mt-1 [[data-variant=legend]+&]:-mt-1.5",
+        "[&>a:hover]:text-primary [&>a]:underline [&>a]:underline-offset-4",
+        className
+      ),
+      ...props
+    }
+  );
+}
+function RadioGroup({
+  className,
+  ...props
+}) {
+  return /* @__PURE__ */ jsx(
+    RadioGroupPrimitive.Root,
+    {
+      "data-slot": "radio-group",
+      className: cn("grid gap-3", className),
+      ...props
+    }
+  );
+}
+function RadioGroupItem({
+  className,
+  ...props
+}) {
+  return /* @__PURE__ */ jsx(
+    RadioGroupPrimitive.Item,
+    {
+      "data-slot": "radio-group-item",
+      className: cn(
+        "border-input text-primary focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 aspect-square size-4 shrink-0 rounded-full border shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50",
+        className
+      ),
+      ...props,
+      children: /* @__PURE__ */ jsx(
+        RadioGroupPrimitive.Indicator,
+        {
+          "data-slot": "radio-group-indicator",
+          className: "relative flex items-center justify-center",
+          children: /* @__PURE__ */ jsx(CircleIcon, { className: "fill-primary absolute top-1/2 left-1/2 size-2 -translate-x-1/2 -translate-y-1/2" })
+        }
+      )
+    }
+  );
+}
+function Textarea({ className, ...props }) {
+  return /* @__PURE__ */ jsx(
+    "textarea",
+    {
+      "data-slot": "textarea",
+      className: cn(
+        "border-input placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 flex field-sizing-content min-h-16 w-full rounded-md border bg-transparent px-3 py-2 text-base shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
+        className
+      ),
+      ...props
+    }
+  );
+}
+const formTemplate = {
+  name: "ex. drink more water",
+  description: "Optionally include a brief description...",
+  status: "active",
+  unit: "unit",
+  frequency: "daily",
+  goal: 0,
+  reminder_time: null,
+  is_archived: false
+};
+function HabitModalButton({ isOpen, open, setHabits }) {
+  const { user } = useAuth();
+  const [form, setForm] = useState(formTemplate);
+  const handleFrequencyChange = (value) => {
+    setForm((prev) => ({
+      ...prev,
+      frequency: value
+    }));
+  };
+  const handleChange = (e) => {
+    const { name, value, type } = e.target;
+    setForm((prev) => ({
+      ...prev,
+      [name]: name === "goal" ? Number(value) : value
+    }));
+  };
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!user) return;
+    if (form === formTemplate) return;
+    const today2 = new TZDate().toISOString().split("T")[0];
+    try {
+      await addHabit({
+        user_id: user.id,
+        name: form.name,
+        description: form.description === "Optionally include a brief description..." ? "" : form.description,
+        status: "active",
+        unit: form.unit,
+        frequency: form.frequency,
+        goal: form.goal,
+        reminder_time: null,
+        is_archived: false
+      });
+      setHabits((prev) => [...prev, { ...form, created_at: today2 }]);
+      isOpen(false);
+      toast.success("Successfully added a new habit.");
+    } catch {
+      toast.error("Failed to create.");
+    }
+  };
+  return /* @__PURE__ */ jsx(Fragment, { children: /* @__PURE__ */ jsx(Dialog, { open, onOpenChange: isOpen, children: /* @__PURE__ */ jsxs("form", { children: [
+    /* @__PURE__ */ jsx(DialogTrigger, { asChild: true, children: /* @__PURE__ */ jsxs(Button, { variant: "outline", children: [
+      /* @__PURE__ */ jsx(Plus, {}),
+      " Habit"
+    ] }) }),
+    /* @__PURE__ */ jsxs(DialogContent, { className: "sm:max-w-[425px]", children: [
+      /* @__PURE__ */ jsxs(DialogHeader, { children: [
+        /* @__PURE__ */ jsx(DialogTitle, { children: "Create a new Habit." }),
+        /* @__PURE__ */ jsx(DialogDescription, { children: "Fill out the form here. Click create when you're done." })
+      ] }),
+      /* @__PURE__ */ jsx("div", { className: "w-full max-w-md", children: /* @__PURE__ */ jsx(FieldSet, { children: /* @__PURE__ */ jsxs(FieldGroup, { children: [
+        /* @__PURE__ */ jsxs(Field, { children: [
+          /* @__PURE__ */ jsx(FieldLabel, { htmlFor: "name", children: "Habit Name" }),
+          /* @__PURE__ */ jsx(Input, { id: "name", name: "name", type: "text", placeholder: "ex. drink more water", onChange: handleChange, required: true }),
+          /* @__PURE__ */ jsx(FieldDescription, { children: "Choose the name of your new habit." })
+        ] }),
+        /* @__PURE__ */ jsxs(Field, { children: [
+          /* @__PURE__ */ jsx(FieldLabel, { htmlFor: "feedback", children: "Description" }),
+          /* @__PURE__ */ jsx(
+            Textarea,
+            {
+              id: "description",
+              name: "description",
+              placeholder: "Optionally include a brief description...",
+              rows: 4,
+              onChange: handleChange
+            }
+          )
+        ] }),
+        /* @__PURE__ */ jsxs(FieldSet, { children: [
+          /* @__PURE__ */ jsx(FieldLabel, { children: "Frequency Plan" }),
+          /* @__PURE__ */ jsx(FieldDescription, { children: "Select how frequent you plan to perform this habit." }),
+          /* @__PURE__ */ jsxs(RadioGroup, { name: "frequency", defaultValue: "daily", onValueChange: handleFrequencyChange, required: true, children: [
+            /* @__PURE__ */ jsxs(Field, { orientation: "horizontal", children: [
+              /* @__PURE__ */ jsx(RadioGroupItem, { value: "daily", id: "plan-daily" }),
+              /* @__PURE__ */ jsx(FieldLabel, { htmlFor: "plan-daily", className: "font-normal", children: "Daily" })
+            ] }),
+            /* @__PURE__ */ jsxs(Field, { orientation: "horizontal", children: [
+              /* @__PURE__ */ jsx(RadioGroupItem, { value: "weekly", id: "plan-weekly" }),
+              /* @__PURE__ */ jsx(FieldLabel, { htmlFor: "plan-weekly", className: "font-normal", children: "Weekly" })
+            ] }),
+            /* @__PURE__ */ jsxs(Field, { orientation: "horizontal", children: [
+              /* @__PURE__ */ jsx(RadioGroupItem, { value: "monthly", id: "plan-monthly" }),
+              /* @__PURE__ */ jsx(FieldLabel, { htmlFor: "plan-monthly", className: "font-normal", children: "Monthly" })
+            ] })
+          ] })
+        ] }),
+        /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-2 gap-4", children: [
+          /* @__PURE__ */ jsxs(Field, { children: [
+            /* @__PURE__ */ jsx(FieldLabel, { htmlFor: "city", children: "Frequency Goal" }),
+            /* @__PURE__ */ jsx(Input, { id: "goal", name: "goal", type: "number", min: 0, placeholder: "0", onChange: handleChange, required: true })
+          ] }),
+          /* @__PURE__ */ jsxs(Field, { children: [
+            /* @__PURE__ */ jsx(FieldLabel, { htmlFor: "unit", children: "Unit To Measure" }),
+            /* @__PURE__ */ jsx(Input, { id: "unit", name: "unit", type: "text", placeholder: "ex. ounces or oz", onChange: handleChange, required: true })
+          ] })
+        ] })
+      ] }) }) }),
+      /* @__PURE__ */ jsxs(DialogFooter, { children: [
+        /* @__PURE__ */ jsx(DialogClose, { asChild: true, children: /* @__PURE__ */ jsx(Button, { variant: "outline", children: "Cancel" }) }),
+        /* @__PURE__ */ jsx(Button, { type: "submit", onClick: handleSubmit, children: "Create Habit" })
+      ] })
+    ] })
+  ] }) }) });
+}
+function HabitEditModal({ habit: habit2, open, onOpenChange, onSave }) {
+  const [form, setForm] = useState({
+    name: habit2.name,
+    description: habit2.description || "",
+    status: habit2.status,
+    unit: habit2.unit,
+    frequency: habit2.frequency || "daily",
+    goal: habit2.goal || 0,
+    reminder_time: habit2.reminder_time,
+    is_archived: habit2.is_archived
+  });
+  useEffect(() => {
+    if (open) {
+      setForm({
+        name: habit2.name,
+        description: habit2.description || "",
+        status: habit2.status,
+        unit: habit2.unit,
+        frequency: habit2.frequency || "daily",
+        goal: habit2.goal || 0,
+        reminder_time: habit2.reminder_time,
+        is_archived: habit2.is_archived
+      });
+    }
+  }, [habit2, open]);
+  const handleFrequencyChange = (value) => {
+    setForm((prev) => ({
+      ...prev,
+      frequency: value
+    }));
+  };
+  const handleChange = (e) => {
+    const { name, value, type } = e.target;
+    setForm((prev) => ({
+      ...prev,
+      [name]: name === "goal" ? Number(value) : value
+    }));
+  };
+  const handleStatusChange = (status) => {
+    setForm((prev) => ({
+      ...prev,
+      status
+    }));
+  };
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const updatedHabit = {
+      ...habit2,
+      ...form
+    };
+    onSave(updatedHabit);
+  };
+  return /* @__PURE__ */ jsx(Dialog, { open, onOpenChange, children: /* @__PURE__ */ jsx("form", { onSubmit: handleSubmit, children: /* @__PURE__ */ jsxs(DialogContent, { className: "sm:max-w-[425px]", children: [
+    /* @__PURE__ */ jsxs(DialogHeader, { children: [
+      /* @__PURE__ */ jsx(DialogTitle, { children: "Edit Habit" }),
+      /* @__PURE__ */ jsx(DialogDescription, { children: "Update your habit details below. Click save when you're done." })
+    ] }),
+    /* @__PURE__ */ jsx("div", { className: "w-full max-w-md", children: /* @__PURE__ */ jsx(FieldSet, { children: /* @__PURE__ */ jsxs(FieldGroup, { children: [
+      /* @__PURE__ */ jsxs(Field, { children: [
+        /* @__PURE__ */ jsx(FieldLabel, { htmlFor: "edit-name", children: "Habit Name" }),
+        /* @__PURE__ */ jsx(
+          Input,
+          {
+            id: "edit-name",
+            name: "name",
+            type: "text",
+            value: form.name,
+            onChange: handleChange,
+            required: true
+          }
+        ),
+        /* @__PURE__ */ jsx(FieldDescription, { children: "The name of your habit." })
+      ] }),
+      /* @__PURE__ */ jsxs(Field, { children: [
+        /* @__PURE__ */ jsx(FieldLabel, { htmlFor: "edit-description", children: "Description" }),
+        /* @__PURE__ */ jsx(
+          Textarea,
+          {
+            id: "edit-description",
+            name: "description",
+            placeholder: "Optional description...",
+            rows: 4,
+            value: form.description,
+            onChange: handleChange
+          }
+        )
+      ] }),
+      /* @__PURE__ */ jsxs(FieldSet, { children: [
+        /* @__PURE__ */ jsx(FieldLabel, { children: "Frequency Plan" }),
+        /* @__PURE__ */ jsx(FieldDescription, { children: "Select how frequent you plan to perform this habit." }),
+        /* @__PURE__ */ jsxs(
+          RadioGroup,
+          {
+            name: "frequency",
+            value: form.frequency || "daily",
+            onValueChange: handleFrequencyChange,
+            required: true,
+            children: [
+              /* @__PURE__ */ jsxs(Field, { orientation: "horizontal", children: [
+                /* @__PURE__ */ jsx(RadioGroupItem, { value: "daily", id: "edit-plan-daily" }),
+                /* @__PURE__ */ jsx(FieldLabel, { htmlFor: "edit-plan-daily", className: "font-normal", children: "Daily" })
+              ] }),
+              /* @__PURE__ */ jsxs(Field, { orientation: "horizontal", children: [
+                /* @__PURE__ */ jsx(RadioGroupItem, { value: "weekly", id: "edit-plan-weekly" }),
+                /* @__PURE__ */ jsx(FieldLabel, { htmlFor: "edit-plan-weekly", className: "font-normal", children: "Weekly" })
+              ] }),
+              /* @__PURE__ */ jsxs(Field, { orientation: "horizontal", children: [
+                /* @__PURE__ */ jsx(RadioGroupItem, { value: "monthly", id: "edit-plan-monthly" }),
+                /* @__PURE__ */ jsx(FieldLabel, { htmlFor: "edit-plan-monthly", className: "font-normal", children: "Monthly" })
+              ] })
+            ]
+          }
+        )
+      ] }),
+      /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-2 gap-4", children: [
+        /* @__PURE__ */ jsxs(Field, { children: [
+          /* @__PURE__ */ jsx(FieldLabel, { htmlFor: "edit-goal", children: "Frequency Goal" }),
+          /* @__PURE__ */ jsx(
+            Input,
+            {
+              id: "edit-goal",
+              name: "goal",
+              type: "number",
+              min: 0,
+              value: form.goal || 0,
+              onChange: handleChange,
+              required: true
+            }
+          )
+        ] }),
+        /* @__PURE__ */ jsxs(Field, { children: [
+          /* @__PURE__ */ jsx(FieldLabel, { htmlFor: "edit-unit", children: "Unit To Measure" }),
+          /* @__PURE__ */ jsx(
+            Input,
+            {
+              id: "edit-unit",
+              name: "unit",
+              type: "text",
+              value: form.unit,
+              onChange: handleChange,
+              required: true
+            }
+          )
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxs(FieldSet, { children: [
+        /* @__PURE__ */ jsx(FieldLabel, { children: "Status" }),
+        /* @__PURE__ */ jsxs(
+          RadioGroup,
+          {
+            value: form.status,
+            onValueChange: handleStatusChange,
+            children: [
+              /* @__PURE__ */ jsxs(Field, { orientation: "horizontal", children: [
+                /* @__PURE__ */ jsx(RadioGroupItem, { value: "active", id: "edit-status-active" }),
+                /* @__PURE__ */ jsx(FieldLabel, { htmlFor: "edit-status-active", className: "font-normal", children: "Active" })
+              ] }),
+              /* @__PURE__ */ jsxs(Field, { orientation: "horizontal", children: [
+                /* @__PURE__ */ jsx(RadioGroupItem, { value: "inactive", id: "edit-status-inactive" }),
+                /* @__PURE__ */ jsx(FieldLabel, { htmlFor: "edit-status-inactive", className: "font-normal", children: "Inactive" })
+              ] })
+            ]
+          }
+        )
+      ] }),
+      /* @__PURE__ */ jsxs(Field, { orientation: "horizontal", className: "items-center gap-2", children: [
+        /* @__PURE__ */ jsx(
+          Checkbox,
+          {
+            id: "edit-archived",
+            checked: form.is_archived,
+            onCheckedChange: (checked) => setForm((prev) => ({ ...prev, is_archived: !!checked }))
+          }
+        ),
+        /* @__PURE__ */ jsx(FieldLabel, { htmlFor: "edit-archived", className: "font-normal cursor-pointer", children: "Archive this habit" })
+      ] })
+    ] }) }) }),
+    /* @__PURE__ */ jsxs(DialogFooter, { children: [
+      /* @__PURE__ */ jsx(DialogClose, { asChild: true, children: /* @__PURE__ */ jsx(Button, { type: "button", variant: "outline", children: "Cancel" }) }),
+      /* @__PURE__ */ jsx(Button, { type: "submit", children: "Save Changes" })
+    ] })
+  ] }) }) });
+}
+async function clientLoader$1() {
+  const {
+    data: {
+      user
+    }
+  } = await supabase.auth.getUser();
+  if (!user) return;
+  const habits = await getHabitsByUserId(user.id);
+  const {
+    data: stats
+  } = await supabase.rpc("get_habit_dashboard_stats", {
+    p_user_id: user.id
+  });
+  return {
+    habits: habits ?? [],
+    stats: stats ?? []
+  };
+}
+const overview = ({
+  loaderData
+}) => {
+  const {
+    user
+  } = useAuth();
+  const [open, isOpen] = useState(false);
+  const [habits, setHabits] = useState(loaderData.habits ?? []);
+  const [stats, setStats] = useState(loaderData.stats ?? []);
+  const [sorting, setSorting] = useState([]);
+  const [columnFilters, setColumnFilters] = useState([]);
+  const [columnVisibility, setColumnVisibility] = useState({});
+  const [rowSelection, setRowSelection] = useState({});
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [viewMode, setViewMode] = useState("table");
+  const [editingHabit, setEditingHabit] = useState(null);
+  const filteredHabits = useMemo(() => {
+    let filtered = habits;
+    if (statusFilter === "active") {
+      filtered = filtered.filter((h) => h.status === "active" && !h.is_archived);
+    } else if (statusFilter === "inactive") {
+      filtered = filtered.filter((h) => h.status === "inactive" && !h.is_archived);
+    } else if (statusFilter === "archived") {
+      filtered = filtered.filter((h) => h.is_archived);
+    }
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter((h) => h.name.toLowerCase().includes(query) || h.description?.toLowerCase().includes(query) || h.unit.toLowerCase().includes(query));
+    }
+    return filtered;
+  }, [habits, searchQuery, statusFilter]);
+  const [selectedRows, setSelectedRows] = useState(/* @__PURE__ */ new Set());
+  const toggleRowSelection = (habitId) => {
+    setSelectedRows((prev) => {
+      const next = new Set(prev);
+      if (next.has(habitId)) {
+        next.delete(habitId);
+      } else {
+        next.add(habitId);
+      }
+      return next;
+    });
+  };
+  const clearSelection = () => {
+    setSelectedRows(/* @__PURE__ */ new Set());
+  };
+  const table = useReactTable({
+    data: filteredHabits,
+    columns: [],
+    onSortingChange: setSorting,
+    onColumnFiltersChange: setColumnFilters,
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    onColumnVisibilityChange: setColumnVisibility,
+    onRowSelectionChange: setRowSelection,
+    enableRowSelection: true,
+    getRowId: (row) => row.id,
+    state: {
+      sorting,
+      columnFilters,
+      columnVisibility,
+      rowSelection
+    }
+  });
+  const selectedHabitsFromGrid = filteredHabits.filter((h) => selectedRows.has(h.id));
+  const selectedCount = viewMode === "table" ? table.getFilteredSelectedRowModel().rows.length : selectedHabitsFromGrid.length;
+  const selectedHabits = viewMode === "table" ? table.getFilteredSelectedRowModel().rows.map((row) => row.original) : selectedHabitsFromGrid;
+  const handleBatchDelete = async () => {
+    if (!user) return;
+    const idBatch = selectedHabits.map((h) => h.id);
+    await deleteHabits(idBatch);
+    setHabits((prevHabits) => prevHabits.filter((e) => !idBatch.includes(e.id)));
+    setRowSelection({});
+    clearSelection();
+    toast.success("Habit(s) deleted");
+  };
+  const handleBatchArchive = async (archive, habitId) => {
+    if (!user) return;
+    const idBatch = habitId ? [habitId] : selectedHabits.map((h) => h.id);
+    if (idBatch.length === 0) return;
+    try {
+      await updateHabitsBatch(idBatch, {
+        is_archived: archive
+      });
+      setHabits((prevHabits) => prevHabits.map((h) => idBatch.includes(h.id) ? {
+        ...h,
+        is_archived: archive
+      } : h));
+      setRowSelection({});
+      clearSelection();
+      toast.success(`${archive ? "Archived" : "Unarchived"} ${idBatch.length} habit(s)`);
+    } catch (error) {
+      toast.error("Failed to update habits");
+    }
+  };
+  const handleBatchStatusChange = async (status, habitId) => {
+    if (!user) return;
+    const idBatch = habitId ? [habitId] : selectedHabits.map((h) => h.id);
+    if (idBatch.length === 0) return;
+    try {
+      await updateHabitsBatch(idBatch, {
+        status
+      });
+      setHabits((prevHabits) => prevHabits.map((h) => idBatch.includes(h.id) ? {
+        ...h,
+        status
+      } : h));
+      setRowSelection({});
+      clearSelection();
+      toast.success(`Updated ${idBatch.length} habit(s) to ${status}`);
+    } catch (error) {
+      toast.error("Failed to update habits");
+    }
+  };
+  const handleEditHabit = async (updatedHabit) => {
+    if (!user) return;
+    try {
+      await updateHabit(updatedHabit.id, {
+        name: updatedHabit.name,
+        description: updatedHabit.description,
+        status: updatedHabit.status,
+        unit: updatedHabit.unit,
+        frequency: updatedHabit.frequency,
+        goal: updatedHabit.goal,
+        reminder_time: updatedHabit.reminder_time,
+        is_archived: updatedHabit.is_archived
+      });
+      setHabits((prevHabits) => prevHabits.map((h) => h.id === updatedHabit.id ? updatedHabit : h));
+      setEditingHabit(null);
+      toast.success("Habit updated successfully");
+    } catch (error) {
+      toast.error("Failed to update habit");
+    }
+  };
+  const getHabitStats = (habitId) => {
+    return stats.find((s) => s.habit_id === habitId);
+  };
+  const refreshData = async () => {
+    if (!user) return;
+    const res = await getHabitsByUserId(user.id);
+    setHabits(res);
+    const {
+      data: newStats
+    } = await supabase.rpc("get_habit_dashboard_stats", {
+      p_user_id: user.id
+    });
+    setStats(newStats ?? []);
+  };
+  useEffect(() => {
+    if (habits.length === 0) {
+      isOpen(true);
+    }
+  }, []);
+  const summaryStats = useMemo(() => {
+    const active = habits.filter((h) => h.status === "active" && !h.is_archived).length;
+    const inactive = habits.filter((h) => h.status === "inactive" && !h.is_archived).length;
+    const archived = habits.filter((h) => h.is_archived).length;
+    const total = habits.length;
+    const avgStreak = stats.length > 0 ? Math.round(stats.reduce((sum, s) => sum + (s.current_streak ?? 0), 0) / stats.length) : 0;
+    return {
+      active,
+      inactive,
+      archived,
+      total,
+      avgStreak
+    };
+  }, [habits, stats]);
+  return /* @__PURE__ */ jsxs("div", {
+    className: "w-full space-y-6",
+    children: [/* @__PURE__ */ jsxs("div", {
+      children: [/* @__PURE__ */ jsx("h2", {
+        className: "scroll-m-20 text-3xl font-semibold tracking-tight",
+        children: "Habit Management"
+      }), /* @__PURE__ */ jsx("p", {
+        className: "leading-7 text-muted-foreground mt-2",
+        children: "Organize, configure, and manage all your habits in one place."
+      })]
+    }), /* @__PURE__ */ jsxs("div", {
+      className: "grid gap-4 md:grid-cols-2 lg:grid-cols-5",
+      children: [/* @__PURE__ */ jsxs(Card, {
+        children: [/* @__PURE__ */ jsx(CardHeader, {
+          className: "pb-2",
+          children: /* @__PURE__ */ jsx(CardDescription, {
+            children: "Total Habits"
+          })
+        }), /* @__PURE__ */ jsx(CardContent, {
+          children: /* @__PURE__ */ jsx("div", {
+            className: "text-2xl font-bold",
+            children: summaryStats.total
+          })
+        })]
+      }), /* @__PURE__ */ jsxs(Card, {
+        children: [/* @__PURE__ */ jsx(CardHeader, {
+          className: "pb-2",
+          children: /* @__PURE__ */ jsx(CardDescription, {
+            children: "Active"
+          })
+        }), /* @__PURE__ */ jsx(CardContent, {
+          children: /* @__PURE__ */ jsx("div", {
+            className: "text-2xl font-bold text-primary",
+            children: summaryStats.active
+          })
+        })]
+      }), /* @__PURE__ */ jsxs(Card, {
+        children: [/* @__PURE__ */ jsx(CardHeader, {
+          className: "pb-2",
+          children: /* @__PURE__ */ jsx(CardDescription, {
+            children: "Inactive"
+          })
+        }), /* @__PURE__ */ jsx(CardContent, {
+          children: /* @__PURE__ */ jsx("div", {
+            className: "text-2xl font-bold text-muted-foreground",
+            children: summaryStats.inactive
+          })
+        })]
+      }), /* @__PURE__ */ jsxs(Card, {
+        children: [/* @__PURE__ */ jsx(CardHeader, {
+          className: "pb-2",
+          children: /* @__PURE__ */ jsx(CardDescription, {
+            children: "Archived"
+          })
+        }), /* @__PURE__ */ jsx(CardContent, {
+          children: /* @__PURE__ */ jsx("div", {
+            className: "text-2xl font-bold text-muted-foreground",
+            children: summaryStats.archived
+          })
+        })]
+      }), /* @__PURE__ */ jsxs(Card, {
+        children: [/* @__PURE__ */ jsx(CardHeader, {
+          className: "pb-2",
+          children: /* @__PURE__ */ jsx(CardDescription, {
+            children: "Avg Streak"
+          })
+        }), /* @__PURE__ */ jsx(CardContent, {
+          children: /* @__PURE__ */ jsxs("div", {
+            className: "flex items-center gap-1",
+            children: [/* @__PURE__ */ jsx(Flame, {
+              className: "h-4 w-4 text-chart-4"
+            }), /* @__PURE__ */ jsx("span", {
+              className: "text-2xl font-bold",
+              children: summaryStats.avgStreak
+            })]
+          })
+        })]
+      })]
+    }), /* @__PURE__ */ jsxs(Card, {
+      children: [/* @__PURE__ */ jsx(CardHeader, {
+        children: /* @__PURE__ */ jsxs("div", {
+          className: "flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between",
+          children: [/* @__PURE__ */ jsxs("div", {
+            className: "flex-1 flex gap-2 items-center w-full sm:w-auto",
+            children: [/* @__PURE__ */ jsxs("div", {
+              className: "relative flex-1 max-w-sm",
+              children: [/* @__PURE__ */ jsx(Search, {
+                className: "absolute left-2 top-2.5 h-4 w-4 text-muted-foreground"
+              }), /* @__PURE__ */ jsx(Input, {
+                placeholder: "Search habits...",
+                value: searchQuery,
+                onChange: (e) => setSearchQuery(e.target.value),
+                className: "pl-8"
+              }), searchQuery && /* @__PURE__ */ jsx(Button, {
+                variant: "ghost",
+                size: "icon",
+                className: "absolute right-1 top-1 h-7 w-7",
+                onClick: () => setSearchQuery(""),
+                children: /* @__PURE__ */ jsx(X, {
+                  className: "h-4 w-4"
+                })
+              })]
+            }), /* @__PURE__ */ jsxs(DropdownMenu, {
+              children: [/* @__PURE__ */ jsx(DropdownMenuTrigger, {
+                asChild: true,
+                children: /* @__PURE__ */ jsxs(Button, {
+                  variant: "outline",
+                  size: "sm",
+                  children: [/* @__PURE__ */ jsx(Filter, {
+                    className: "h-4 w-4 mr-2"
+                  }), statusFilter === "all" ? "All" : statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1)]
+                })
+              }), /* @__PURE__ */ jsxs(DropdownMenuContent, {
+                children: [/* @__PURE__ */ jsx(DropdownMenuItem, {
+                  onClick: () => setStatusFilter("all"),
+                  children: "All Habits"
+                }), /* @__PURE__ */ jsx(DropdownMenuItem, {
+                  onClick: () => setStatusFilter("active"),
+                  children: "Active"
+                }), /* @__PURE__ */ jsx(DropdownMenuItem, {
+                  onClick: () => setStatusFilter("inactive"),
+                  children: "Inactive"
+                }), /* @__PURE__ */ jsx(DropdownMenuItem, {
+                  onClick: () => setStatusFilter("archived"),
+                  children: "Archived"
+                })]
+              })]
+            })]
+          }), /* @__PURE__ */ jsxs("div", {
+            className: "flex gap-2",
+            children: [/* @__PURE__ */ jsxs("div", {
+              className: "flex border rounded-md",
+              children: [/* @__PURE__ */ jsx(Button, {
+                variant: viewMode === "table" ? "default" : "ghost",
+                size: "sm",
+                className: "rounded-r-none",
+                onClick: () => setViewMode("table"),
+                children: /* @__PURE__ */ jsx(List, {
+                  className: "h-4 w-4"
+                })
+              }), /* @__PURE__ */ jsx(Button, {
+                variant: viewMode === "grid" ? "default" : "ghost",
+                size: "sm",
+                className: "rounded-l-none",
+                onClick: () => setViewMode("grid"),
+                children: /* @__PURE__ */ jsx(LayoutGrid, {
+                  className: "h-4 w-4"
+                })
+              })]
+            }), /* @__PURE__ */ jsx(HabitModalButton, {
+              open,
+              isOpen,
+              setHabits: async () => {
+                await refreshData();
+              }
+            })]
+          })]
+        })
+      }), selectedCount > 0 && /* @__PURE__ */ jsxs(Fragment, {
+        children: [/* @__PURE__ */ jsx(Separator, {}), /* @__PURE__ */ jsx(CardContent, {
+          className: "pt-4",
+          children: /* @__PURE__ */ jsxs("div", {
+            className: "flex flex-wrap items-center gap-2",
+            children: [/* @__PURE__ */ jsxs("span", {
+              className: "text-sm text-muted-foreground",
+              children: [selectedCount, " habit(s) selected"]
+            }), /* @__PURE__ */ jsx(Separator, {
+              orientation: "vertical",
+              className: "h-4"
+            }), /* @__PURE__ */ jsxs(Button, {
+              variant: "outline",
+              size: "sm",
+              onClick: () => handleBatchStatusChange("active"),
+              children: [/* @__PURE__ */ jsx(Play, {
+                className: "h-4 w-4 mr-2"
+              }), "Activate"]
+            }), /* @__PURE__ */ jsxs(Button, {
+              variant: "outline",
+              size: "sm",
+              onClick: () => handleBatchStatusChange("inactive"),
+              children: [/* @__PURE__ */ jsx(Pause, {
+                className: "h-4 w-4 mr-2"
+              }), "Deactivate"]
+            }), /* @__PURE__ */ jsxs(Button, {
+              variant: "outline",
+              size: "sm",
+              onClick: () => handleBatchArchive(true),
+              children: [/* @__PURE__ */ jsx(Archive, {
+                className: "h-4 w-4 mr-2"
+              }), "Archive"]
+            }), /* @__PURE__ */ jsxs(Button, {
+              variant: "outline",
+              size: "sm",
+              onClick: () => handleBatchArchive(false),
+              children: [/* @__PURE__ */ jsx(ArchiveRestore, {
+                className: "h-4 w-4 mr-2"
+              }), "Unarchive"]
+            }), /* @__PURE__ */ jsx(Separator, {
+              orientation: "vertical",
+              className: "h-4"
+            }), /* @__PURE__ */ jsx(AlertDialogButton, {
+              onContinue: handleBatchDelete,
+              variant: "destructive",
+              dialingDesc: "This action cannot be undone. All selected habits will be permanently deleted.",
+              buttonText: "Delete"
+            })]
+          })
+        })]
+      })]
+    }), viewMode === "table" ? /* @__PURE__ */ jsx(Card, {
+      children: /* @__PURE__ */ jsx(CardContent, {
+        className: "p-0",
+        children: /* @__PURE__ */ jsx("div", {
+          className: "overflow-x-auto",
+          children: /* @__PURE__ */ jsxs(Table, {
+            children: [/* @__PURE__ */ jsx(TableHeader, {
+              children: /* @__PURE__ */ jsxs(TableRow, {
+                children: [/* @__PURE__ */ jsx(TableHead, {
+                  className: "w-12",
+                  children: /* @__PURE__ */ jsx(Checkbox, {
+                    checked: table.getIsAllPageRowsSelected(),
+                    onCheckedChange: (value) => table.toggleAllPageRowsSelected(!!value),
+                    "aria-label": "Select all"
+                  })
+                }), /* @__PURE__ */ jsx(TableHead, {
+                  children: "Habit"
+                }), /* @__PURE__ */ jsx(TableHead, {
+                  children: "Goal"
+                }), /* @__PURE__ */ jsx(TableHead, {
+                  children: "Frequency"
+                }), /* @__PURE__ */ jsx(TableHead, {
+                  children: "Status"
+                }), /* @__PURE__ */ jsx(TableHead, {
+                  children: "Stats"
+                }), /* @__PURE__ */ jsx(TableHead, {
+                  children: "Created"
+                }), /* @__PURE__ */ jsx(TableHead, {
+                  className: "w-12"
+                })]
+              })
+            }), /* @__PURE__ */ jsx(TableBody, {
+              children: filteredHabits.length > 0 ? filteredHabits.map((habit2) => {
+                const habitStats = getHabitStats(habit2.id);
+                return /* @__PURE__ */ jsxs(TableRow, {
+                  "data-state": table.getRowModel().rows.some((r) => r.original.id === habit2.id && r.getIsSelected()) && "selected",
+                  className: habit2.is_archived ? "opacity-60" : "",
+                  children: [/* @__PURE__ */ jsx(TableCell, {
+                    children: /* @__PURE__ */ jsx(Checkbox, {
+                      checked: table.getRowModel().rows.some((r) => r.original.id === habit2.id && r.getIsSelected()),
+                      onCheckedChange: (value) => {
+                        const row = table.getRowModel().rows.find((r) => r.original.id === habit2.id);
+                        if (row) row.toggleSelected(!!value);
+                      }
+                    })
+                  }), /* @__PURE__ */ jsx(TableCell, {
+                    children: /* @__PURE__ */ jsxs("div", {
+                      children: [/* @__PURE__ */ jsx(Link, {
+                        to: `/dashboard/habits/${habit2.id}`,
+                        className: "font-medium capitalize hover:underline",
+                        children: habit2.name
+                      }), habit2.description && /* @__PURE__ */ jsx("p", {
+                        className: "text-sm text-muted-foreground line-clamp-1",
+                        children: habit2.description
+                      })]
+                    })
+                  }), /* @__PURE__ */ jsx(TableCell, {
+                    children: /* @__PURE__ */ jsxs("div", {
+                      className: "flex items-center gap-1",
+                      children: [/* @__PURE__ */ jsx(Target, {
+                        className: "h-3 w-3 text-muted-foreground"
+                      }), /* @__PURE__ */ jsxs("span", {
+                        children: [habit2.goal ?? 0, " ", habit2.unit]
+                      })]
+                    })
+                  }), /* @__PURE__ */ jsx(TableCell, {
+                    children: /* @__PURE__ */ jsx(Badge, {
+                      variant: "outline",
+                      className: "capitalize",
+                      children: habit2.frequency ?? "N/A"
+                    })
+                  }), /* @__PURE__ */ jsx(TableCell, {
+                    children: /* @__PURE__ */ jsxs("div", {
+                      className: "flex flex-col gap-1",
+                      children: [/* @__PURE__ */ jsx(Badge, {
+                        variant: habit2.status === "active" ? "default" : "secondary",
+                        className: "w-fit capitalize",
+                        children: habit2.status
+                      }), habit2.is_archived && /* @__PURE__ */ jsx(Badge, {
+                        variant: "outline",
+                        className: "w-fit text-xs",
+                        children: "Archived"
+                      })]
+                    })
+                  }), /* @__PURE__ */ jsx(TableCell, {
+                    children: habitStats ? /* @__PURE__ */ jsxs("div", {
+                      className: "flex items-center gap-2 text-sm",
+                      children: [habitStats.current_streak > 0 && /* @__PURE__ */ jsxs("div", {
+                        className: "flex items-center gap-1",
+                        children: [/* @__PURE__ */ jsx(Flame, {
+                          className: "h-3 w-3 text-chart-4"
+                        }), /* @__PURE__ */ jsx("span", {
+                          children: habitStats.current_streak
+                        })]
+                      }), /* @__PURE__ */ jsxs("span", {
+                        className: "text-muted-foreground",
+                        children: [habitStats.week_completion ?? 0, "% week"]
+                      })]
+                    }) : /* @__PURE__ */ jsx("span", {
+                      className: "text-sm text-muted-foreground",
+                      children: "No data"
+                    })
+                  }), /* @__PURE__ */ jsx(TableCell, {
+                    children: /* @__PURE__ */ jsxs("div", {
+                      className: "flex items-center gap-1 text-sm text-muted-foreground",
+                      children: [/* @__PURE__ */ jsx(Calendar, {
+                        className: "h-3 w-3"
+                      }), new TZDate(habit2.created_at).toLocaleDateString()]
+                    })
+                  }), /* @__PURE__ */ jsx(TableCell, {
+                    children: /* @__PURE__ */ jsxs(DropdownMenu, {
+                      children: [/* @__PURE__ */ jsx(DropdownMenuTrigger, {
+                        asChild: true,
+                        children: /* @__PURE__ */ jsx(Button, {
+                          variant: "ghost",
+                          className: "h-8 w-8 p-0",
+                          children: /* @__PURE__ */ jsx(MoreHorizontal, {
+                            className: "h-4 w-4"
+                          })
+                        })
+                      }), /* @__PURE__ */ jsxs(DropdownMenuContent, {
+                        align: "end",
+                        children: [/* @__PURE__ */ jsxs(DropdownMenuItem, {
+                          onClick: () => setEditingHabit(habit2),
+                          children: [/* @__PURE__ */ jsx(Edit2, {
+                            className: "h-4 w-4 mr-2"
+                          }), "Edit"]
+                        }), /* @__PURE__ */ jsx(DropdownMenuItem, {
+                          asChild: true,
+                          children: /* @__PURE__ */ jsx(Link, {
+                            to: `/dashboard/habits/${habit2.id}`,
+                            children: "View Details"
+                          })
+                        }), /* @__PURE__ */ jsx(DropdownMenuSeparator, {}), /* @__PURE__ */ jsx(DropdownMenuItem, {
+                          onClick: () => handleBatchStatusChange(habit2.status === "active" ? "inactive" : "active", habit2.id),
+                          children: habit2.status === "active" ? /* @__PURE__ */ jsxs(Fragment, {
+                            children: [/* @__PURE__ */ jsx(Pause, {
+                              className: "h-4 w-4 mr-2"
+                            }), "Deactivate"]
+                          }) : /* @__PURE__ */ jsxs(Fragment, {
+                            children: [/* @__PURE__ */ jsx(Play, {
+                              className: "h-4 w-4 mr-2"
+                            }), "Activate"]
+                          })
+                        }), /* @__PURE__ */ jsx(DropdownMenuItem, {
+                          onClick: () => handleBatchArchive(!habit2.is_archived, habit2.id),
+                          children: habit2.is_archived ? /* @__PURE__ */ jsxs(Fragment, {
+                            children: [/* @__PURE__ */ jsx(ArchiveRestore, {
+                              className: "h-4 w-4 mr-2"
+                            }), "Unarchive"]
+                          }) : /* @__PURE__ */ jsxs(Fragment, {
+                            children: [/* @__PURE__ */ jsx(Archive, {
+                              className: "h-4 w-4 mr-2"
+                            }), "Archive"]
+                          })
+                        })]
+                      })]
+                    })
+                  })]
+                }, habit2.id);
+              }) : /* @__PURE__ */ jsx(TableRow, {
+                children: /* @__PURE__ */ jsxs(TableCell, {
+                  colSpan: 8,
+                  className: "h-24 text-center",
+                  children: ["No habits found. ", searchQuery || statusFilter !== "all" ? "Try adjusting your filters." : "Create your first habit to get started!"]
+                })
+              })
+            })]
+          })
+        })
+      })
+    }) : /* @__PURE__ */ jsx("div", {
+      className: "grid gap-4 md:grid-cols-2 lg:grid-cols-3",
+      children: filteredHabits.length > 0 ? filteredHabits.map((habit2) => {
+        const habitStats = getHabitStats(habit2.id);
+        const isSelected = selectedRows.has(habit2.id);
+        return /* @__PURE__ */ jsxs(Card, {
+          className: habit2.is_archived ? "opacity-60" : "",
+          children: [/* @__PURE__ */ jsx(CardHeader, {
+            children: /* @__PURE__ */ jsxs("div", {
+              className: "flex items-start justify-between",
+              children: [/* @__PURE__ */ jsxs("div", {
+                className: "flex-1",
+                children: [/* @__PURE__ */ jsx(CardTitle, {
+                  className: "capitalize",
+                  children: habit2.name
+                }), habit2.description && /* @__PURE__ */ jsx(CardDescription, {
+                  className: "mt-1 line-clamp-2",
+                  children: habit2.description
+                })]
+              }), /* @__PURE__ */ jsx(Checkbox, {
+                checked: isSelected,
+                onCheckedChange: () => toggleRowSelection(habit2.id)
+              })]
+            })
+          }), /* @__PURE__ */ jsxs(CardContent, {
+            className: "space-y-4",
+            children: [/* @__PURE__ */ jsxs("div", {
+              className: "flex flex-wrap gap-2",
+              children: [/* @__PURE__ */ jsx(Badge, {
+                variant: habit2.status === "active" ? "default" : "secondary",
+                className: "capitalize",
+                children: habit2.status
+              }), habit2.is_archived && /* @__PURE__ */ jsx(Badge, {
+                variant: "outline",
+                children: "Archived"
+              }), /* @__PURE__ */ jsx(Badge, {
+                variant: "outline",
+                className: "capitalize",
+                children: habit2.frequency ?? "N/A"
+              })]
+            }), /* @__PURE__ */ jsxs("div", {
+              className: "space-y-2",
+              children: [/* @__PURE__ */ jsxs("div", {
+                className: "flex items-center justify-between text-sm",
+                children: [/* @__PURE__ */ jsx("span", {
+                  className: "text-muted-foreground",
+                  children: "Goal"
+                }), /* @__PURE__ */ jsxs("span", {
+                  className: "font-medium",
+                  children: [habit2.goal ?? 0, " ", habit2.unit]
+                })]
+              }), habitStats && /* @__PURE__ */ jsxs(Fragment, {
+                children: [habitStats.current_streak > 0 && /* @__PURE__ */ jsxs("div", {
+                  className: "flex items-center justify-between text-sm",
+                  children: [/* @__PURE__ */ jsx("span", {
+                    className: "text-muted-foreground",
+                    children: "Current Streak"
+                  }), /* @__PURE__ */ jsxs("div", {
+                    className: "flex items-center gap-1",
+                    children: [/* @__PURE__ */ jsx(Flame, {
+                      className: "h-3 w-3 text-chart-4"
+                    }), /* @__PURE__ */ jsxs("span", {
+                      className: "font-medium",
+                      children: [habitStats.current_streak, " days"]
+                    })]
+                  })]
+                }), /* @__PURE__ */ jsxs("div", {
+                  className: "flex items-center justify-between text-sm",
+                  children: [/* @__PURE__ */ jsx("span", {
+                    className: "text-muted-foreground",
+                    children: "Week Completion"
+                  }), /* @__PURE__ */ jsxs("span", {
+                    className: "font-medium",
+                    children: [habitStats.week_completion ?? 0, "%"]
+                  })]
+                })]
+              }), /* @__PURE__ */ jsxs("div", {
+                className: "flex items-center justify-between text-sm",
+                children: [/* @__PURE__ */ jsx("span", {
+                  className: "text-muted-foreground",
+                  children: "Created"
+                }), /* @__PURE__ */ jsx("span", {
+                  className: "font-medium",
+                  children: new TZDate(habit2.created_at).toLocaleDateString()
+                })]
+              })]
+            }), /* @__PURE__ */ jsxs("div", {
+              className: "flex gap-2 pt-2",
+              children: [/* @__PURE__ */ jsx(Button, {
+                variant: "outline",
+                size: "sm",
+                className: "flex-1",
+                asChild: true,
+                children: /* @__PURE__ */ jsx(Link, {
+                  to: `/dashboard/habits/${habit2.id}`,
+                  children: "View Details"
+                })
+              }), /* @__PURE__ */ jsx(Button, {
+                variant: "outline",
+                size: "sm",
+                onClick: () => setEditingHabit(habit2),
+                children: /* @__PURE__ */ jsx(Edit2, {
+                  className: "h-4 w-4"
+                })
+              })]
+            })]
+          })]
+        }, habit2.id);
+      }) : /* @__PURE__ */ jsx(Card, {
+        className: "col-span-full",
+        children: /* @__PURE__ */ jsx(CardContent, {
+          className: "py-12 text-center",
+          children: /* @__PURE__ */ jsxs("p", {
+            className: "text-muted-foreground",
+            children: ["No habits found. ", searchQuery || statusFilter !== "all" ? "Try adjusting your filters." : "Create your first habit to get started!"]
+          })
+        })
+      })
+    }), editingHabit && /* @__PURE__ */ jsx(HabitEditModal, {
+      habit: editingHabit,
+      open: !!editingHabit,
+      onOpenChange: (open2) => !open2 && setEditingHabit(null),
+      onSave: handleEditHabit
+    })]
+  });
+};
+const overview_default = UNSAFE_withComponentProps(overview);
+const route5 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+  __proto__: null,
+  clientLoader: clientLoader$1,
+  default: overview_default
+}, Symbol.toStringTag, { value: "Module" }));
 async function clientLoader({
   params
 }) {
@@ -4201,7 +6260,7 @@ const habit = ({
   });
 };
 const habit_default = UNSAFE_withComponentProps(habit);
-const route5 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route6 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   clientLoader,
   default: habit_default
@@ -4211,7 +6270,7 @@ const catchall = () => {
     children: "catchall"
   });
 };
-const route6 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route7 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   catchall
 }, Symbol.toStringTag, { value: "Module" }));
@@ -4273,7 +6332,7 @@ const Register = () => {
   });
 };
 const register = UNSAFE_withComponentProps(Register);
-const route9 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route10 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   default: register
 }, Symbol.toStringTag, { value: "Module" }));
@@ -4349,7 +6408,7 @@ const login = UNSAFE_withComponentProps(function Login() {
     })
   });
 });
-const route8 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route9 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   default: login
 }, Symbol.toStringTag, { value: "Module" }));
@@ -4370,11 +6429,11 @@ const AuthLayout = () => {
   });
 };
 const layout = UNSAFE_withComponentProps(AuthLayout);
-const route7 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route8 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   default: layout
 }, Symbol.toStringTag, { value: "Module" }));
-const serverManifest = { "entry": { "module": "/assets/entry.client-CPAYb8e-.js", "imports": ["/assets/catchall-DwulxZne.js", "/assets/index-C4tjowxs.js"], "css": ["/assets/index-cbun3zR3.css"] }, "routes": { "root": { "id": "root", "parentId": void 0, "path": "", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasErrorBoundary": false, "module": "/assets/root-DYJI3-bf.js", "imports": ["/assets/catchall-DwulxZne.js", "/assets/index-C4tjowxs.js", "/assets/AuthContext-CVIf5Sz9.js", "/assets/utils-CDN07tui.js"], "css": ["/assets/index-cbun3zR3.css"], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "pages/dashboard": { "id": "pages/dashboard", "parentId": "root", "path": "/dashboard?", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasErrorBoundary": false, "module": "/assets/dashboard-n9_M9BzX.js", "imports": ["/assets/index-C4tjowxs.js", "/assets/catchall-DwulxZne.js", "/assets/index-BpNPvmzu.js", "/assets/index-BGqFuT78.js", "/assets/button-BdwCQaQm.js", "/assets/utils-CDN07tui.js", "/assets/x-llPyrhA8.js", "/assets/index-CP3L_gY7.js", "/assets/AuthContext-CVIf5Sz9.js", "/assets/dropdown-menu-16LMhZFV.js", "/assets/map-BRdV3QtG.js", "/assets/plus-DQ9pYXXo.js", "/assets/separator-G_U5ctMB.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "pages/home": { "id": "pages/home", "parentId": "pages/dashboard", "path": void 0, "index": true, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasErrorBoundary": false, "module": "/assets/home-zBtyuvvt.js", "imports": ["/assets/index-C4tjowxs.js", "/assets/catchall-DwulxZne.js", "/assets/separator-G_U5ctMB.js", "/assets/button-BdwCQaQm.js", "/assets/AuthContext-CVIf5Sz9.js", "/assets/AlertDialogButton-B_A-eDf3.js", "/assets/card-7visTkmD.js", "/assets/label-CGXZxnbG.js", "/assets/utils-CDN07tui.js", "/assets/index-BpNPvmzu.js", "/assets/index-BGqFuT78.js", "/assets/map-BRdV3QtG.js", "/assets/index-BQcZugzN.js", "/assets/plus-DQ9pYXXo.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "pages/habits/layout": { "id": "pages/habits/layout", "parentId": "pages/dashboard", "path": void 0, "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasErrorBoundary": false, "module": "/assets/layout-D3gIJPMh.js", "imports": ["/assets/index-C4tjowxs.js", "/assets/catchall-DwulxZne.js", "/assets/separator-G_U5ctMB.js", "/assets/index-BGqFuT78.js", "/assets/utils-CDN07tui.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "pages/habits/overview": { "id": "pages/habits/overview", "parentId": "pages/habits/layout", "path": "habits", "index": true, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": true, "hasClientMiddleware": false, "hasErrorBoundary": false, "module": "/assets/overview-C5pY6VtN.js", "imports": ["/assets/index-C4tjowxs.js", "/assets/catchall-DwulxZne.js", "/assets/AlertDialogButton-B_A-eDf3.js", "/assets/table-CY8VXiLW.js", "/assets/AuthContext-CVIf5Sz9.js", "/assets/button-BdwCQaQm.js", "/assets/dropdown-menu-16LMhZFV.js", "/assets/index-BQcZugzN.js", "/assets/label-CGXZxnbG.js", "/assets/index-BpNPvmzu.js", "/assets/utils-CDN07tui.js", "/assets/x-llPyrhA8.js", "/assets/field-hu4poVML.js", "/assets/index-BGqFuT78.js", "/assets/plus-DQ9pYXXo.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "pages/habits/habit": { "id": "pages/habits/habit", "parentId": "pages/habits/layout", "path": "habits/:habitId", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": true, "hasClientMiddleware": false, "hasErrorBoundary": false, "module": "/assets/habit-RNWhxLfc.js", "imports": ["/assets/index-C4tjowxs.js", "/assets/catchall-DwulxZne.js", "/assets/AlertDialogButton-B_A-eDf3.js", "/assets/AuthContext-CVIf5Sz9.js", "/assets/table-CY8VXiLW.js", "/assets/button-BdwCQaQm.js", "/assets/dropdown-menu-16LMhZFV.js", "/assets/card-7visTkmD.js", "/assets/utils-CDN07tui.js", "/assets/index-BpNPvmzu.js", "/assets/index-BGqFuT78.js", "/assets/index-CP3L_gY7.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "catchall": { "id": "catchall", "parentId": "pages/dashboard", "path": "*", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasErrorBoundary": false, "module": "/assets/catchall-DwulxZne.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "pages/auth/layout": { "id": "pages/auth/layout", "parentId": "root", "path": void 0, "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasErrorBoundary": false, "module": "/assets/layout-D0u6hQKD.js", "imports": ["/assets/index-C4tjowxs.js", "/assets/catchall-DwulxZne.js", "/assets/AuthContext-CVIf5Sz9.js", "/assets/utils-CDN07tui.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "pages/auth/login": { "id": "pages/auth/login", "parentId": "pages/auth/layout", "path": "login", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasErrorBoundary": false, "module": "/assets/login-C5-QLzrU.js", "imports": ["/assets/index-C4tjowxs.js", "/assets/catchall-DwulxZne.js", "/assets/utils-CDN07tui.js", "/assets/button-BdwCQaQm.js", "/assets/card-7visTkmD.js", "/assets/field-hu4poVML.js", "/assets/label-CGXZxnbG.js", "/assets/AuthContext-CVIf5Sz9.js", "/assets/index-BGqFuT78.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "pages/auth/register": { "id": "pages/auth/register", "parentId": "pages/auth/layout", "path": "/register", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasErrorBoundary": false, "module": "/assets/register-C17sA2vm.js", "imports": ["/assets/index-C4tjowxs.js", "/assets/catchall-DwulxZne.js", "/assets/AuthContext-CVIf5Sz9.js", "/assets/button-BdwCQaQm.js", "/assets/card-7visTkmD.js", "/assets/field-hu4poVML.js", "/assets/label-CGXZxnbG.js", "/assets/utils-CDN07tui.js", "/assets/index-BGqFuT78.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 } }, "url": "/assets/manifest-23314622.js", "version": "23314622", "sri": void 0 };
+const serverManifest = { "entry": { "module": "/assets/entry.client-kEaRqM1p.js", "imports": ["/assets/catchall-DRODuvbv.js", "/assets/index-CiLVYEwt.js"], "css": ["/assets/index-Br-1Qa5i.css"] }, "routes": { "root": { "id": "root", "parentId": void 0, "path": "", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasErrorBoundary": false, "module": "/assets/root-ZPMogHzD.js", "imports": ["/assets/catchall-DRODuvbv.js", "/assets/index-CiLVYEwt.js", "/assets/AuthContext-DaAjC7CZ.js", "/assets/createLucideIcon-CEFgt_Ga.js", "/assets/circle-check-Tw8vkcF0.js", "/assets/utils-CDN07tui.js"], "css": ["/assets/index-Br-1Qa5i.css"], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "pages/dashboard": { "id": "pages/dashboard", "parentId": "root", "path": "/dashboard?", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasErrorBoundary": false, "module": "/assets/dashboard-F7ceC0fN.js", "imports": ["/assets/index-CiLVYEwt.js", "/assets/catchall-DRODuvbv.js", "/assets/index-rF36wCKm.js", "/assets/index-olsFugHa.js", "/assets/dropdown-menu-BswiM50g.js", "/assets/button-DQSlb20C.js", "/assets/utils-CDN07tui.js", "/assets/tooltip-BdRvqY4z.js", "/assets/createLucideIcon-CEFgt_Ga.js", "/assets/AuthContext-DaAjC7CZ.js", "/assets/x-58R_Chr7.js", "/assets/chart-column-CcqKC87t.js", "/assets/target-BGb18Bjt.js", "/assets/separator-_L2rgyuV.js", "/assets/index-CmlK_pLt.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "pages/home": { "id": "pages/home", "parentId": "pages/dashboard", "path": void 0, "index": true, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": true, "hasClientMiddleware": false, "hasErrorBoundary": false, "module": "/assets/home-kOe4IXOS.js", "imports": ["/assets/index-CiLVYEwt.js", "/assets/catchall-DRODuvbv.js", "/assets/separator-_L2rgyuV.js", "/assets/button-DQSlb20C.js", "/assets/index-DhH_ZBC8.js", "/assets/card-DTOgLEzj.js", "/assets/label-CbLlOEyM.js", "/assets/utils-CDN07tui.js", "/assets/dropdown-menu-BswiM50g.js", "/assets/index-rF36wCKm.js", "/assets/index-olsFugHa.js", "/assets/search-BskTmzzA.js", "/assets/AuthContext-DaAjC7CZ.js", "/assets/tooltip-BdRvqY4z.js", "/assets/table-dz0QsdU7.js", "/assets/createLucideIcon-CEFgt_Ga.js", "/assets/index-wRzQt9Q5.js", "/assets/proxy-C-nCn21S.js", "/assets/circle-check-Tw8vkcF0.js", "/assets/target-BGb18Bjt.js", "/assets/x-58R_Chr7.js", "/assets/index-CmlK_pLt.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "pages/home-analytics": { "id": "pages/home-analytics", "parentId": "pages/dashboard", "path": "analytics", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": true, "hasClientMiddleware": false, "hasErrorBoundary": false, "module": "/assets/home-analytics-nu2nfRQb.js", "imports": ["/assets/index-CiLVYEwt.js", "/assets/catchall-DRODuvbv.js", "/assets/separator-_L2rgyuV.js", "/assets/button-DQSlb20C.js", "/assets/index-DhH_ZBC8.js", "/assets/card-DTOgLEzj.js", "/assets/createLucideIcon-CEFgt_Ga.js", "/assets/index-wRzQt9Q5.js", "/assets/ChartAreaInteractive-CYRgHSG6.js", "/assets/proxy-C-nCn21S.js", "/assets/target-BGb18Bjt.js", "/assets/circle-check-Tw8vkcF0.js", "/assets/chart-column-CcqKC87t.js", "/assets/index-olsFugHa.js", "/assets/utils-CDN07tui.js", "/assets/index-rF36wCKm.js", "/assets/index-CmlK_pLt.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "pages/habits/layout": { "id": "pages/habits/layout", "parentId": "pages/dashboard", "path": void 0, "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasErrorBoundary": false, "module": "/assets/layout-DnhxG3V_.js", "imports": ["/assets/index-CiLVYEwt.js", "/assets/catchall-DRODuvbv.js", "/assets/separator-_L2rgyuV.js", "/assets/index-olsFugHa.js", "/assets/utils-CDN07tui.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "pages/habits/overview": { "id": "pages/habits/overview", "parentId": "pages/habits/layout", "path": "habits", "index": true, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": true, "hasClientMiddleware": false, "hasErrorBoundary": false, "module": "/assets/overview-Dr60S4aQ.js", "imports": ["/assets/index-CiLVYEwt.js", "/assets/catchall-DRODuvbv.js", "/assets/index-DhH_ZBC8.js", "/assets/table-dz0QsdU7.js", "/assets/AuthContext-DaAjC7CZ.js", "/assets/createLucideIcon-CEFgt_Ga.js", "/assets/button-DQSlb20C.js", "/assets/dropdown-menu-BswiM50g.js", "/assets/label-CbLlOEyM.js", "/assets/utils-CDN07tui.js", "/assets/card-DTOgLEzj.js", "/assets/index-wRzQt9Q5.js", "/assets/x-58R_Chr7.js", "/assets/field-3A_m1d7x.js", "/assets/index-rF36wCKm.js", "/assets/index-olsFugHa.js", "/assets/separator-_L2rgyuV.js", "/assets/search-BskTmzzA.js", "/assets/target-BGb18Bjt.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "pages/habits/habit": { "id": "pages/habits/habit", "parentId": "pages/habits/layout", "path": "habits/:habitId", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": true, "hasClientMiddleware": false, "hasErrorBoundary": false, "module": "/assets/habit-DAarLmCW.js", "imports": ["/assets/index-CiLVYEwt.js", "/assets/catchall-DRODuvbv.js", "/assets/index-DhH_ZBC8.js", "/assets/createLucideIcon-CEFgt_Ga.js", "/assets/table-dz0QsdU7.js", "/assets/button-DQSlb20C.js", "/assets/dropdown-menu-BswiM50g.js", "/assets/AuthContext-DaAjC7CZ.js", "/assets/ChartAreaInteractive-CYRgHSG6.js", "/assets/index-rF36wCKm.js", "/assets/index-olsFugHa.js", "/assets/utils-CDN07tui.js", "/assets/card-DTOgLEzj.js", "/assets/index-CmlK_pLt.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "catchall": { "id": "catchall", "parentId": "pages/dashboard", "path": "*", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasErrorBoundary": false, "module": "/assets/catchall-DRODuvbv.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "pages/auth/layout": { "id": "pages/auth/layout", "parentId": "root", "path": void 0, "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasErrorBoundary": false, "module": "/assets/layout-BaP9avQb.js", "imports": ["/assets/index-CiLVYEwt.js", "/assets/catchall-DRODuvbv.js", "/assets/AuthContext-DaAjC7CZ.js", "/assets/createLucideIcon-CEFgt_Ga.js", "/assets/utils-CDN07tui.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "pages/auth/login": { "id": "pages/auth/login", "parentId": "pages/auth/layout", "path": "login", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasErrorBoundary": false, "module": "/assets/login-BtYQnqfA.js", "imports": ["/assets/index-CiLVYEwt.js", "/assets/catchall-DRODuvbv.js", "/assets/utils-CDN07tui.js", "/assets/button-DQSlb20C.js", "/assets/card-DTOgLEzj.js", "/assets/field-3A_m1d7x.js", "/assets/label-CbLlOEyM.js", "/assets/AuthContext-DaAjC7CZ.js", "/assets/index-olsFugHa.js", "/assets/createLucideIcon-CEFgt_Ga.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "pages/auth/register": { "id": "pages/auth/register", "parentId": "pages/auth/layout", "path": "/register", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasErrorBoundary": false, "module": "/assets/register-bYEoLp6R.js", "imports": ["/assets/index-CiLVYEwt.js", "/assets/catchall-DRODuvbv.js", "/assets/AuthContext-DaAjC7CZ.js", "/assets/button-DQSlb20C.js", "/assets/card-DTOgLEzj.js", "/assets/field-3A_m1d7x.js", "/assets/label-CbLlOEyM.js", "/assets/createLucideIcon-CEFgt_Ga.js", "/assets/utils-CDN07tui.js", "/assets/index-olsFugHa.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 } }, "url": "/assets/manifest-6c0b7718.js", "version": "6c0b7718", "sri": void 0 };
 const assetsBuildDirectory = "build\\client";
 const basename = "/";
 const future = { "v8_middleware": false, "unstable_optimizeDeps": false, "unstable_splitRouteModules": false, "unstable_subResourceIntegrity": false, "unstable_viteEnvironmentApi": false };
@@ -4409,13 +6468,21 @@ const routes = {
     caseSensitive: void 0,
     module: route2
   },
+  "pages/home-analytics": {
+    id: "pages/home-analytics",
+    parentId: "pages/dashboard",
+    path: "analytics",
+    index: void 0,
+    caseSensitive: void 0,
+    module: route3
+  },
   "pages/habits/layout": {
     id: "pages/habits/layout",
     parentId: "pages/dashboard",
     path: void 0,
     index: void 0,
     caseSensitive: void 0,
-    module: route3
+    module: route4
   },
   "pages/habits/overview": {
     id: "pages/habits/overview",
@@ -4423,7 +6490,7 @@ const routes = {
     path: "habits",
     index: true,
     caseSensitive: void 0,
-    module: route4
+    module: route5
   },
   "pages/habits/habit": {
     id: "pages/habits/habit",
@@ -4431,7 +6498,7 @@ const routes = {
     path: "habits/:habitId",
     index: void 0,
     caseSensitive: void 0,
-    module: route5
+    module: route6
   },
   "catchall": {
     id: "catchall",
@@ -4439,7 +6506,7 @@ const routes = {
     path: "*",
     index: void 0,
     caseSensitive: void 0,
-    module: route6
+    module: route7
   },
   "pages/auth/layout": {
     id: "pages/auth/layout",
@@ -4447,7 +6514,7 @@ const routes = {
     path: void 0,
     index: void 0,
     caseSensitive: void 0,
-    module: route7
+    module: route8
   },
   "pages/auth/login": {
     id: "pages/auth/login",
@@ -4455,7 +6522,7 @@ const routes = {
     path: "login",
     index: void 0,
     caseSensitive: void 0,
-    module: route8
+    module: route9
   },
   "pages/auth/register": {
     id: "pages/auth/register",
@@ -4463,7 +6530,7 @@ const routes = {
     path: "/register",
     index: void 0,
     caseSensitive: void 0,
-    module: route9
+    module: route10
   }
 };
 export {

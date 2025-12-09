@@ -12,6 +12,7 @@
     "routeIdToServerBundleId": {
       "root": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
       "pages/home": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+      "pages/home-analytics": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
       "pages/habits/overview": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
       "pages/habits/habit": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
       "catchall": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
@@ -39,6 +40,13 @@
         "parentId": "pages/dashboard",
         "file": "app/pages/home.tsx",
         "index": true,
+        "config": {}
+      },
+      "pages/home-analytics": {
+        "id": "pages/home-analytics",
+        "parentId": "pages/dashboard",
+        "file": "app/pages/home-analytics.tsx",
+        "path": "analytics",
         "config": {}
       },
       "pages/habits/layout": {
@@ -120,6 +128,12 @@
         "file": "./pages/home.tsx",
         "index": true
       },
+      "pages/home-analytics": {
+        "id": "pages/home-analytics",
+        "parentId": "pages/dashboard",
+        "file": "./pages/home-analytics.tsx",
+        "path": "analytics"
+      },
       "pages/habits/layout": {
         "id": "pages/habits/layout",
         "parentId": "pages/dashboard",
@@ -181,6 +195,10 @@
               {
                 "file": "./pages/home.tsx",
                 "index": true
+              },
+              {
+                "file": "./pages/home-analytics.tsx",
+                "path": "analytics"
               },
               {
                 "file": "./pages/habits/layout.tsx",
