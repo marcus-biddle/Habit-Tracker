@@ -1,5 +1,5 @@
-import { deleteHabits, getHabitsByUserId, updateHabit, updateHabitsBatch } from '../../api/supabase'
-import { type Habit } from '../../components/Tables/Habits/columns'
+import { deleteHabits, getHabitsByUserId, updateHabit, updateHabitsBatch, getHabitGroupsByUserId, getHabitsByUserIdWithGroups } from '../../api/supabase'
+import { type Habit, type HabitGroup } from '../../components/Tables/Habits/columns'
 import { useAuth } from '../../context/AuthContext'
 import { useEffect, useState, useMemo } from 'react'
 import { supabase } from '../../api/client/client';
@@ -13,7 +13,7 @@ import {
   useReactTable,
   type VisibilityState,
 } from "@tanstack/react-table"
-import { MoreHorizontal, Search, Filter, Archive, ArchiveRestore, Play, Pause, Edit2, LayoutGrid, List, X, Flame, Target, Calendar } from "lucide-react"
+import { MoreHorizontal, Search, Filter, Archive, ArchiveRestore, Play, Pause, Edit2, LayoutGrid, List, X, Flame, Target, Calendar, FolderPlus, Folder } from "lucide-react"
 import { Button } from "../../components/ui/button"
 import { Checkbox } from "../../components/ui/checkbox"
 import {
@@ -37,28 +37,39 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../..
 import { TZDate } from '@date-fns/tz';
 import { toast } from 'sonner'
 import { HabitModalButton } from '../../components/Modals/Habits/HabitModalButton';
+import { HabitGroupModal } from '../../components/Modals/Habits/HabitGroupModal';
 import { AlertDialogButton } from '../../components/AlertDialogButton';
 import { Link } from 'react-router';
 import { Separator } from "../../components/ui/separator"
 import { HabitEditModal } from '../../components/Modals/Habits/HabitEditModal';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../../components/ui/select"
 import type { DashboardHabit } from '../../features/overview/table'
 
 export async function clientLoader() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    const habits: Habit[] = await getHabitsByUserId(user.id);
+    const habits: Habit[] = await getHabitsByUserIdWithGroups(user.id);
+    const groups: HabitGroup[] = await getHabitGroupsByUserId(user.id);
     const { data: stats } = await supabase.rpc('get_habit_dashboard_stats', { 
       p_user_id: user.id 
     });
 
-    return { habits: habits ?? [], stats: stats ?? [] };
+    return { habits: habits ?? [], groups: groups ?? [], stats: stats ?? [] };
 }
 
 const overview = ({ loaderData }: any) => {
     const { user } = useAuth();
     const [open, isOpen] = useState(false);
+    const [groupModalOpen, setGroupModalOpen] = useState(false);
     const [habits, setHabits] = useState<Habit[]>(loaderData.habits ?? []);
+    const [groups, setGroups] = useState<HabitGroup[]>(loaderData.groups ?? []);
     const [stats, setStats] = useState<DashboardHabit[]>(loaderData.stats ?? []);
     const [sorting, setSorting] = useState<SortingState>([])
     const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
@@ -66,10 +77,11 @@ const overview = ({ loaderData }: any) => {
     const [rowSelection, setRowSelection] = useState({})
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive' | 'archived'>('all');
+    const [groupFilter, setGroupFilter] = useState<string>('all');
     const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
     const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
 
-    // Filter habits based on search and status
+    // Filter habits based on search, status, and group
     const filteredHabits = useMemo(() => {
         let filtered = habits;
 
@@ -80,6 +92,15 @@ const overview = ({ loaderData }: any) => {
             filtered = filtered.filter(h => h.status === 'inactive' && !h.is_archived);
         } else if (statusFilter === 'archived') {
             filtered = filtered.filter(h => h.is_archived);
+        }
+
+        // Group filter
+        if (groupFilter !== 'all') {
+            if (groupFilter === 'ungrouped') {
+                filtered = filtered.filter(h => !h.group_id);
+            } else {
+                filtered = filtered.filter(h => h.group_id === groupFilter);
+            }
         }
 
         // Search filter
@@ -93,7 +114,26 @@ const overview = ({ loaderData }: any) => {
         }
 
         return filtered;
-    }, [habits, searchQuery, statusFilter]);
+    }, [habits, searchQuery, statusFilter, groupFilter]);
+
+    // Group habits by their group_id for display
+    const groupedHabits = useMemo(() => {
+        const grouped: Record<string, Habit[]> = {};
+        const ungrouped: Habit[] = [];
+
+        filteredHabits.forEach(habit => {
+            if (habit.group_id) {
+                if (!grouped[habit.group_id]) {
+                    grouped[habit.group_id] = [];
+                }
+                grouped[habit.group_id].push(habit);
+            } else {
+                ungrouped.push(habit);
+            }
+        });
+
+        return { grouped, ungrouped };
+    }, [filteredHabits]);
 
     // Create a simple row selection map for grid view
     const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
@@ -210,6 +250,7 @@ const overview = ({ loaderData }: any) => {
                 goal: updatedHabit.goal,
                 reminder_time: updatedHabit.reminder_time,
                 is_archived: updatedHabit.is_archived,
+                group_id: updatedHabit.group_id || null,
             });
             setHabits((prevHabits: Habit[]) => 
                 prevHabits.map(h => h.id === updatedHabit.id ? updatedHabit : h)
@@ -227,8 +268,10 @@ const overview = ({ loaderData }: any) => {
 
     const refreshData = async () => {
         if (!user) return;
-        const res = await getHabitsByUserId(user.id);
+        const res = await getHabitsByUserIdWithGroups(user.id);
         setHabits(res);
+        const groupsRes = await getHabitGroupsByUserId(user.id);
+        setGroups(groupsRes);
         const { data: newStats } = await supabase.rpc('get_habit_dashboard_stats', { 
             p_user_id: user.id 
         });
@@ -359,6 +402,29 @@ const overview = ({ loaderData }: any) => {
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
+                            <Select value={groupFilter} onValueChange={setGroupFilter}>
+                                <SelectTrigger className="w-[180px]">
+                                    <Folder className="h-4 w-4 mr-2" />
+                                    <SelectValue placeholder="All Groups" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Groups</SelectItem>
+                                    <SelectItem value="ungrouped">Ungrouped</SelectItem>
+                                    {groups.map((group) => (
+                                        <SelectItem key={group.id} value={group.id}>
+                                            <div className="flex items-center gap-2">
+                                                {group.color && (
+                                                    <div 
+                                                        className="w-3 h-3 rounded-full" 
+                                                        style={{ backgroundColor: group.color }}
+                                                    />
+                                                )}
+                                                <span>{group.name}</span>
+                                            </div>
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
       </div>
                         <div className="flex gap-2">
                             <div className="flex border rounded-md">
@@ -379,6 +445,14 @@ const overview = ({ loaderData }: any) => {
                                     <LayoutGrid className="h-4 w-4" />
                                 </Button>
           </div>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setGroupModalOpen(true)}
+                            >
+                                <FolderPlus className="h-4 w-4 mr-2" />
+                                Group
+                            </Button>
                             <HabitModalButton 
                                 open={open} 
                                 isOpen={isOpen} 
@@ -460,6 +534,7 @@ const overview = ({ loaderData }: any) => {
                                             />
         </TableHead>
                                         <TableHead>Habit</TableHead>
+                                        <TableHead>Group</TableHead>
                                         <TableHead>Goal</TableHead>
                                         <TableHead>Frequency</TableHead>
                                         <TableHead>Status</TableHead>
@@ -501,6 +576,30 @@ const overview = ({ loaderData }: any) => {
                                                                 </p>
                                                             )}
                                                         </div>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        {habit.group_id ? (
+                                                            <div className="flex items-center gap-2">
+                                                                {(() => {
+                                                                    const group = groups.find(g => g.id === habit.group_id);
+                                                                    return group ? (
+                                                                        <>
+                                                                            {group.color && (
+                                                                                <div 
+                                                                                    className="w-3 h-3 rounded-full" 
+                                                                                    style={{ backgroundColor: group.color }}
+                                                                                />
+                                                                            )}
+                                                            <Badge variant="outline" className="text-xs">
+                                                                {group.name}
+                                                            </Badge>
+                                                                        </>
+                                                                    ) : null;
+                                                                })()}
+                                                            </div>
+                                                        ) : (
+                                                            <span className="text-sm text-muted-foreground">—</span>
+                                                        )}
                                                     </TableCell>
                                                     <TableCell>
                                                         <div className="flex items-center gap-1">
@@ -631,7 +730,23 @@ const overview = ({ loaderData }: any) => {
                                     <CardHeader>
                                         <div className="flex items-start justify-between">
                                             <div className="flex-1">
-                                                <CardTitle className="capitalize">{habit.name}</CardTitle>
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <CardTitle className="capitalize">{habit.name}</CardTitle>
+                                                    {habit.group_id && (() => {
+                                                        const group = groups.find(g => g.id === habit.group_id);
+                                                        return group ? (
+                                                            <Badge variant="outline" className="text-xs">
+                                                                {group.color && (
+                                                                    <div 
+                                                                        className="w-2 h-2 rounded-full mr-1" 
+                                                                        style={{ backgroundColor: group.color }}
+                                                                    />
+                                                                )}
+                                                                {group.name}
+                                                            </Badge>
+                                                        ) : null;
+                                                    })()}
+                                                </div>
                                                 {habit.description && (
                                                     <CardDescription className="mt-1 line-clamp-2">
                                                         {habit.description}
@@ -734,6 +849,15 @@ const overview = ({ loaderData }: any) => {
                     onSave={handleEditHabit}
                 />
             )}
+
+            {/* Group Modal */}
+            <HabitGroupModal
+                open={groupModalOpen}
+                onOpenChange={setGroupModalOpen}
+                onSuccess={async () => {
+                    await refreshData();
+                }}
+            />
     </div>
   )
 }

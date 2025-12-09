@@ -11,6 +11,18 @@ export type Habit = {
   goal?: number | null;      // Target goal for the habit, if any
   reminder_time?: string | null; // Time of day for reminders, in string format (e.g., "08:00:00")
   is_archived: boolean;      // Whether habit is archived
+  group_id?: string | null;  // UUID of the habit group this habit belongs to (optional)
+  created_at: string;        // Timestamp ISO string of creation
+  updated_at: string;        // Timestamp ISO string of last update
+};
+
+export type HabitGroup = {
+  id: string;                // UUID string, primary key
+  user_id: string;           // UUID of the user who owns the group
+  name: string;              // Name of the group (e.g., "Health Habits")
+  description?: string | null; // Optional description of the group
+  color?: string | null;     // Hex color code for UI customization (e.g., "#FF5733")
+  display_order?: number | null; // Order for displaying groups
   created_at: string;        // Timestamp ISO string of creation
   updated_at: string;        // Timestamp ISO string of last update
 };

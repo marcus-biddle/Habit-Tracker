@@ -1,4 +1,6 @@
-import { type Habit } from '../../../components/Tables/Habits/columns'
+import { type Habit, type HabitGroup } from '../../../components/Tables/Habits/columns'
+import { getHabitGroupsByUserId } from '../../../api/supabase'
+import { useAuth } from '../../../context/AuthContext'
 import { useState, useEffect } from 'react'
 import { Button } from "../../../components/ui/button"
 import { Input } from "../../../components/ui/input"
@@ -22,6 +24,13 @@ import {
   RadioGroup,
   RadioGroupItem,
 } from "../../../components/ui/radio-group"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../../../components/ui/select"
 import { Textarea } from "../../../components/ui/textarea"
 import { Label } from "../../../components/ui/label"
 import { Checkbox } from "../../../components/ui/checkbox"
@@ -34,6 +43,7 @@ type HabitEditModalProps = {
 };
 
 export function HabitEditModal({ habit, open, onOpenChange, onSave }: HabitEditModalProps) {
+  const { user } = useAuth();
   const [form, setForm] = useState<Omit<Habit, "id" | "created_at" | "updated_at" | "user_id">>({
     name: habit.name,
     description: habit.description || "",
@@ -43,7 +53,23 @@ export function HabitEditModal({ habit, open, onOpenChange, onSave }: HabitEditM
     goal: habit.goal || 0,
     reminder_time: habit.reminder_time,
     is_archived: habit.is_archived,
+    group_id: habit.group_id || null,
   });
+  const [groups, setGroups] = useState<HabitGroup[]>([]);
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(habit.group_id || null);
+
+  useEffect(() => {
+    const fetchGroups = async () => {
+      if (user) {
+        const userGroups = await getHabitGroupsByUserId(user.id);
+        setGroups(userGroups);
+      }
+    };
+    if (open) {
+      fetchGroups();
+      setSelectedGroupId(habit.group_id || null);
+    }
+  }, [user, open, habit.group_id]);
 
   useEffect(() => {
     if (open) {
@@ -56,7 +82,9 @@ export function HabitEditModal({ habit, open, onOpenChange, onSave }: HabitEditM
         goal: habit.goal || 0,
         reminder_time: habit.reminder_time,
         is_archived: habit.is_archived,
+        group_id: habit.group_id || null,
       });
+      setSelectedGroupId(habit.group_id || null);
     }
   }, [habit, open]);
 
@@ -90,6 +118,7 @@ export function HabitEditModal({ habit, open, onOpenChange, onSave }: HabitEditM
     const updatedHabit: Habit = {
       ...habit,
       ...form,
+      group_id: selectedGroupId || null,
     };
     onSave(updatedHabit);
   };
@@ -128,7 +157,7 @@ export function HabitEditModal({ habit, open, onOpenChange, onSave }: HabitEditM
                     name="description"
                     placeholder="Optional description..."
                     rows={4}
-                    value={form.description}
+                    value={form.description || ""}
                     onChange={handleChange}
                   />
                 </Field>
@@ -208,6 +237,33 @@ export function HabitEditModal({ habit, open, onOpenChange, onSave }: HabitEditM
                     </Field>
                   </RadioGroup>
                 </FieldSet>
+                <Field>
+                  <FieldLabel htmlFor="edit-group">Habit Group (Optional)</FieldLabel>
+                  <Select value={selectedGroupId || "none"} onValueChange={(value) => setSelectedGroupId(value === "none" ? null : value)}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="No group" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No group</SelectItem>
+                      {groups.map((group) => (
+                        <SelectItem key={group.id} value={group.id}>
+                          <div className="flex items-center gap-2">
+                            {group.color && (
+                              <div 
+                                className="w-3 h-3 rounded-full" 
+                                style={{ backgroundColor: group.color }}
+                              />
+                            )}
+                            <span>{group.name}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FieldDescription>
+                    Optionally assign this habit to a group for better organization.
+                  </FieldDescription>
+                </Field>
                 <Field orientation="horizontal" className="items-center gap-2">
                   <Checkbox
                     id="edit-archived"

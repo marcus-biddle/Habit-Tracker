@@ -1,8 +1,8 @@
-import { addHabit } from '../../../api/supabase'
+import { addHabit, getHabitGroupsByUserId } from '../../../api/supabase'
 import { type Habit } from '../../../components/Tables/Habits/columns'
 import { useAuth } from '../../../context/AuthContext'
 import { Plus } from 'lucide-react'
-import { useState, type Dispatch } from 'react'
+import { useState, type Dispatch, useEffect } from 'react'
 import { Button } from "../../../components/ui/button"
 import { Input } from "../../../components/ui/input"
 import {
@@ -26,6 +26,13 @@ import {
   RadioGroup,
   RadioGroupItem,
 } from "../../../components/ui/radio-group"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../../../components/ui/select"
 import { Textarea } from "../../../components/ui/textarea"
 import { TZDate } from '@date-fns/tz';
 import { toast } from 'sonner'
@@ -50,6 +57,20 @@ type HabitModalProps = {
 export function HabitModalButton({ isOpen, open, setHabits }: HabitModalProps) {
     const { user } = useAuth();
         const [form, setForm] = useState<Omit<Habit, "id" | "created_at" | "updated_at" | "user_id">>(formTemplate);
+    const [groups, setGroups] = useState<Array<{ id: string; name: string; color?: string | null }>>([]);
+    const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
+
+    useEffect(() => {
+        const fetchGroups = async () => {
+            if (user) {
+                const userGroups = await getHabitGroupsByUserId(user.id);
+                setGroups(userGroups);
+            }
+        };
+        if (open) {
+            fetchGroups();
+        }
+    }, [user, open]);
 
   const handleFrequencyChange = (value: string) => {
         setForm(prev => ({
@@ -75,6 +96,18 @@ export function HabitModalButton({ isOpen, open, setHabits }: HabitModalProps) {
         if (form === formTemplate) return;
         const today = new TZDate().toISOString().split('T')[0];
 
+        // Validate group_id if provided
+        let validGroupId: string | null = null;
+        if (selectedGroupId) {
+            // Check if the selected group exists in the groups list
+            const groupExists = groups.some(g => g.id === selectedGroupId);
+            if (!groupExists) {
+                toast.error("Selected group does not exist. Please refresh and try again.");
+                return;
+            }
+            validGroupId = selectedGroupId;
+        }
+
         try {
             await addHabit({
                 user_id: user.id,
@@ -86,9 +119,12 @@ export function HabitModalButton({ isOpen, open, setHabits }: HabitModalProps) {
                 goal: form.goal,
                 reminder_time: null,
                 is_archived: false,
+                group_id: validGroupId,
             })
-            setHabits((prev: any[]) => [...prev, {...form, created_at: today}])
+            setHabits((prev: any[]) => [...prev, {...form, created_at: today, group_id: selectedGroupId}])
             isOpen(false);
+            setSelectedGroupId(null);
+            setForm(formTemplate);
 
             toast.success("Successfully added a new habit.");
         } catch {
@@ -166,6 +202,33 @@ export function HabitModalButton({ isOpen, open, setHabits }: HabitModalProps) {
     <Input id="unit" name="unit" type="text" placeholder="ex. ounces or oz" onChange={handleChange} required />
     </Field>
     </div>
+    <Field>
+    <FieldLabel htmlFor="group">Habit Group (Optional)</FieldLabel>
+    <Select value={selectedGroupId || "none"} onValueChange={(value) => setSelectedGroupId(value === "none" ? null : value)}>
+      <SelectTrigger className="w-full">
+        <SelectValue placeholder="No group" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="none">No group</SelectItem>
+        {groups.map((group) => (
+          <SelectItem key={group.id} value={group.id}>
+            <div className="flex items-center gap-2">
+              {group.color && (
+                <div 
+                  className="w-3 h-3 rounded-full" 
+                  style={{ backgroundColor: group.color }}
+                />
+              )}
+              <span>{group.name}</span>
+            </div>
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+    <FieldDescription>
+      Optionally assign this habit to a group for better organization.
+    </FieldDescription>
+    </Field>
     
     </FieldGroup>
     </FieldSet>
