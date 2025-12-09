@@ -11,7 +11,6 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
-import { Container } from "../Container/Container";
 
 ChartJS.register(
   CategoryScale,
@@ -104,8 +103,8 @@ export const ExerciseProgressionChart: React.FC<Props> = ({
   };
 
   return (
-    <Container>
+
         <Line data={data} options={options} />
-    </Container>
+
 );
 };

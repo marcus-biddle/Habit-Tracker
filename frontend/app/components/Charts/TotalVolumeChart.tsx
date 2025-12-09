@@ -11,7 +11,6 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
-import { Container } from "../Container/Container";
 
 ChartJS.register(
   CategoryScale,
@@ -85,8 +84,8 @@ export const TotalVolumeChart: React.FC<Props> = ({ workoutEntries }) => {
   };
 
   return (
-    <Container>
+
         <Line data={data} options={options} />
-    </Container>
+
   );
 };

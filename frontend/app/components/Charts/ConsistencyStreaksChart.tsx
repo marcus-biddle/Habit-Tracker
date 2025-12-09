@@ -1,6 +1,5 @@
 // ConsistencyStreaksChart.tsx
 import React from "react";
-import { Container } from "../Container/Container";
 
 interface Props {
   workoutDates: string[]; // array of ISO date strings user has worked out on
@@ -28,7 +27,7 @@ export const ConsistencyStreaksChart: React.FC<Props> = ({ workoutDates }) => {
   });
 
   return (
-    <Container>
+    <>
         <div style={{ display: "flex", gap: "4px", flexWrap: "wrap", maxWidth: 280 }}>
             {days.map(({ day, workedOut }) => (
                 <div
@@ -50,7 +49,7 @@ export const ConsistencyStreaksChart: React.FC<Props> = ({ workoutDates }) => {
                 </div>
             ))}
         </div>
-    </Container>
+    </>
     
   );
 };

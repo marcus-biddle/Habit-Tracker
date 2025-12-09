@@ -11,7 +11,6 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
-import { Container } from "../Container/Container";
 
 ChartJS.register(
   CategoryScale,
@@ -74,8 +73,8 @@ export const BodyMeasurementsChart: React.FC<Props> = ({ measurements }) => {
   };
 
   return (
-    <Container>
+
         <Line data={data} options={options} />
-    </Container>
+
   );
 };

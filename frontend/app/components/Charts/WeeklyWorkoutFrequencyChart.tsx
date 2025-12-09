@@ -10,7 +10,6 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
-import { Container } from "../Container/Container";
 
 ChartJS.register(CategoryScale, BarElement, LinearScale, Title, Tooltip, Legend);
 
@@ -70,9 +69,9 @@ export const WeeklyWorkoutFrequencyChart: React.FC<Props> = ({ workoutDates }) =
   };
 
   return (
-    <Container>
+
         <Bar data={data} options={options} />
-    </Container>
+
   
 );
 };
