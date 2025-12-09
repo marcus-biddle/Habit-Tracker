@@ -58,8 +58,8 @@ export function CircularProgress({
         />
       </svg>
       <div className="absolute text-sm font-medium flex flex-col justify-center items-center">
-        <p className="text-4xl font-bold text-black mb-1">{value}</p>
-        {showGoal ? <p className="text-gray-400 text-sm font-medium">/ {goal} {unit}</p> : <p className="text-gray-400 text-sm font-medium">{unit}</p>}
+        <p className="text-4xl font-bold text-slate-500 mb-1">{value}</p>
+        {/* {showGoal ? <p className="text-gray-400 text-sm font-medium">/ {goal} {unit}</p> : <p className="text-gray-400 text-sm font-medium">{unit}</p>} */}
       </div>
     </div>
   )

@@ -123,3 +123,33 @@ export async function fetchHabitNameById(habitId: string){
 
   return data;
 }
+
+export async function updateHabit(habitId: string, updates: Partial<HabitInsert>) {
+  const { data, error } = await supabase
+    .from("habits")
+    .update(updates)
+    .eq("id", habitId)
+    .select();
+
+  if (error) {
+    console.error("Error updating habit:", error.message);
+    throw error;
+  }
+
+  return data?.[0];
+}
+
+export async function updateHabitsBatch(habitIds: string[], updates: Partial<HabitInsert>) {
+  const { data, error } = await supabase
+    .from("habits")
+    .update(updates)
+    .in("id", habitIds)
+    .select();
+
+  if (error) {
+    console.error("Error updating habits:", error.message);
+    throw error;
+  }
+
+  return data;
+}

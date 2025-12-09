@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState, useMemo } from 'react'
 import { Separator } from "../components/ui/separator"
 import { type Habit } from '../components/Tables/Habits/columns'
 import { Button } from '../components/ui/button'
-import { Forward, Plus, CheckCircle2, Flame, Target } from 'lucide-react'
+import { Forward, Plus, CheckCircle2, Flame, Target, Minus, Edit2 } from 'lucide-react'
 import { addHabitEntry, getHabitsByUserId } from '../api/supabase'
 import { motion } from 'framer-motion'
 import { Card, CardDescription, CardFooter, CardHeader, CardTitle, CardContent } from '../components/ui/card'
@@ -22,6 +22,8 @@ import { CircularProgress } from '../components/CircularProgressBar'
 import ReusableTable from '../features/overview/table'
 import CSVImporter from '../features/CSVImporter'
 import type { DashboardHabit } from '../features/overview/table'
+import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popover'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/tooltip'
 
 export const fakeHabits: Habit[] = [
   {
@@ -150,7 +152,8 @@ export default function home({ loaderData }: any) {
   const [value, selectValue] = useState<number>(0);
   const [data, setData] = useState<Habit[] | []>(loaderData.habits ?? [])
   const [dailySums, setDailySums] = useState<{ id: string; value: number }[]>(loaderData.dailySums ?? []);
-  const [expanded, setExpanded] = useState<string[]>([]);
+  const [editingHabit, setEditingHabit] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState<number>(0);
   const formRef = useRef<HTMLFormElement>(null);
 
   const activeHabits = useMemo(() => {
@@ -266,10 +269,52 @@ export default function home({ loaderData }: any) {
     await fetchAllSums(res);
   }
 
-  const handleCardExpansion = (id: string) => {
-    setExpanded(prev =>
-      prev.includes(id) ? prev.filter(h => h !== id) : [...prev, id]
-    );
+  const handleQuickUpdate = async (habitId: string, increment: number) => {
+    if (!user) return;
+    
+    try {
+      await addHabitEntry({
+        user_id: user.id,
+        habit_id: habitId,
+        value: increment,
+        entry_date: today
+      });
+      
+      toast.success(`Updated habit entry.`);
+      
+      // Refresh data
+      const res = await getHabitsByUserId(user.id);
+      setData(res);
+      await fetchAllSums(res);
+    } catch (err) {
+      console.error("Failed to update habit entry", err);
+      toast.error("Failed to update habit. Please try again.");
+    }
+  };
+
+  const handleManualUpdate = async (habitId: string) => {
+    if (!user || editValue < 0) return;
+    
+    try {
+      await addHabitEntry({
+        user_id: user.id,
+        habit_id: habitId,
+        value: editValue,
+        entry_date: today
+      });
+      
+      toast.success("Successfully updated habit.");
+      setEditingHabit(null);
+      setEditValue(0);
+      
+      // Refresh data
+      const res = await getHabitsByUserId(user.id);
+      setData(res);
+      await fetchAllSums(res);
+    } catch (err) {
+      console.error("Failed to update habit entry", err);
+      toast.error("Failed to update habit. Please try again.");
+    }
   };
 
   useEffect(() => {
@@ -571,86 +616,203 @@ export default function home({ loaderData }: any) {
             <CarouselContent className="p-3">
               {activeHabits.map((habit: Habit) => {
                 const backendValue = dailySums.find((s: { id: string; value: number }) => s.id === habit.id);
-                const isOpen = expanded.includes(habit.id);
-                const progress = backendValue && habit.goal 
-                  ? Math.min((backendValue.value / habit.goal) * 100, 100)
+                const currentValue = backendValue?.value ?? 0;
+                const progress = habit.goal 
+                  ? Math.min((currentValue / habit.goal) * 100, 100)
                   : 0;
+                const habitStats = loaderData.stats?.find((s: DashboardHabit) => s.habit_id === habit.id);
+                const streak = habitStats?.current_streak ?? 0;
                 
                 return (
-                  <CarouselItem key={habit.id} className={`${isOpen ? 'basis-full lg:basis-1/2' : 'basis-full lg:basis-1/3'}`}>
+                  <CarouselItem key={habit.id} className="basis-full lg:basis-1/3">
                     <motion.div
                       initial={{ opacity: 0, scale: 0.95 }}
                       animate={{ opacity: 1, scale: 1 }}
                       transition={{ duration: 0.2 }}
                     >
                       <Card 
-                        className={`w-full shadow-lg cursor-pointer transition-all ${
-                          progress >= 100 ? 'border-primary' : 
+                        className={`w-full transition-all hover:shadow-lg ${
+                          progress >= 100 ? 'border-primary border-2' : 
                           progress >= 50 ? 'border-accent' : 
                           'border-border'
                         }`}
-                        onClick={() => handleCardExpansion(habit.id)}
                       >
-                        <CardHeader>
-                          <div className="flex items-center justify-between">
-                            <CardTitle className="capitalize">{habit.name}</CardTitle>
+                        <CardHeader className="pb-3">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <CardTitle className="text-lg capitalize mb-1">{habit.name}</CardTitle>
+                              <CardDescription className="text-xs">
+                                {habit.description || `Goal: ${habit.goal} ${habit.unit} ${habit.frequency}`}
+                              </CardDescription>
+                            </div>
                             <Link to={`/dashboard/habits/${habit.id}`} onClick={(e) => e.stopPropagation()}>
-                              <Button variant="ghost" size="sm">
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
                                 <Forward className="h-4 w-4" />
                               </Button>
                             </Link>
                           </div>
-                          <CardDescription>
-                            {habit.description || `${habit.frequency} ${habit.goal} ${habit.unit}`}
-                          </CardDescription>
                         </CardHeader>
-                        <CardContent className="flex flex-col items-center gap-4">
-                          {backendValue && (
-                            <CircularProgress
-                              value={backendValue.value}
-                              goal={habit.goal ?? 1}
-                              unit={habit.unit}
-                              showGoal={true}
-                              size={120}
-                            />
-                          )}
-                          <div className="w-full">
-                            <div className="flex justify-between text-sm mb-1">
-                              <span className="text-muted-foreground">Progress</span>
-                              <span className="font-medium">{Math.round(progress)}%</span>
-                            </div>
-                            <div className="w-full bg-secondary rounded-full h-2">
-                              <div
-                                className={`h-2 rounded-full transition-all ${
-                                  progress >= 100 ? 'bg-primary' :
-                                  progress >= 50 ? 'bg-accent' :
-                                  'bg-muted'
-                                }`}
-                                style={{ width: `${progress}%` }}
+                        <CardContent className="space-y-4">
+                          {/* Progress Display */}
+                          <div className="flex items-center gap-4">
+                            <div className="shrink-0">
+                              <CircularProgress
+                                value={currentValue}
+                                goal={habit.goal ?? 1}
+                                unit={habit.unit}
+                                showGoal={false}
+                                size={80}
                               />
                             </div>
+                            <div className="flex-1 space-y-2">
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm text-muted-foreground">Progress</span>
+                                <span className="text-sm font-semibold">{Math.round(progress)}%</span>
+                              </div>
+                              <div className="w-full bg-secondary rounded-full h-2">
+                                <motion.div
+                                  initial={{ width: 0 }}
+                                  animate={{ width: `${progress}%` }}
+                                  transition={{ duration: 0.5 }}
+                                  className={`h-2 rounded-full ${
+                                    progress >= 100 ? 'bg-primary' :
+                                    progress >= 50 ? 'bg-accent' :
+                                    'bg-muted-foreground'
+                                  }`}
+                                />
+                              </div>
+                              {streak > 0 && (
+                                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                  <Flame className="h-3 w-3 text-chart-4" />
+                                  <span>{streak} day{streak !== 1 ? 's' : ''} streak</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Quick Update Controls */}
+                          <div className="flex items-center gap-2 pt-2 border-t">
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="outline"
+                                    size="icon"
+                                    className="h-9 w-9"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleQuickUpdate(habit.id, -1);
+                                    }}
+                                  >
+                                    <Minus className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Decrease by 1</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+
+                            <div className="flex-1 flex items-center justify-center gap-1">
+                              <span className="text-lg font-semibold">{currentValue}</span>
+                              <span className="text-sm text-muted-foreground">/ {habit.goal}</span>
+                              <span className="text-xs text-muted-foreground ml-1">{habit.unit}</span>
+                            </div>
+
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="outline"
+                                    size="icon"
+                                    className="h-9 w-9"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleQuickUpdate(habit.id, 1);
+                                    }}
+                                  >
+                                    <Plus className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Increase by 1</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+
+                            <Popover open={editingHabit === habit.id} onOpenChange={(open) => {
+                              if (!open) {
+                                setEditingHabit(null);
+                                setEditValue(0);
+                              } else {
+                                setEditingHabit(habit.id);
+                                setEditValue(currentValue);
+                              }
+                            }}>
+                              <PopoverTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  size="icon"
+                                  className="h-9 w-9"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <Edit2 className="h-4 w-4" />
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-64" onClick={(e) => e.stopPropagation()}>
+                                <div className="space-y-4">
+                                  <div>
+                                    <Label htmlFor={`edit-${habit.id}`} className="text-sm font-medium">
+                                      Update {habit.name}
+                                    </Label>
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                      Enter the total value for today
+                                    </p>
+                                  </div>
+                                  <div className="space-y-2">
+                                    <div className="flex items-center gap-2">
+                                      <Input
+                                        id={`edit-${habit.id}`}
+                                        type="number"
+                                        min={0}
+                                        value={editValue || ''}
+                                        onChange={(e) => setEditValue(Number(e.target.value) || 0)}
+                                        placeholder="Enter value"
+                                        className="flex-1"
+                                        onKeyDown={(e) => {
+                                          if (e.key === 'Enter') {
+                                            handleManualUpdate(habit.id);
+                                          }
+                                        }}
+                                      />
+                                      <span className="text-sm text-muted-foreground">{habit.unit}</span>
+                                    </div>
+                                    <div className="flex gap-2">
+                                      <Button
+                                        size="sm"
+                                        className="flex-1"
+                                        onClick={() => handleManualUpdate(habit.id)}
+                                      >
+                                        Update
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="flex-1"
+                                        onClick={() => {
+                                          setEditingHabit(null);
+                                          setEditValue(0);
+                                        }}
+                                      >
+                                        Cancel
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </div>
+                              </PopoverContent>
+                            </Popover>
                           </div>
                         </CardContent>
-                        {isOpen && (
-                          <CardFooter className="flex flex-col gap-2">
-                            <div className="grid grid-cols-2 gap-4 w-full text-sm">
-                              <div className="flex flex-col">
-                                <span className="text-muted-foreground">Frequency</span>
-                                <span className="font-medium capitalize">{habit.frequency}</span>
-                              </div>
-                              <div className="flex flex-col">
-                                <span className="text-muted-foreground">Last Updated</span>
-                                <span className="font-medium">{formatHabitDate(habit.updated_at)}</span>
-                              </div>
-                            </div>
-                            <Link to={`/dashboard/habits/${habit.id}`} className="w-full">
-                              <Button variant="secondary" className="w-full">
-                                View Details
-                                <Forward className="ml-2 h-4 w-4" />
-                              </Button>
-                            </Link>
-                          </CardFooter>
-                        )}
                       </Card>
                     </motion.div>
                   </CarouselItem>
