@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import {
   type ColumnDef,
   type ColumnFiltersState,
@@ -11,7 +11,7 @@ import {
   useReactTable,
   type VisibilityState,
 } from "@tanstack/react-table"
-import { Lock, MoreHorizontal, Unlock } from "lucide-react"
+import { MoreHorizontal, CheckCircle2, AlertTriangle, TrendingUp, ExternalLink, Plus, Edit2, BarChart3 } from "lucide-react"
 import { Button } from "../../components/ui/button"
 import { Checkbox } from "../../components/ui/checkbox"
 import {
@@ -30,8 +30,18 @@ import {
   TableHeader,
   TableRow,
 } from "../../components/ui/table"
+import { Badge } from "../../components/ui/badge"
 import { TZDate } from '@date-fns/tz'
 import { Link } from 'react-router'
+import type { Habit } from '../../components/Tables/Habits/columns'
+import { 
+  getEffectiveGoal, 
+  getEffectiveCurrentValue, 
+  calculateProgress, 
+  isGoalMet,
+  getGoalPeriodText,
+  getDisplayUnit
+} from '../../components/Home/utils/habitCalculations'
 
 export interface DashboardHabit {
   habit_id: string;
@@ -46,7 +56,24 @@ export interface DashboardHabit {
   last_entry_date: string;
 }
 
-const columns: ColumnDef<DashboardHabit>[] = [
+export interface EnrichedHabitRow {
+  habit: Habit;
+  stats: DashboardHabit;
+  dailyValue: number;
+  progress: number;
+  isCompleted: boolean;
+  daysSinceLastEntry: number;
+  isAtRisk: boolean;
+  goalPeriod: string;
+  currentValue: number;
+  goal: number;
+  unit: string;
+}
+
+const createColumns = (
+  onQuickLog?: (habitId: string, increment: number) => void,
+  onManualLog?: (habitId: string, value: number) => void
+): ColumnDef<EnrichedHabitRow>[] => [
   {
     id: "select",
     header: ({ table }) => (
@@ -73,103 +100,141 @@ const columns: ColumnDef<DashboardHabit>[] = [
   },
   {
     accessorKey: "name",
-    header: "Name",
+    header: "Habit Name",
     cell: ({ row }) => {
       return (
-      <Link to={`/dashboard/habits/${row.original.habit_id}`} className="capitalize">{row.original.habit_name}</Link>
-    )},
+        <Link 
+          to={`/dashboard/habits/${row.original.habit.id}`} 
+          className="font-medium hover:underline"
+        >
+          {row.original.habit.name}
+        </Link>
+      )
+    },
   },
   {
-    accessorKey: "longest_streak",
-    header: "Longest Streak",
-    cell: ({ row }) => (
-      <div className="capitalize">{row.original.longest_streak}</div>
-    ),
+    accessorKey: "status",
+    header: "Status",
+    cell: ({ row }) => {
+      const { isCompleted, isAtRisk, progress } = row.original
+      return (
+        <div className="flex items-center gap-2">
+          {isCompleted ? (
+            <div className="flex items-center gap-1.5 text-primary">
+              <CheckCircle2 className="h-4 w-4" />
+              <span className="text-sm font-medium">Completed</span>
+            </div>
+          ) : isAtRisk ? (
+            <div className="flex items-center gap-1.5 text-destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <span className="text-sm font-medium">At Risk</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1.5 text-muted-foreground">
+              <TrendingUp className="h-4 w-4" />
+              <span className="text-sm font-medium">In Progress</span>
+            </div>
+          )}
+        </div>
+      )
+    },
+  },
+  {
+    accessorKey: "progress",
+    header: "Progress",
+    cell: ({ row }) => {
+      const { progress, currentValue, goal, unit, isCompleted } = row.original
+      return (
+        <div className="flex items-center gap-3 min-w-[200px]">
+          <div className="flex-1 space-y-1">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-muted-foreground">
+                {currentValue} / {goal} {unit}
+              </span>
+              <span className={`font-medium ${isCompleted ? 'text-primary' : ''}`}>
+                {Math.round(progress)}%
+              </span>
+            </div>
+            <div className="w-full h-2 bg-secondary rounded-full overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all ${
+                  progress >= 100 ? 'bg-primary' :
+                  progress >= 50 ? 'bg-accent' :
+                  'bg-muted-foreground'
+                }`}
+                style={{ width: `${Math.min(progress, 100)}%` }}
+              />
+            </div>
+          </div>
+        </div>
+      )
+    },
+  },
+  {
+    accessorKey: "goalPeriod",
+    header: "Frequency",
+    cell: ({ row }) => {
+      const period = row.original.goalPeriod
+      return (
+        <Badge variant="outline" className="text-xs">
+          {period}
+        </Badge>
+      )
+    },
+  },
+  {
+    accessorKey: "daysSinceLastEntry",
+    header: "Last Entry",
+    cell: ({ row }) => {
+      const days = row.original.daysSinceLastEntry
+      const lastEntryDate = row.original.stats.last_entry_date
+      
+      if (!lastEntryDate) {
+        return <span className="text-sm text-muted-foreground">Never</span>
+      }
+      
+      if (days === 0) {
+        return <span className="text-sm font-medium text-primary">Today</span>
+      }
+      if (days === 1) {
+        return <span className="text-sm">Yesterday</span>
+      }
+      if (days < 7) {
+        return <span className="text-sm">{days} days ago</span>
+      }
+      return (
+        <span className="text-sm text-muted-foreground">
+          {new TZDate(lastEntryDate).toLocaleDateString()}
+        </span>
+      )
+    },
   },
   {
     accessorKey: "current_streak",
-    header: "Current Streak",
-    cell: ({ row }) => (
-      <div className="capitalize">{row.original.current_streak}</div>
-    ),
+    header: "Streak",
+    cell: ({ row }) => {
+      const streak = row.original.stats.current_streak
+      const longestStreak = row.original.stats.longest_streak
+      return (
+        <div className="flex flex-col">
+          <span className="text-sm font-medium">{streak} days</span>
+          {longestStreak > streak && (
+            <span className="text-xs text-muted-foreground">
+              Best: {longestStreak}
+            </span>
+          )}
+        </div>
+      )
+    },
   },
-//   {
-//     accessorKey: "completion_rate",
-//     header: "Completion Rate",
-//     cell: ({ row }) => (
-//       <div className="capitalize">{row.getValue("frequency")}</div>
-//     ),
-//   },
-  {
-    accessorKey: "last_entry_date",
-    header: "Last Updated",
-    cell: ({ row }) => (
-      <div className="capitalize">{row.original.last_entry_date}</div>
-    ),
-  },
-  {
-    accessorKey: "today_value",
-    header: "Today's Amount",
-    cell: ({ row }) => (
-      <div className="capitalize">{row.original.today_value ? row.original.today_value : 0}</div>
-    ),
-  },
-  {
-    accessorKey: "join_count",
-    header: "Users Joined",
-    cell: ({ row }) => (
-      <div className="capitalize">{row.original.join_count}</div>
-    ),
-  },
-  {
-    accessorKey: "is_public",
-    header: "Public",
-    cell: ({ row }) => (
-      <div className="capitalize">{row.original.is_public ? <Unlock className='size-4' /> : <Lock className='size-4' />}</div>
-    ),
-  },
-//   {
-//     accessorKey: "value",
-//     header: ({ column }) => {
-//       return (
-//         <Button
-//           variant="ghost"
-//           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-//         >
-//           Amount
-//           <ArrowUpDown />
-//         </Button>
-//       )
-//     },
-//     cell: ({ row }) => <div className="lowercase pl-8">{row.getValue("value")}</div>,
-//   },
-//   {
-//     accessorKey: "unit",
-//     header: () => <div className="capitalize">Unit Type</div>,
-//     cell: ({ row }) => {
-//       return <div className=" font-semibold text-slate-500">{row.getValue("unit")}</div>
-//     },
-//   },
-//   {
-//     accessorKey: "status",
-//     header: "Status",
-//     cell: ({ row }) => (
-//       <div className="capitalize">{row.getValue("status")}</div>
-//     ),
-//   },
-//   {
-//     accessorKey: "created_at",
-//     header: "Created At",
-//     cell: ({ row }) => {
-//         const date = new TZDate(row.getValue("created_at")).toISOString().split('T')[0];
-//         return <div className="capitalize">{date}</div>
-//     },
-//   },
   {
     id: "actions",
     enableHiding: false,
     cell: ({ row }) => {
-      const entry = row.original
+      const { habit, isCompleted } = row.original
+      const isBinary = habit.tracking_type === 'binary'
+      const effectiveGoal = getEffectiveGoal(habit)
+      
       return (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -178,16 +243,66 @@ const columns: ColumnDef<DashboardHabit>[] = [
               <MoreHorizontal />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem
-            //   onClick={() => navigator.clipboard.writeText(entry.id)}
-            >
-              Copy Entry ID
+          <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuLabel>Quick Actions</DropdownMenuLabel>
+            
+            {/* Quick Log Entry */}
+            {onQuickLog && !isCompleted && (
+              <>
+                {!isBinary && (
+                  <>
+                    <DropdownMenuItem
+                      onClick={() => onQuickLog(habit.id, 1)}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Log +1 Entry
+                    </DropdownMenuItem>
+                    {effectiveGoal > 1 && (
+                      <DropdownMenuItem
+                        onClick={() => onQuickLog(habit.id, effectiveGoal)}
+                      >
+                        <CheckCircle2 className="h-4 w-4 mr-2" />
+                        Log Goal ({effectiveGoal})
+                      </DropdownMenuItem>
+                    )}
+                  </>
+                )}
+                {isBinary && (
+                  <DropdownMenuItem
+                    onClick={() => onQuickLog(habit.id, 1)}
+                  >
+                    <CheckCircle2 className="h-4 w-4 mr-2" />
+                    Mark as Complete
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuSeparator />
+              </>
+            )}
+            
+            {/* Navigation Actions */}
+            <DropdownMenuItem asChild>
+              <Link to={`/dashboard/habits/${habit.id}`} className="flex items-center">
+                <ExternalLink className="h-4 w-4 mr-2" />
+                View Details
+              </Link>
             </DropdownMenuItem>
+            
+            <DropdownMenuItem asChild>
+              <Link to={`/dashboard/analytics?habit=${habit.id}`} className="flex items-center">
+                <BarChart3 className="h-4 w-4 mr-2" />
+                View Analytics
+              </Link>
+            </DropdownMenuItem>
+            
             <DropdownMenuSeparator />
-            {/* <DropdownMenuItem>View customer</DropdownMenuItem>
-            <DropdownMenuItem>View payment details</DropdownMenuItem> */}
+            
+            {/* Edit Action */}
+            <DropdownMenuItem asChild>
+              <Link to={`/dashboard/habits/overview?edit=${habit.id}`} className="flex items-center">
+                <Edit2 className="h-4 w-4 mr-2" />
+                Edit Habit
+              </Link>
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       )
@@ -196,14 +311,98 @@ const columns: ColumnDef<DashboardHabit>[] = [
 ]
 
 type ReusableTableProps = {
-    data: any;
+    data: DashboardHabit[];
+    habits?: Habit[];
+    dailySums?: { id: string; value: number }[];
+    onQuickLog?: (habitId: string, increment: number) => void;
+    onManualLog?: (habitId: string, value: number) => void;
 }
 
-const ReusableTable = ({ data }: ReusableTableProps) => {
+const ReusableTable = ({ data, habits = [], dailySums = [], onQuickLog, onManualLog }: ReusableTableProps) => {
     const [rowSelection, setRowSelection] = useState({})
 
+    // Enrich the data with habit details and calculated metrics
+    const enrichedData = useMemo<EnrichedHabitRow[]>(() => {
+      if (!habits || habits.length === 0) {
+        // Fallback to basic data if habits not provided
+        return data.map(stat => {
+          const dailyValue = dailySums.find(ds => ds.id === stat.habit_id)?.value ?? 0
+          
+          // Return minimal data if habit not found
+          return {
+            habit: {
+              id: stat.habit_id,
+              name: stat.habit_name,
+              user_id: '',
+              status: 'active',
+              unit: '',
+              is_archived: false,
+              created_at: '',
+              updated_at: '',
+            } as Habit,
+            stats: stat,
+            dailyValue,
+            progress: 0,
+            isCompleted: false,
+            daysSinceLastEntry: 0,
+            isAtRisk: false,
+            goalPeriod: 'per day',
+            currentValue: 0,
+            goal: 0,
+            unit: '',
+          }
+        })
+      }
+
+      return data.map(stat => {
+        const habit = habits.find(h => h.id === stat.habit_id)
+        if (!habit) return null
+
+        const dailyValue = dailySums.find(ds => ds.id === stat.habit_id)?.value ?? 0
+        const periodTotal = stat.period_total ?? null
+        const currentValue = getEffectiveCurrentValue(habit, dailyValue, periodTotal)
+        const goal = getEffectiveGoal(habit)
+        const progress = calculateProgress(habit, currentValue)
+        const isCompleted = isGoalMet(habit, currentValue)
+        const unit = getDisplayUnit(habit)
+        const goalPeriod = getGoalPeriodText(habit.goal_period)
+
+        // Calculate days since last entry
+        let daysSinceLastEntry = 0
+        if (stat.last_entry_date) {
+          const lastEntry = new TZDate(stat.last_entry_date)
+          const today = new TZDate()
+          const startOfToday = new TZDate(today.getFullYear(), today.getMonth(), today.getDate())
+          const startOfLastEntry = new TZDate(lastEntry.getFullYear(), lastEntry.getMonth(), lastEntry.getDate())
+          const diffMs = startOfToday.getTime() - startOfLastEntry.getTime()
+          daysSinceLastEntry = Math.round(diffMs / (1000 * 60 * 60 * 24))
+        } else {
+          daysSinceLastEntry = 999 // Never logged
+        }
+
+        // At risk: has a streak but no entry today
+        const isAtRisk = (stat.current_streak ?? 0) > 0 && dailyValue === 0 && daysSinceLastEntry > 0
+
+        return {
+          habit,
+          stats: stat,
+          dailyValue,
+          progress,
+          isCompleted,
+          daysSinceLastEntry,
+          isAtRisk,
+          goalPeriod,
+          currentValue,
+          goal,
+          unit,
+        }
+      }).filter((row): row is EnrichedHabitRow => row !== null)
+    }, [data, habits, dailySums])
+
+    const columns = useMemo(() => createColumns(onQuickLog, onManualLog), [onQuickLog, onManualLog])
+
     const table = useReactTable({
-        data: data,
+        data: enrichedData,
         columns,
         // onSortingChange: setSorting,
         // onColumnFiltersChange: setColumnFilters,

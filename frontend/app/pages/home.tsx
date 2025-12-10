@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { addHabitEntry, getHabitsByUserIdWithGroups, getHabitGroupsByUserId } from '../api/supabase'
 import { supabase } from '../api/client/client'
 import { toast } from 'sonner'
@@ -19,6 +19,15 @@ import {
   useHomeStats
 } from '../components/Home'
 import { today } from '../components/Home/utils'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../components/ui/select'
+import { Filter } from 'lucide-react'
+import type { DashboardHabit } from '../features/overview/table'
 
 
 
@@ -57,6 +66,7 @@ export default function home({ loaderData }: any) {
   const user = loaderData.user
   const [showQuickEntry, setShowQuickEntry] = useState(false)
   const [stats, setStats] = useState<typeof loaderData.stats>(loaderData.stats ?? [])
+  const [groupFilter, setGroupFilter] = useState<string>('all')
 
   const {
     data,
@@ -67,12 +77,29 @@ export default function home({ loaderData }: any) {
     fetchData
   } = useHomeData(user?.id, loaderData)
 
+  // Filter habits based on selected group filter
+  const filteredActiveHabits = useMemo(() => {
+    if (groupFilter === 'all') {
+      return activeHabits
+    } else if (groupFilter === 'ungrouped') {
+      return habitsByGroup.ungrouped
+    } else {
+      return habitsByGroup.grouped[groupFilter] || []
+    }
+  }, [activeHabits, habitsByGroup, groupFilter])
+
+  // Filter stats based on selected group filter
+  const filteredStats = useMemo(() => {
+    const filteredHabitIds = new Set(filteredActiveHabits.map(h => h.id))
+    return stats.filter((stat: DashboardHabit) => filteredHabitIds.has(stat.habit_id))
+  }, [stats, filteredActiveHabits])
+
   const { groupStats, ungroupedStats, todayStats } = useHomeStats(
-    activeHabits,
+    filteredActiveHabits,
     habitsByGroup,
     groups,
     dailySums,
-    stats
+    filteredStats
   )
 
   const refreshStats = async () => {
@@ -170,6 +197,25 @@ export default function home({ loaderData }: any) {
     <div className="relative h-full flex flex-1 flex-col gap-6 p-4 pt-0 overflow-x-hidden max-w-full">
       <HomeHeader />
 
+      {/* Group Filter */}
+      <div className="flex items-center gap-2 w-full">
+        <Filter className="h-4 w-4 text-muted-foreground" />
+        <Select value={groupFilter} onValueChange={setGroupFilter}>
+          <SelectTrigger className="w-[200px]">
+            <SelectValue placeholder="Filter by group" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Habits</SelectItem>
+            <SelectItem value="ungrouped">Ungrouped</SelectItem>
+            {groups.map((group) => (
+              <SelectItem key={group.id} value={group.id}>
+                {group.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
       {/* Today's Summary Stats */}
       <div 
         className="grid gap-4 w-full"
@@ -229,20 +275,31 @@ export default function home({ loaderData }: any) {
       />
 
       <TodaysHabitsCarousel
-        activeHabits={activeHabits}
+        activeHabits={filteredActiveHabits}
         allHabits={data}
         dailySums={dailySums}
-        stats={stats}
+        stats={filteredStats}
         groups={groups}
         onQuickUpdate={handleQuickUpdate}
         onManualUpdate={handleManualUpdate}
       />
 
-      {/* Habit Overview Table */}
-      {stats && stats.length > 0 && (
+      {/* Habit Progress & Status Table */}
+      {filteredStats && filteredStats.length > 0 && (
         <div className="w-full overflow-x-auto">
-          <h3 className="text-lg font-semibold mb-4">All Habits Overview</h3>
-          <ReusableTable data={stats} />
+          <div className="mb-4">
+            <h3 className="text-lg font-semibold">Habit Progress & Status</h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              Track progress, identify habits at risk, and take quick actions
+            </p>
+          </div>
+          <ReusableTable 
+            data={filteredStats} 
+            habits={filteredActiveHabits}
+            dailySums={dailySums}
+            onQuickLog={handleQuickUpdate}
+            onManualLog={handleManualUpdate}
+          />
         </div>
       )}
     </div>

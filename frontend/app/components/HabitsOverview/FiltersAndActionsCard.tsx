@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { Card, CardHeader } from '../../components/ui/card'
+import { Card, CardContent, CardHeader } from '../../components/ui/card'
 import { Input } from '../../components/ui/input'
-import { Search, Filter, X, LayoutGrid, List, FolderPlus, Folder } from 'lucide-react'
+import { Search, Filter, X, LayoutGrid, List, FolderPlus, Folder, Plus, RefreshCw, Sparkles } from 'lucide-react'
+import { Tabs, TabsList, TabsTrigger } from '../../components/ui/tabs'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,6 +19,7 @@ import {
 import { HabitCreateSheet } from '../Modals/Habits/HabitCreateSheet'
 import type { HabitGroup } from '../Tables/Habits/columns'
 import { Button } from '../../components/ui/button'
+import { cn } from '../../lib/utils'
 
 interface FiltersAndActionsCardProps {
   searchQuery: string
@@ -31,6 +33,7 @@ interface FiltersAndActionsCardProps {
   onViewModeChange: (mode: 'table' | 'grid') => void
   onGroupModalOpen: () => void
   onHabitModalOpen: (open: boolean) => void
+  onPresetGroupsOpen: () => void
   onRefresh: () => Promise<void>
 }
 
@@ -46,106 +49,170 @@ export function FiltersAndActionsCard({
   onViewModeChange,
   onGroupModalOpen,
   onHabitModalOpen,
+  onPresetGroupsOpen,
   onRefresh
 }: FiltersAndActionsCardProps) {
   const [open, setOpen] = useState(false)
+  const [isRefreshing, setIsRefreshing] = useState(false)
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true)
+    await onRefresh()
+    setIsRefreshing(false)
+  }
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-          <div className="flex-1 flex gap-2 items-center w-full sm:w-auto">
-            <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search habits..."
-                value={searchQuery}
-                onChange={(e) => onSearchChange(e.target.value)}
-                className="pl-8"
-              />
-              {searchQuery && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="absolute right-1 top-1 h-7 w-7"
-                  onClick={() => onSearchChange('')}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <Filter className="h-4 w-4 mr-2" />
-                  {statusFilter === 'all' ? 'All' : statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1)}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuItem onClick={() => onStatusFilterChange('all')}>
-                  All Habits
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onStatusFilterChange('active')}>
-                  Active
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onStatusFilterChange('inactive')}>
-                  Inactive
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onStatusFilterChange('archived')}>
-                  Archived
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <Select value={groupFilter} onValueChange={onGroupFilterChange}>
-              <SelectTrigger className="w-[180px]">
-                <Folder className="h-4 w-4 mr-2" />
-                <SelectValue placeholder="All Groups" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Groups</SelectItem>
-                <SelectItem value="ungrouped">Ungrouped</SelectItem>
-                {groups.map((group) => (
-                  <SelectItem key={group.id} value={group.id}>
-                    <div className="flex items-center gap-2">
-                      {group.color && (
-                        <div 
-                          className="w-3 h-3 rounded-full" 
-                          style={{ backgroundColor: group.color }}
-                        />
-                      )}
-                      <span>{group.name}</span>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex gap-2">
-            <div className="flex border rounded-md">
-              <Button
-                variant={viewMode === 'table' ? 'default' : 'ghost'}
-                size="sm"
-                className="rounded-r-none"
-                onClick={() => onViewModeChange('table')}
+    <Card className="border-border/50 shadow-sm">
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold">Filters & Actions</h3>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+          >
+            <RefreshCw className={cn("h-4 w-4", isRefreshing && "animate-spin")} />
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {/* Search Bar - Full Width on Mobile */}
+        <div className="relative w-full">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search habits..."
+            value={searchQuery}
+            onChange={(e) => onSearchChange(e.target.value)}
+            className="pl-9 pr-9 h-9 w-full"
+          />
+          {searchQuery && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+              onClick={() => onSearchChange('')}
+            >
+              <X className="h-3.5 w-3.5" />
+            </Button>
+          )}
+        </div>
+
+        {/* Filters Row - Responsive Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {/* Status Filter */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button 
+                variant="outline" 
+                className="w-full justify-start h-9"
               >
-                <List className="h-4 w-4" />
+                <Filter className="h-4 w-4 mr-2 shrink-0" />
+                <span className="truncate">
+                  {statusFilter === 'all' 
+                    ? 'All Habits' 
+                    : statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1)}
+                </span>
               </Button>
-              <Button
-                variant={viewMode === 'grid' ? 'default' : 'ghost'}
-                size="sm"
-                className="rounded-l-none"
-                onClick={() => onViewModeChange('grid')}
-              >
-                <LayoutGrid className="h-4 w-4" />
-              </Button>
-            </div>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-[200px]">
+              <DropdownMenuItem onClick={() => onStatusFilterChange('all')}>
+                All Habits
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onStatusFilterChange('active')}>
+                Active
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onStatusFilterChange('inactive')}>
+                Inactive
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onStatusFilterChange('archived')}>
+                Archived
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Group Filter */}
+          <Select value={groupFilter} onValueChange={onGroupFilterChange}>
+            <SelectTrigger className="w-full h-9">
+              <Folder className="h-4 w-4 mr-2 shrink-0" />
+              <SelectValue placeholder="All Groups" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Groups</SelectItem>
+              <SelectItem value="ungrouped">Ungrouped</SelectItem>
+              {groups.map((group) => (
+                <SelectItem key={group.id} value={group.id}>
+                  <div className="flex items-center gap-2">
+                    {group.color && (
+                      <div 
+                        className="w-3 h-3 rounded-full shrink-0" 
+                        style={{ backgroundColor: group.color }}
+                      />
+                    )}
+                    <span className="truncate">{group.name}</span>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Actions Row - Responsive Layout */}
+        <div className="flex flex-col sm:flex-row gap-2">
+          {/* View Mode Toggle */}
+          <Tabs 
+            value={viewMode} 
+            onValueChange={(value) => onViewModeChange(value as 'table' | 'grid')}
+            className="w-full sm:w-auto"
+          >
+            <TabsList className="grid w-full grid-cols-2 h-9">
+              <TabsTrigger value="table" className="flex items-center gap-1.5 text-xs">
+                <List className="h-4 w-4 shrink-0" />
+                <span className="hidden sm:inline">Table</span>
+                <span className="sm:hidden">List</span>
+              </TabsTrigger>
+              <TabsTrigger value="grid" className="flex items-center gap-1.5 text-xs">
+                <LayoutGrid className="h-4 w-4 shrink-0" />
+                <span>Grid</span>
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+
+          {/* Action Buttons */}
+          <div className="flex gap-2 flex-1 min-w-0">
             <Button
               variant="outline"
               size="sm"
+              className="flex-1 sm:flex-initial h-9 px-3"
+              onClick={onPresetGroupsOpen}
+            >
+              <Sparkles className="h-4 w-4 sm:mr-1.5 shrink-0" />
+              <span className="hidden sm:inline text-xs">Presets</span>
+              <span className="sm:hidden text-xs">Presets</span>
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1 sm:flex-initial h-9 px-3"
               onClick={onGroupModalOpen}
             >
-              <FolderPlus className="h-4 w-4 mr-2" />
-              Group
+              <FolderPlus className="h-4 w-4 sm:mr-1.5 shrink-0" />
+              <span className="hidden sm:inline text-xs">Group</span>
+              <span className="sm:hidden text-xs">Add Group</span>
+            </Button>
+            <Button
+              variant="default"
+              size="sm"
+              className="flex-1 sm:flex-initial h-9 px-3"
+              onClick={() => {
+                setOpen(true)
+                onHabitModalOpen(true)
+              }}
+            >
+              <Plus className="h-4 w-4 sm:mr-1.5 shrink-0" />
+              <span className="hidden sm:inline text-xs">Habit</span>
+              <span className="sm:hidden text-xs">Add Habit</span>
             </Button>
             <HabitCreateSheet 
               open={open} 
@@ -157,7 +224,7 @@ export function FiltersAndActionsCard({
             />
           </div>
         </div>
-      </CardHeader>
+      </CardContent>
     </Card>
   )
 }

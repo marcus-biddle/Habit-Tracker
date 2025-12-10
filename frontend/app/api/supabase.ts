@@ -1,7 +1,7 @@
 import { supabase } from "../api/client/client";
 import type { Habit, HabitGroup } from "../components/Tables/Habits/columns";
 
-type HabitInsert = Omit<Habit, "id" | "created_at" | "updated_at">;
+export type HabitInsert = Omit<Habit, "id" | "created_at" | "updated_at">;
 type HabitGroupInsert = Omit<HabitGroup, "id" | "created_at" | "updated_at">;
 export type HabitEntryInsert = {
   user_id: string;
@@ -471,4 +471,40 @@ export async function getHabitsWithGroups(user_id: string): Promise<(Habit & { g
       : null,
     habit_groups: undefined, // Remove the nested object
   }));
+}
+
+// Preset Groups API Functions
+
+export async function importPresetGroup(userId: string, presetGroup: { name: string; description: string; color?: string; habits: Omit<HabitInsert, 'user_id' | 'group_id'>[] }): Promise<void> {
+  // First, create the group
+  const group = await addHabitGroup({
+    user_id: userId,
+    name: presetGroup.name,
+    description: presetGroup.description,
+    color: presetGroup.color || null,
+    display_order: 0,
+  });
+
+  // Then, create all habits in the group
+  const habitsToCreate = presetGroup.habits.map(habit => ({
+    ...habit,
+    user_id: userId,
+    group_id: group.id,
+  }));
+
+  // Insert all habits at once
+  const { error } = await supabase
+    .from("habits")
+    .insert(habitsToCreate);
+
+  if (error) {
+    console.error("Error importing preset group habits:", error.message);
+    // Try to clean up the group if habit creation failed
+    try {
+      await deleteHabitGroup(group.id);
+    } catch (cleanupError) {
+      console.error("Failed to clean up group after error:", cleanupError);
+    }
+    throw error;
+  }
 }

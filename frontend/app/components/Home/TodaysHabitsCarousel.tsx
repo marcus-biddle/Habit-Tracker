@@ -1,9 +1,10 @@
 import { Link } from 'react-router'
 import { Button } from '../ui/button'
 import { Carousel, CarouselContent, CarouselItem } from '../ui/carousel'
-import { Forward } from 'lucide-react'
+import { Forward, Sparkles } from 'lucide-react'
 import { EmptyHabitState } from '../EmptyHabitState'
-import CSVImporter from '../../features/CSVImporter'
+import { useState } from 'react'
+import { PresetGroupsSheet } from '../Modals/Habits/PresetGroupsSheet'
 import { HabitCard } from './HabitCard'
 import type { Habit, HabitGroup } from '../Tables/Habits/columns'
 import type { DashboardHabit } from '../../features/overview/table'
@@ -28,6 +29,8 @@ export function TodaysHabitsCarousel({
   onQuickUpdate,
   onManualUpdate
 }: TodaysHabitsCarouselProps) {
+  const [presetGroupsOpen, setPresetGroupsOpen] = useState(false)
+
   if (activeHabits.length === 0) {
     return <EmptyHabitState />
   }
@@ -40,7 +43,15 @@ export function TodaysHabitsCarousel({
           <p className="text-sm text-muted-foreground">Quick access to log your daily progress</p>
         </div>
         <div className="flex flex-wrap gap-2 w-full sm:w-auto">
-          <CSVImporter habits={allHabits} />
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="w-full sm:w-auto"
+            onClick={() => setPresetGroupsOpen(true)}
+          >
+            <Sparkles className="mr-2 h-4 w-4" />
+            Import & Presets
+          </Button>
           <Link to="/dashboard/analytics">
             <Button variant="outline" size="sm" className="w-full sm:w-auto">
               View Analytics
@@ -89,6 +100,16 @@ export function TodaysHabitsCarousel({
           })}
         </CarouselContent>
       </Carousel>
+
+      <PresetGroupsSheet
+        open={presetGroupsOpen}
+        onOpenChange={setPresetGroupsOpen}
+        habits={allHabits}
+        onSuccess={() => {
+          // Refresh will be handled by parent component
+          window.location.reload()
+        }}
+      />
     </div>
   )
 }

@@ -16,6 +16,7 @@ import {
 import { toast } from 'sonner'
 import { HabitGroupSheet } from '../../components/Modals/Habits/HabitGroupSheet'
 import { HabitEditSheet } from '../../components/Modals/Habits/HabitEditSheet'
+import { PresetGroupsSheet } from '../../components/Modals/Habits/PresetGroupsSheet'
 import type { DashboardHabit } from '../../features/overview/table'
 import {
   HabitsOverviewHeader,
@@ -45,6 +46,7 @@ const overview = ({ loaderData }: any) => {
     const { user } = useAuth();
     const [, isOpen] = useState(false);
     const [groupModalOpen, setGroupModalOpen] = useState(false);
+    const [presetGroupsOpen, setPresetGroupsOpen] = useState(false);
     const [habits, setHabits] = useState<Habit[]>(loaderData.habits ?? []);
     const [groups, setGroups] = useState<HabitGroup[]>(loaderData.groups ?? []);
     const [stats, setStats] = useState<DashboardHabit[]>(loaderData.stats ?? []);
@@ -245,6 +247,7 @@ const overview = ({ loaderData }: any) => {
         viewMode={viewMode}
         onViewModeChange={setViewMode}
         onGroupModalOpen={() => setGroupModalOpen(true)}
+        onPresetGroupsOpen={() => setPresetGroupsOpen(true)}
         onHabitModalOpen={isOpen}
         onRefresh={refreshData}
       />
@@ -299,6 +302,16 @@ const overview = ({ loaderData }: any) => {
       <HabitGroupSheet
         open={groupModalOpen}
         onOpenChange={setGroupModalOpen}
+        onSuccess={async () => {
+          await refreshData()
+        }}
+      />
+
+      {/* Preset Groups Modal */}
+      <PresetGroupsSheet
+        open={presetGroupsOpen}
+        onOpenChange={setPresetGroupsOpen}
+        habits={habits}
         onSuccess={async () => {
           await refreshData()
         }}

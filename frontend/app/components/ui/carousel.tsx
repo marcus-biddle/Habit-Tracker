@@ -58,9 +58,18 @@ function Carousel({
   )
   const [canScrollPrev, setCanScrollPrev] = React.useState(false)
   const [canScrollNext, setCanScrollNext] = React.useState(false)
+  const isMountedRef = React.useRef(false)
+
+  // Track mount status
+  React.useEffect(() => {
+    isMountedRef.current = true
+    return () => {
+      isMountedRef.current = false
+    }
+  }, [])
 
   const onSelect = React.useCallback((api: CarouselApi) => {
-    if (!api) return
+    if (!api || !isMountedRef.current) return
     setCanScrollPrev(api.canScrollPrev())
     setCanScrollNext(api.canScrollNext())
   }, [])
@@ -87,18 +96,19 @@ function Carousel({
   )
 
   React.useEffect(() => {
-    if (!api || !setApi) return
+    if (!api || !setApi || !isMountedRef.current) return
     setApi(api)
   }, [api, setApi])
 
   React.useEffect(() => {
-    if (!api) return
+    if (!api || !isMountedRef.current) return
     onSelect(api)
     api.on("reInit", onSelect)
     api.on("select", onSelect)
 
     return () => {
       api?.off("select", onSelect)
+      api?.off("reInit", onSelect)
     }
   }, [api, onSelect])
 

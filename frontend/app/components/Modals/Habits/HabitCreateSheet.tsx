@@ -66,7 +66,7 @@ const formTemplate: Omit<Habit, "id" | "created_at" | "updated_at" | "user_id"> 
 
 type HabitCreateSheetProps = {
   isOpen: (open: boolean) => void;
-  open: boolean;
+  open?: boolean;
   setHabits: Dispatch<any>;
 };
 
@@ -207,11 +207,17 @@ export function HabitCreateSheet({ isOpen, open, setHabits }: HabitCreateSheetPr
     }
   };
 
+  // Determine if this is controlled (open prop provided) or uncontrolled
+  const isControlled = open !== undefined
+  
   return (
-    <Sheet open={open} onOpenChange={isOpen}>
-      <SheetTrigger asChild>
-        <Button variant="outline"><Plus /> Habit</Button>
-      </SheetTrigger>
+    <Sheet open={isControlled ? open : undefined} onOpenChange={isOpen}>
+      {/* Only show trigger when uncontrolled */}
+      {!isControlled && (
+        <SheetTrigger asChild>
+          <Button variant="outline"><Plus /> Habit</Button>
+        </SheetTrigger>
+      )}
       <SheetContent side="right" className="sm:max-w-md flex flex-col p-0">
         <form onSubmit={handleSubmit} className="flex flex-col h-full">
           <SheetHeader className="px-6 pt-6 pb-4">

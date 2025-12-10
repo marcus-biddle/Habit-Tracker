@@ -40,6 +40,26 @@ interface UngroupedStats {
   completionRate: number
   avgStreak: number
   avgProgress: number
+  // Frequency breakdowns
+  dailyHabits: {
+    count: number
+    atGoal: number
+    completionRate: number
+  }
+  weeklyHabits: {
+    count: number
+    atGoal: number
+    avgProgress: number
+    weekCompletion: number
+  }
+  monthlyHabits: {
+    count: number
+    atGoal: number
+    avgProgress: number
+    monthCompletion: number
+  }
+  // Weighted completion rate that accounts for frequencies
+  weightedCompletionRate: number
 }
 
 interface TodayStats {
@@ -285,10 +305,20 @@ export function useHomeStats(
         completedToday: 0,
         completionRate: 0,
         avgStreak: 0,
-        avgProgress: 0
+        avgProgress: 0,
+        dailyHabits: { count: 0, atGoal: 0, completionRate: 0 },
+        weeklyHabits: { count: 0, atGoal: 0, avgProgress: 0, weekCompletion: 0 },
+        monthlyHabits: { count: 0, atGoal: 0, avgProgress: 0, monthCompletion: 0 },
+        weightedCompletionRate: 0
       }
     }
 
+    // Break down habits by frequency
+    const dailyHabits = ungroupedHabits.filter(h => !h.goal_period || h.goal_period === 'per_day')
+    const weeklyHabits = ungroupedHabits.filter(h => h.goal_period === 'per_week')
+    const monthlyHabits = ungroupedHabits.filter(h => h.goal_period === 'per_month')
+
+    // Calculate habits at goal (using period totals for weekly/monthly)
     const completedToday = ungroupedHabits.filter(habit => {
       const sum = dailySums.find((ds: { id: string; value: number }) => ds.id === habit.id)
       const dailyValue = sum?.value ?? 0
@@ -298,7 +328,110 @@ export function useHomeStats(
       return isGoalMet(habit, currentValue)
     }).length
 
-    const completionRate = Math.round((completedToday / ungroupedHabits.length) * 100)
+    // Daily habits metrics
+    const dailyHabitsAtGoal = dailyHabits.filter(habit => {
+      const sum = dailySums.find((ds: { id: string; value: number }) => ds.id === habit.id)
+      const dailyValue = sum?.value ?? 0
+      const habitStat = stats.find((s: DashboardHabit) => s.habit_id === habit.id)
+      const periodTotal = habitStat?.period_total ?? null
+      const currentValue = getEffectiveCurrentValue(habit, dailyValue, periodTotal)
+      return isGoalMet(habit, currentValue)
+    }).length
+    const dailyCompletionRate = dailyHabits.length > 0 
+      ? Math.round((dailyHabitsAtGoal / dailyHabits.length) * 100) 
+      : 0
+
+    // Weekly habits metrics
+    const weeklyHabitsAtGoal = weeklyHabits.filter(habit => {
+      const habitStat = stats.find((s: DashboardHabit) => s.habit_id === habit.id)
+      const periodTotal = habitStat?.period_total ?? null
+      const sum = dailySums.find((ds: { id: string; value: number }) => ds.id === habit.id)
+      const dailyValue = sum?.value ?? 0
+      const currentValue = getEffectiveCurrentValue(habit, dailyValue, periodTotal)
+      return isGoalMet(habit, currentValue)
+    }).length
+
+    const weeklyProgressData = weeklyHabits.map(habit => {
+      const sum = dailySums.find((ds: { id: string; value: number }) => ds.id === habit.id)
+      const dailyValue = sum?.value ?? 0
+      const habitStat = stats.find((s: DashboardHabit) => s.habit_id === habit.id)
+      const periodTotal = habitStat?.period_total ?? null
+      const currentValue = getEffectiveCurrentValue(habit, dailyValue, periodTotal)
+      return calculateProgress(habit, currentValue)
+    })
+    const avgWeeklyProgress = weeklyProgressData.length > 0
+      ? Math.round(weeklyProgressData.reduce((sum, p) => sum + p, 0) / weeklyProgressData.length)
+      : 0
+
+    const weeklyHabitsWeekCompletion = weeklyHabits.length > 0
+      ? Math.round(
+          weeklyHabits.reduce((sum, habit) => {
+            const habitStat = stats.find((s: DashboardHabit) => s.habit_id === habit.id)
+            return sum + (habitStat?.week_completion ?? 0)
+          }, 0) / weeklyHabits.length
+        )
+      : 0
+
+    // Monthly habits metrics
+    const monthlyHabitsAtGoal = monthlyHabits.filter(habit => {
+      const habitStat = stats.find((s: DashboardHabit) => s.habit_id === habit.id)
+      const periodTotal = habitStat?.period_total ?? null
+      const sum = dailySums.find((ds: { id: string; value: number }) => ds.id === habit.id)
+      const dailyValue = sum?.value ?? 0
+      const currentValue = getEffectiveCurrentValue(habit, dailyValue, periodTotal)
+      return isGoalMet(habit, currentValue)
+    }).length
+
+    const monthlyProgressData = monthlyHabits.map(habit => {
+      const sum = dailySums.find((ds: { id: string; value: number }) => ds.id === habit.id)
+      const dailyValue = sum?.value ?? 0
+      const habitStat = stats.find((s: DashboardHabit) => s.habit_id === habit.id)
+      const periodTotal = habitStat?.period_total ?? null
+      const currentValue = getEffectiveCurrentValue(habit, dailyValue, periodTotal)
+      return calculateProgress(habit, currentValue)
+    })
+    const avgMonthlyProgress = monthlyProgressData.length > 0
+      ? Math.round(monthlyProgressData.reduce((sum, p) => sum + p, 0) / monthlyProgressData.length)
+      : 0
+
+    const monthlyHabitsMonthCompletion = monthlyHabits.length > 0
+      ? Math.round(
+          monthlyHabits.reduce((sum, habit) => {
+            const habitStat = stats.find((s: DashboardHabit) => s.habit_id === habit.id)
+            return sum + (habitStat?.week_completion ?? 0) // week_completion contains monthly % for monthly habits
+          }, 0) / monthlyHabits.length
+        )
+      : 0
+
+    // Calculate weighted completion rate
+    // For daily: use completion rate
+    // For weekly: use week completion percentage
+    // For monthly: use month completion percentage
+    // Weight by number of habits in each category
+    let weightedSum = 0
+    let totalWeight = 0
+    
+    if (dailyHabits.length > 0) {
+      weightedSum += dailyCompletionRate * dailyHabits.length
+      totalWeight += dailyHabits.length
+    }
+    
+    if (weeklyHabits.length > 0) {
+      weightedSum += weeklyHabitsWeekCompletion * weeklyHabits.length
+      totalWeight += weeklyHabits.length
+    }
+    
+    if (monthlyHabits.length > 0) {
+      weightedSum += monthlyHabitsMonthCompletion * monthlyHabits.length
+      totalWeight += monthlyHabits.length
+    }
+    
+    const weightedCompletionRate = totalWeight > 0 
+      ? Math.round(weightedSum / totalWeight) 
+      : 0
+
+    // Overall completion rate (simple count-based)
+    const completionRate = ungroupedHabits.length > 0 ? Math.round((completedToday / ungroupedHabits.length) * 100) : 0
 
     const ungroupedStatsData = ungroupedHabits.map(habit => 
       stats.find((s: DashboardHabit) => s.habit_id === habit.id)
@@ -323,7 +456,25 @@ export function useHomeStats(
       completedToday,
       completionRate,
       avgStreak,
-      avgProgress
+      avgProgress,
+      dailyHabits: {
+        count: dailyHabits.length,
+        atGoal: dailyHabitsAtGoal,
+        completionRate: dailyCompletionRate
+      },
+      weeklyHabits: {
+        count: weeklyHabits.length,
+        atGoal: weeklyHabitsAtGoal,
+        avgProgress: avgWeeklyProgress,
+        weekCompletion: weeklyHabitsWeekCompletion
+      },
+      monthlyHabits: {
+        count: monthlyHabits.length,
+        atGoal: monthlyHabitsAtGoal,
+        avgProgress: avgMonthlyProgress,
+        monthCompletion: monthlyHabitsMonthCompletion
+      },
+      weightedCompletionRate
     }
   }, [habitsByGroup.ungrouped, dailySums, stats])
 
