@@ -39,7 +39,10 @@ export default [
     index("./pages/home.tsx"),
 
     // Analytics page
-    route("analytics", "./pages/home-analytics.tsx"),
+    route("analytics", "./pages/analytics.tsx"),
+
+    // Profile page
+    route("profile", "./pages/profile.tsx"),
 
     // Habits routes - nested under /dashboard/habits
     ...prefix("habits", [

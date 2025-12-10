@@ -153,6 +153,16 @@ export async function addHabitEntry(entry: HabitEntryInsert) {
     throw error;
   }
 
+  // Award points for completing a habit (simple: 10 points per entry)
+  try {
+    await updateUserPoints(entry.user_id, 10);
+    // Check for new achievements
+    await checkAndUnlockAchievements(entry.user_id);
+  } catch (pointsError) {
+    // Don't fail the entry if points update fails
+    console.error("Failed to update points:", pointsError);
+  }
+
   return data;
 }
 
@@ -475,7 +485,10 @@ export async function getHabitsWithGroups(user_id: string): Promise<(Habit & { g
 
 // Preset Groups API Functions
 
-export async function importPresetGroup(userId: string, presetGroup: { name: string; description: string; color?: string; habits: Omit<HabitInsert, 'user_id' | 'group_id'>[] }): Promise<void> {
+export async function importPresetGroup(
+  userId: string, 
+  presetGroup: { name: string; description: string; color?: string; habits: Omit<HabitInsert, 'user_id' | 'group_id'>[] }
+): Promise<{ regrouped: number; created: number; skipped: number }> {
   // Check if a group with this name already exists
   const existingGroups = await getHabitGroupsByUserId(userId);
   let group: HabitGroup;
@@ -493,10 +506,11 @@ export async function importPresetGroup(userId: string, presetGroup: { name: str
     let groupName = presetGroup.name;
     let attempts = 0;
     let created = false;
+    let createdGroup: HabitGroup | null = null;
     
     while (!created && attempts < 10) {
       try {
-        group = await addHabitGroup({
+        createdGroup = await addHabitGroup({
           user_id: userId,
           name: groupName,
           description: presetGroup.description,
@@ -516,33 +530,368 @@ export async function importPresetGroup(userId: string, presetGroup: { name: str
       }
     }
     
-    if (!created) {
+    if (!created || !createdGroup) {
       throw new Error(`Unable to create group with name "${presetGroup.name}". Please try a different name.`);
     }
+    
+    group = createdGroup;
   }
 
-  // Then, create all habits in the group
-  const habitsToCreate = presetGroup.habits.map(habit => ({
-    ...habit,
-    user_id: userId,
-    group_id: group.id,
-  }));
+  // Fetch existing habits for the user to check for duplicates
+  const existingHabits = await getHabitsByUserId(userId);
+  
+  // Create a map of existing habits by name (case-insensitive) for quick lookup
+  const existingHabitsMap = new Map<string, Habit>();
+  existingHabits.forEach(habit => {
+    const key = habit.name.toLowerCase().trim();
+    existingHabitsMap.set(key, habit);
+  });
 
-  // Insert all habits at once
+  // Separate habits into those that need to be regrouped and those that need to be created
+  const habitsToRegroup: Habit[] = [];
+  const habitsToCreate: Omit<HabitInsert, 'user_id' | 'group_id'>[] = [];
+
+  for (const presetHabit of presetGroup.habits) {
+    const habitNameKey = presetHabit.name.toLowerCase().trim();
+    const existingHabit = existingHabitsMap.get(habitNameKey);
+
+    if (existingHabit) {
+      // Habit already exists - check if it needs to be regrouped
+      // Only regroup if it's not already in the target group
+      if (existingHabit.group_id !== group.id) {
+        habitsToRegroup.push(existingHabit);
+      }
+      // If it's already in the target group, skip it (no action needed)
+    } else {
+      // Habit doesn't exist - add it to the create list
+      habitsToCreate.push(presetHabit);
+    }
+  }
+
+  let regroupedCount = 0;
+  let createdCount = 0;
+  let skippedCount = 0;
+
+  // Count habits that are already in the target group (skipped)
+  for (const presetHabit of presetGroup.habits) {
+    const habitNameKey = presetHabit.name.toLowerCase().trim();
+    const existingHabit = existingHabitsMap.get(habitNameKey);
+    if (existingHabit && existingHabit.group_id === group.id) {
+      skippedCount++;
+    }
+  }
+
+  // Regroup existing habits that match preset habits
+  if (habitsToRegroup.length > 0) {
+    const regroupPromises = habitsToRegroup.map(habit => 
+      updateHabit(userId, habit.id, { group_id: group.id })
+    );
+    
+    try {
+      await Promise.all(regroupPromises);
+      regroupedCount = habitsToRegroup.length;
+      console.log(`Regrouped ${regroupedCount} existing habit(s) into "${group.name}"`);
+    } catch (error: any) {
+      console.error("Error regrouping existing habits:", error);
+      // Don't throw here - we still want to create new habits even if regrouping fails
+      // The error is logged for debugging, but we continue with creating new habits
+    }
+  }
+
+  // Create new habits that don't exist yet
+  if (habitsToCreate.length > 0) {
+    const habitsToInsert = habitsToCreate.map(habit => ({
+      ...habit,
+      user_id: userId,
+      group_id: group.id,
+    }));
+
+    const { error } = await supabase
+      .from("habits")
+      .insert(habitsToInsert);
+
+    if (error) {
+      console.error("Error importing preset group habits:", error.message);
+      // Only try to clean up if we created a new group (not if using existing)
+      if (!isExistingGroup) {
+        try {
+          await deleteHabitGroup(group.id);
+        } catch (cleanupError) {
+          console.error("Failed to clean up group after error:", cleanupError);
+        }
+      }
+      throw error;
+    }
+    
+    createdCount = habitsToCreate.length;
+  }
+
+  return {
+    regrouped: regroupedCount,
+    created: createdCount,
+    skipped: skippedCount,
+  };
+}
+
+// Gamification API Functions
+
+export type UserProfile = {
+  id: string;
+  user_id: string;
+  total_points: number;
+  current_level: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type Achievement = {
+  id: string;
+  user_id: string;
+  achievement_type: string;
+  unlocked_at: string;
+};
+
+export async function getUserProfile(user_id: string): Promise<UserProfile | null> {
+  // First, try to get existing profile
+  let { data, error } = await supabase
+    .from("user_profiles")
+    .select("*")
+    .eq("user_id", user_id)
+    .maybeSingle();
+
+  if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+    console.error("Error fetching user profile:", error.message);
+    return null;
+  }
+
+  // If no profile exists, create one
+  if (!data) {
+    const { data: newProfile, error: createError } = await supabase
+      .from("user_profiles")
+      .insert([{
+        user_id: user_id,
+        total_points: 0,
+        current_level: 1,
+      }])
+      .select()
+      .single();
+
+    if (createError) {
+      console.error("Error creating user profile:", createError.message);
+      return null;
+    }
+
+    return newProfile;
+  }
+
+  return data;
+}
+
+export async function updateUserPoints(user_id: string, pointsToAdd: number): Promise<void> {
+  // Get current profile
+  const profile = await getUserProfile(user_id);
+  if (!profile) {
+    throw new Error("User profile not found");
+  }
+
+  const newPoints = profile.total_points + pointsToAdd;
+  const newLevel = calculateLevel(newPoints);
+
   const { error } = await supabase
-    .from("habits")
-    .insert(habitsToCreate);
+    .from("user_profiles")
+    .update({
+      total_points: newPoints,
+      current_level: newLevel,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("user_id", user_id);
 
   if (error) {
-    console.error("Error importing preset group habits:", error.message);
-    // Only try to clean up if we created a new group (not if using existing)
-    if (!isExistingGroup) {
-      try {
-        await deleteHabitGroup(group.id);
-      } catch (cleanupError) {
-        console.error("Failed to clean up group after error:", cleanupError);
-      }
-    }
+    console.error("Error updating user points:", error.message);
     throw error;
   }
+}
+
+export function calculateLevel(points: number): number {
+  // Simple level calculation: Level 1 = 0-100, Level 2 = 101-300, Level 3 = 301-600, etc.
+  // Each level requires more points than the previous
+  if (points < 100) return 1;
+  if (points < 300) return 2;
+  if (points < 600) return 3;
+  if (points < 1000) return 4;
+  if (points < 1500) return 5;
+  if (points < 2100) return 6;
+  if (points < 2800) return 7;
+  if (points < 3600) return 8;
+  if (points < 4500) return 9;
+  return 10 + Math.floor((points - 4500) / 1000);
+}
+
+export function getPointsForNextLevel(currentLevel: number): number {
+  const levelThresholds: Record<number, number> = {
+    1: 100,
+    2: 300,
+    3: 600,
+    4: 1000,
+    5: 1500,
+    6: 2100,
+    7: 2800,
+    8: 3600,
+    9: 4500,
+  };
+  
+  if (currentLevel < 10) {
+    return levelThresholds[currentLevel] || 4500 + (currentLevel - 9) * 1000;
+  }
+  return 4500 + (currentLevel - 9) * 1000;
+}
+
+export function getPointsForCurrentLevel(currentLevel: number): number {
+  if (currentLevel === 1) return 0;
+  return getPointsForNextLevel(currentLevel - 1);
+}
+
+export async function getAchievements(user_id: string): Promise<Achievement[]> {
+  const { data, error } = await supabase
+    .from("achievements")
+    .select("*")
+    .eq("user_id", user_id)
+    .order("unlocked_at", { ascending: false });
+
+  if (error) {
+    console.error("Error fetching achievements:", error.message);
+    return [];
+  }
+
+  return data ?? [];
+}
+
+export async function checkAndUnlockAchievements(user_id: string): Promise<Achievement[]> {
+  const profile = await getUserProfile(user_id);
+  if (!profile) return [];
+
+  const { data: habits } = await supabase
+    .from("habits")
+    .select("id, created_at")
+    .eq("user_id", user_id);
+
+  const { data: entries } = await supabase
+    .from("habit_entries")
+    .select("entry_date")
+    .eq("user_id", user_id)
+    .order("entry_date", { ascending: true });
+
+  const { data: stats } = await supabase.rpc('get_habit_dashboard_stats', {
+    p_user_id: user_id
+  });
+
+  const newAchievements: Achievement[] = [];
+  const existingAchievements = await getAchievements(user_id);
+  const existingTypes = new Set(existingAchievements.map(a => a.achievement_type));
+
+  // Check for "First Habit" achievement
+  if (habits && habits.length > 0 && !existingTypes.has('first_habit')) {
+    const { data: achievement } = await supabase
+      .from("achievements")
+      .insert([{
+        user_id: user_id,
+        achievement_type: 'first_habit',
+      }])
+      .select()
+      .single();
+    
+    if (achievement) newAchievements.push(achievement);
+  }
+
+  // Check for "100 Points" achievement
+  if (profile.total_points >= 100 && !existingTypes.has('100_points')) {
+    const { data: achievement } = await supabase
+      .from("achievements")
+      .insert([{
+        user_id: user_id,
+        achievement_type: '100_points',
+      }])
+      .select()
+      .single();
+    
+    if (achievement) newAchievements.push(achievement);
+  }
+
+  // Check for "500 Points" achievement
+  if (profile.total_points >= 500 && !existingTypes.has('500_points')) {
+    const { data: achievement } = await supabase
+      .from("achievements")
+      .insert([{
+        user_id: user_id,
+        achievement_type: '500_points',
+      }])
+      .select()
+      .single();
+    
+    if (achievement) newAchievements.push(achievement);
+  }
+
+  // Check for "7 Day Streak" achievement
+  if (stats && stats.length > 0) {
+    const has7DayStreak = stats.some((stat: any) => stat.current_streak >= 7);
+    if (has7DayStreak && !existingTypes.has('7_day_streak')) {
+      const { data: achievement } = await supabase
+        .from("achievements")
+        .insert([{
+          user_id: user_id,
+          achievement_type: '7_day_streak',
+        }])
+        .select()
+        .single();
+      
+      if (achievement) newAchievements.push(achievement);
+    }
+  }
+
+  // Check for "30 Day Streak" achievement
+  if (stats && stats.length > 0) {
+    const has30DayStreak = stats.some((stat: any) => stat.current_streak >= 30);
+    if (has30DayStreak && !existingTypes.has('30_day_streak')) {
+      const { data: achievement } = await supabase
+        .from("achievements")
+        .insert([{
+          user_id: user_id,
+          achievement_type: '30_day_streak',
+        }])
+        .select()
+        .single();
+      
+      if (achievement) newAchievements.push(achievement);
+    }
+  }
+
+  // Check for "10 Habits" achievement
+  if (habits && habits.length >= 10 && !existingTypes.has('10_habits')) {
+    const { data: achievement } = await supabase
+      .from("achievements")
+      .insert([{
+        user_id: user_id,
+        achievement_type: '10_habits',
+      }])
+      .select()
+      .single();
+    
+    if (achievement) newAchievements.push(achievement);
+  }
+
+  // Check for "100 Entries" achievement
+  if (entries && entries.length >= 100 && !existingTypes.has('100_entries')) {
+    const { data: achievement } = await supabase
+      .from("achievements")
+      .insert([{
+        user_id: user_id,
+        achievement_type: '100_entries',
+      }])
+      .select()
+      .single();
+    
+    if (achievement) newAchievements.push(achievement);
+  }
+
+  return newAchievements;
 }

@@ -370,10 +370,15 @@ const ReusableTable = ({ data, habits = [], dailySums = [], onQuickLog, onManual
         // Calculate days since last entry
         let daysSinceLastEntry = 0
         if (stat.last_entry_date) {
-          const lastEntry = new TZDate(stat.last_entry_date)
+          // Parse the date string (YYYY-MM-DD) as local date to avoid timezone issues
+          const dateParts = stat.last_entry_date.split('-')
+          const lastEntryYear = parseInt(dateParts[0], 10)
+          const lastEntryMonth = parseInt(dateParts[1], 10) - 1 // month is 0-indexed
+          const lastEntryDay = parseInt(dateParts[2], 10)
+          
           const today = new TZDate()
           const startOfToday = new TZDate(today.getFullYear(), today.getMonth(), today.getDate())
-          const startOfLastEntry = new TZDate(lastEntry.getFullYear(), lastEntry.getMonth(), lastEntry.getDate())
+          const startOfLastEntry = new TZDate(lastEntryYear, lastEntryMonth, lastEntryDay)
           const diffMs = startOfToday.getTime() - startOfLastEntry.getTime()
           daysSinceLastEntry = Math.round(diffMs / (1000 * 60 * 60 * 24))
         } else {

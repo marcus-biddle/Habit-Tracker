@@ -5,6 +5,7 @@ import {
   BarChart3,
   Settings2,
   Target,
+  User,
 } from "lucide-react"
 
 import { NavMain } from "../components/nav-main"
@@ -52,16 +53,20 @@ const data = {
       items: [],
     },
     {
+      title: "Profile",
+      url: "/dashboard/profile",
+      icon: User,
+      isActive: true,
+      showItems: false,
+      items: [],
+    },
+    {
       title: "Settings",
       url: "#",
       icon: Settings2,
       isActive: true,
       showItems: false,
       items: [
-        {
-          title: "Profile",
-          url: "#",
-        },
         {
           title: "Preferences",
           url: "#",

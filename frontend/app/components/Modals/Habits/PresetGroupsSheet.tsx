@@ -61,15 +61,37 @@ export function PresetGroupsSheet({ open, onOpenChange, onSuccess, habits = [] }
       const existingGroups = await getHabitGroupsByUserId(user.id);
       const groupExists = existingGroups.some(g => g.name.toLowerCase() === presetGroup.name.toLowerCase());
       
-      await importPresetGroup(user.id, presetGroup);
+      const result = await importPresetGroup(user.id, presetGroup);
       
-      if (groupExists) {
-        toast.success(`Added habits to existing "${presetGroup.name}" group!`, {
-          duration: 4000,
-        });
-      } else {
-        toast.success(`Successfully imported "${presetGroup.name}" group!`);
+      // Build a detailed success message based on what happened
+      const messageParts: string[] = [];
+      
+      if (result.regrouped > 0) {
+        messageParts.push(`${result.regrouped} habit${result.regrouped > 1 ? 's' : ''} regrouped`);
       }
+      
+      if (result.created > 0) {
+        messageParts.push(`${result.created} new habit${result.created > 1 ? 's' : ''} created`);
+      }
+      
+      if (result.skipped > 0) {
+        messageParts.push(`${result.skipped} habit${result.skipped > 1 ? 's' : ''} already in group`);
+      }
+      
+      let successMessage = '';
+      if (groupExists) {
+        successMessage = `Updated "${presetGroup.name}" group`;
+      } else {
+        successMessage = `Successfully imported "${presetGroup.name}" group`;
+      }
+      
+      if (messageParts.length > 0) {
+        successMessage += `: ${messageParts.join(', ')}`;
+      }
+      
+      toast.success(successMessage, {
+        duration: 5000,
+      });
       
       onSuccess();
       onOpenChange(false);
