@@ -9,6 +9,7 @@ import {
   TodaysProgressCard,
   ActiveHabitsCard,
   StreakPerformanceCard,
+  WeeklyMonthlyStatsCard,
   QuickActionsCard,
   QuickEntryForm,
   HabitGroupsSection,
@@ -27,9 +28,13 @@ export async function clientLoader() {
 
     const habits: Habit[] = await getHabitsByUserIdWithGroups(user.id);
     const groups: HabitGroup[] = await getHabitGroupsByUserId(user.id);
-    const { data } = await supabase.rpc('get_habit_dashboard_stats', { 
+    const { data, error: statsError } = await supabase.rpc('get_habit_dashboard_stats', { 
       p_user_id: user.id 
     });
+    
+    if (statsError) {
+      console.error('Failed to fetch dashboard stats in loader:', statsError);
+    }
 
     // Get daily sums for today
     const dailySumsPromises = habits.map(habit =>
@@ -51,6 +56,7 @@ export async function clientLoader() {
 export default function home({ loaderData }: any) {
   const user = loaderData.user
   const [showQuickEntry, setShowQuickEntry] = useState(false)
+  const [stats, setStats] = useState<typeof loaderData.stats>(loaderData.stats ?? [])
 
   const {
     data,
@@ -58,8 +64,7 @@ export default function home({ loaderData }: any) {
     dailySums,
     activeHabits,
     habitsByGroup,
-    fetchData,
-    fetchAllSums
+    fetchData
   } = useHomeData(user?.id, loaderData)
 
   const { groupStats, ungroupedStats, todayStats } = useHomeStats(
@@ -67,8 +72,32 @@ export default function home({ loaderData }: any) {
     habitsByGroup,
     groups,
     dailySums,
-    loaderData.stats ?? []
+    stats
   )
+
+  const refreshStats = async () => {
+    if (!user) return
+    
+    // Ensure we have a valid session before making the RPC call
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) {
+      console.error('No active session found')
+      return
+    }
+    
+    const { data: newStats, error } = await supabase.rpc('get_habit_dashboard_stats', { 
+      p_user_id: user.id 
+    })
+    
+    if (error) {
+      console.error('Failed to refresh stats:', error)
+      // Don't update stats if there's an error
+      return
+    }
+    
+    // Force a new array reference to ensure React re-renders
+    setStats(newStats ? [...newStats] : [])
+  }
 
   const handleQuickEntrySubmit = async (habitId: string, value: number) => {
     if (!user) return
@@ -84,10 +113,9 @@ export default function home({ loaderData }: any) {
       toast.success("Successfully updated habit.")
       setShowQuickEntry(false)
       
-      // Refresh data
-      const res = await getHabitsByUserIdWithGroups(user.id)
-      await fetchAllSums(res)
+      // Refresh data - fetchData already calls fetchAllSums internally
       await fetchData()
+      await refreshStats()
     } catch (err) {
       console.error("Failed to add habit entry", err)
       toast.error("Failed to update habit. Please try again.")
@@ -107,10 +135,9 @@ export default function home({ loaderData }: any) {
       
       toast.success(`Updated habit entry.`)
       
-      // Refresh data
-      const res = await getHabitsByUserIdWithGroups(user.id)
-      await fetchAllSums(res)
+      // Refresh data - fetchData already calls fetchAllSums internally
       await fetchData()
+      await refreshStats()
     } catch (err) {
       console.error("Failed to update habit entry", err)
       toast.error("Failed to update habit. Please try again.")
@@ -130,10 +157,9 @@ export default function home({ loaderData }: any) {
       
       toast.success("Successfully updated habit.")
       
-      // Refresh data
-      const res = await getHabitsByUserIdWithGroups(user.id)
-      await fetchAllSums(res)
+      // Refresh data - fetchData already calls fetchAllSums internally
       await fetchData()
+      await refreshStats()
     } catch (err) {
       console.error("Failed to update habit entry", err)
       toast.error("Failed to update habit. Please try again.")
@@ -175,7 +201,11 @@ export default function home({ loaderData }: any) {
           bestStreakEver={todayStats.bestStreakEver}
           atRisk={todayStats.atRisk}
         />
-                      </div>
+        <WeeklyMonthlyStatsCard
+          weeklyHabits={todayStats.weeklyHabits}
+          monthlyHabits={todayStats.monthlyHabits}
+        />
+      </div>
 
       <QuickActionsCard onLogEntryClick={() => setShowQuickEntry(!showQuickEntry)} />
 
@@ -190,6 +220,7 @@ export default function home({ loaderData }: any) {
         groupStats={groupStats}
         habitsByGroup={habitsByGroup.grouped}
         dailySums={dailySums}
+        stats={stats}
       />
 
       <UngroupedHabitsSection
@@ -201,17 +232,17 @@ export default function home({ loaderData }: any) {
         activeHabits={activeHabits}
         allHabits={data}
         dailySums={dailySums}
-        stats={loaderData.stats ?? []}
+        stats={stats}
         groups={groups}
         onQuickUpdate={handleQuickUpdate}
         onManualUpdate={handleManualUpdate}
       />
 
       {/* Habit Overview Table */}
-      {loaderData.stats && loaderData.stats.length > 0 && (
+      {stats && stats.length > 0 && (
         <div className="w-full overflow-x-auto">
           <h3 className="text-lg font-semibold mb-4">All Habits Overview</h3>
-          <ReusableTable data={loaderData.stats} />
+          <ReusableTable data={stats} />
         </div>
       )}
     </div>

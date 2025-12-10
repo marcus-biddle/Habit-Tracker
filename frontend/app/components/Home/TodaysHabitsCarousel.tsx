@@ -7,6 +7,7 @@ import CSVImporter from '../../features/CSVImporter'
 import { HabitCard } from './HabitCard'
 import type { Habit, HabitGroup } from '../Tables/Habits/columns'
 import type { DashboardHabit } from '../../features/overview/table'
+import { calculateProgress, getEffectiveCurrentValue } from './utils/habitCalculations'
 
 interface TodaysHabitsCarouselProps {
   activeHabits: Habit[]
@@ -57,16 +58,16 @@ export function TodaysHabitsCarousel({
         <CarouselContent className="-ml-2 md:-ml-4 max-w-full">
           {activeHabits.map((habit: Habit) => {
             const backendValue = dailySums.find((s: { id: string; value: number }) => s.id === habit.id)
-            const currentValue = backendValue?.value ?? 0
-            const progress = habit.goal 
-              ? Math.min((currentValue / habit.goal) * 100, 100)
-              : 0
+            const dailyValue = backendValue?.value ?? 0
             const habitStats = stats?.find((s: DashboardHabit) => s.habit_id === habit.id)
+            const periodTotal = habitStats?.period_total ?? null
+            const currentValue = getEffectiveCurrentValue(habit, dailyValue, periodTotal)
+            const progress = calculateProgress(habit, currentValue)
             const streak = habitStats?.current_streak ?? 0
             
             return (
               <CarouselItem 
-                key={habit.id} 
+                key={`${habit.id}-${currentValue}-${progress}`} 
                 className="pl-2 md:pl-4"
                 style={{
                   minWidth: 'min(100%, 320px)',

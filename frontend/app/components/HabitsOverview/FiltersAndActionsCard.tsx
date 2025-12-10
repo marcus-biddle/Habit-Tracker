@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../../components/ui/select'
-import { HabitModalButton } from '../Modals/Habits/HabitModalButton'
+import { HabitCreateSheet } from '../Modals/Habits/HabitCreateSheet'
 import type { HabitGroup } from '../Tables/Habits/columns'
 import { Button } from '../../components/ui/button'
 
@@ -147,7 +147,7 @@ export function FiltersAndActionsCard({
               <FolderPlus className="h-4 w-4 mr-2" />
               Group
             </Button>
-            <HabitModalButton 
+            <HabitCreateSheet 
               open={open} 
               isOpen={(value) => {
                 setOpen(value)

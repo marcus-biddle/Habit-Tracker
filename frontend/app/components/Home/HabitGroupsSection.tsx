@@ -5,6 +5,8 @@ import { Button } from '../ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 import { Folder, FolderOpen, CheckCircle2 } from 'lucide-react'
 import type { Habit, HabitGroup } from '../Tables/Habits/columns'
+import { calculateProgress, getEffectiveGoal, getDisplayUnit, isGoalMet, getEffectiveCurrentValue } from './utils/habitCalculations'
+import type { DashboardHabit } from '../../features/overview/table'
 
 interface GroupStats {
   groupId: string
@@ -15,6 +17,26 @@ interface GroupStats {
   avgStreak: number
   totalProgress: number
   avgProgress: number
+  // Frequency breakdowns
+  dailyHabits: {
+    count: number
+    atGoal: number
+    completionRate: number
+  }
+  weeklyHabits: {
+    count: number
+    atGoal: number
+    avgProgress: number
+    weekCompletion: number
+  }
+  monthlyHabits: {
+    count: number
+    atGoal: number
+    avgProgress: number
+    monthCompletion: number
+  }
+  // Weighted completion rate that accounts for frequencies
+  weightedCompletionRate: number
 }
 
 interface HabitGroupsSectionProps {
@@ -22,13 +44,15 @@ interface HabitGroupsSectionProps {
   groupStats: GroupStats[]
   habitsByGroup: Record<string, Habit[]>
   dailySums: { id: string; value: number }[]
+  stats?: DashboardHabit[]
 }
 
 export function HabitGroupsSection({
   groups,
   groupStats,
   habitsByGroup,
-  dailySums
+  dailySums,
+  stats = []
 }: HabitGroupsSectionProps) {
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set())
 
@@ -55,11 +79,11 @@ export function HabitGroupsSection({
         }}
       >
         {groups.map((group) => {
-          const stats = groupStats.find(s => s.groupId === group.id)
+          const groupStat = groupStats.find(s => s.groupId === group.id)
           const groupHabits = habitsByGroup[group.id] || []
           const isExpanded = expandedGroups.has(group.id)
 
-          if (!stats || stats.totalHabits === 0) return null
+          if (!groupStat || groupStat.totalHabits === 0) return null
 
           return (
             <motion.div
@@ -98,23 +122,78 @@ export function HabitGroupsSection({
                   )}
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{stats.completionRate}%</div>
+                  <div className="text-2xl font-bold">{groupStat.weightedCompletionRate}%</div>
                   <p className="text-xs text-muted-foreground">
-                    {stats.completedToday} of {stats.totalHabits} habits completed
+                    Weighted completion rate
                   </p>
                   <div className="mt-4 space-y-2">
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-muted-foreground">Total habits</span>
-                      <span className="font-medium">{stats.totalHabits}</span>
+                      <span className="font-medium">{groupStat.totalHabits}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">At goal</span>
+                      <span className="font-medium">{groupStat.completedToday}/{groupStat.totalHabits}</span>
                     </div>
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-muted-foreground">Avg streak</span>
-                      <span className="font-medium">{stats.avgStreak} days</span>
+                      <span className="font-medium">{groupStat.avgStreak} days</span>
                     </div>
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-muted-foreground">Avg progress</span>
-                      <span className="font-medium">{stats.avgProgress}%</span>
+                      <span className="font-medium">{groupStat.avgProgress}%</span>
                     </div>
+                    
+                    {/* Frequency breakdowns */}
+                    {groupStat.dailyHabits.count > 0 && (
+                      <div className="pt-2 border-t space-y-1.5">
+                        <div className="text-xs font-medium text-muted-foreground mb-1">Daily Habits</div>
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-muted-foreground">Completion</span>
+                          <span className="font-medium">{groupStat.dailyHabits.completionRate}%</span>
+                        </div>
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-muted-foreground">At goal</span>
+                          <span className="font-medium">{groupStat.dailyHabits.atGoal}/{groupStat.dailyHabits.count}</span>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {groupStat.weeklyHabits.count > 0 && (
+                      <div className="pt-2 border-t space-y-1.5">
+                        <div className="text-xs font-medium text-muted-foreground mb-1">Weekly Habits</div>
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-muted-foreground">Week progress</span>
+                          <span className="font-medium">{groupStat.weeklyHabits.weekCompletion}%</span>
+                        </div>
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-muted-foreground">At goal</span>
+                          <span className="font-medium">{groupStat.weeklyHabits.atGoal}/{groupStat.weeklyHabits.count}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-muted-foreground">Avg progress</span>
+                          <span className="font-medium">{groupStat.weeklyHabits.avgProgress}%</span>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {groupStat.monthlyHabits.count > 0 && (
+                      <div className="pt-2 border-t space-y-1.5">
+                        <div className="text-xs font-medium text-muted-foreground mb-1">Monthly Habits</div>
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-muted-foreground">Month progress</span>
+                          <span className="font-medium">{groupStat.monthlyHabits.monthCompletion}%</span>
+                        </div>
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-muted-foreground">At goal</span>
+                          <span className="font-medium">{groupStat.monthlyHabits.atGoal}/{groupStat.monthlyHabits.count}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-muted-foreground">Avg progress</span>
+                          <span className="font-medium">{groupStat.monthlyHabits.avgProgress}%</span>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Expanded View - Show Habits in Group */}
@@ -124,12 +203,22 @@ export function HabitGroupsSection({
                         Habits in this group:
                       </div>
                       {groupHabits.slice(0, 3).map((habit) => {
-                        const sum = dailySums.find((ds: { id: string; value: number }) => ds.id === habit.id)
-                        const currentValue = sum?.value ?? 0
-                        const progress = habit.goal 
-                          ? Math.min((currentValue / habit.goal) * 100, 100)
-                          : 0
-                        const isCompleted = currentValue > 0
+                        const sum = dailySums.find &&
+                          typeof dailySums.find === 'function'
+                          ? dailySums.find((ds: { id: string; value: number }) => ds.id === habit.id)
+                          : undefined;
+                        const dailyValue = sum?.value ?? 0;
+                        let habitStat: DashboardHabit | undefined = undefined;
+                        if (Array.isArray(stats)) {
+                          habitStat = stats.find((s: DashboardHabit) => s.habit_id === habit.id);
+                        }
+                        const periodTotal = habitStat?.period_total ?? null;
+                        const currentValue = getEffectiveCurrentValue(habit, dailyValue, periodTotal);
+                        const progress = calculateProgress(habit, currentValue);
+                        const isCompleted = isGoalMet(habit, currentValue);
+                        const effectiveGoal = getEffectiveGoal(habit)
+                        const displayUnit = getDisplayUnit(habit)
+                        const isBinary = habit.tracking_type === 'binary'
 
                         return (
                           <Link
@@ -148,9 +237,22 @@ export function HabitGroupsSection({
                                 <span className="text-xs font-medium capitalize truncate">{habit.name}</span>
                               </div>
                               <div className="flex items-center gap-2 shrink-0">
-                                <span className="text-xs text-muted-foreground">
-                                  {currentValue}/{habit.goal}
-                                </span>
+                                {isBinary ? (
+                                  <span className="text-xs text-muted-foreground">
+                                    {isCompleted ? 'Done' : 'Not done'}
+                                  </span>
+                                ) : (
+                                  <>
+                                    <span className="text-xs text-muted-foreground">
+                                      {currentValue}/{effectiveGoal}
+                                    </span>
+                                    {displayUnit && (
+                                      <span className="text-xs text-muted-foreground">
+                                        {displayUnit}
+                                      </span>
+                                    )}
+                                  </>
+                                )}
                                 <div className="w-12 h-1.5 bg-secondary rounded-full overflow-hidden">
                                   <div
                                     className={`h-full rounded-full ${

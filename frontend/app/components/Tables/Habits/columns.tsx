@@ -6,12 +6,18 @@ export type Habit = {
   name: string;              // Name of the habit
   description?: string | null; // Optional longer description or notes
   status: "active" | "inactive"; // Enum status
-  unit: string;              // Unit of measurement for the habit
-  frequency?: string | null; // How often the habit should be done (e.g., daily, weekly)
+  unit: string;              // Unit of measurement for the habit (kept for backward compatibility)
+  frequency?: string | null; // How often the habit should be done (e.g., daily, weekly) - kept for backward compatibility
   goal?: number | null;      // Target goal for the habit, if any
   reminder_time?: string | null; // Time of day for reminders, in string format (e.g., "08:00:00")
   is_archived: boolean;      // Whether habit is archived
   group_id?: string | null;  // UUID of the habit group this habit belongs to (optional)
+  // New enhanced metric system fields
+  tracking_type?: "binary" | "count" | "duration" | "distance" | "weight" | "volume" | "custom" | null; // Type of tracking
+  goal_period?: "per_day" | "per_week" | "per_month" | null; // Period for goal (replaces frequency for goal context)
+  min_value?: number | null; // Optional minimum value for validation
+  max_value?: number | null; // Optional maximum value for validation
+  unit_display?: string | null; // Custom display name for unit (e.g., "glasses" instead of "cups")
   created_at: string;        // Timestamp ISO string of creation
   updated_at: string;        // Timestamp ISO string of last update
 };

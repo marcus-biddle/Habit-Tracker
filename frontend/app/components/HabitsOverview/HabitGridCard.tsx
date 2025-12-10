@@ -7,6 +7,7 @@ import { Flame, Edit2 } from 'lucide-react'
 import { TZDate } from '@date-fns/tz'
 import type { Habit, HabitGroup } from '../Tables/Habits/columns'
 import type { DashboardHabit } from '../../features/overview/table'
+import { getDisplayUnit, getEffectiveGoal, getGoalPeriodText } from '../Home/utils/habitCalculations'
 
 interface HabitGridCardProps {
   habit: Habit
@@ -69,15 +70,30 @@ export function HabitGridCard({
           {habit.is_archived && (
             <Badge variant="outline">Archived</Badge>
           )}
-          <Badge variant="outline" className="capitalize">
-            {habit.frequency ?? 'N/A'}
-          </Badge>
+          {habit.tracking_type && (
+            <Badge variant="outline" className="capitalize">
+              {habit.tracking_type}
+            </Badge>
+          )}
+          {habit.goal_period && habit.goal_period !== 'per_day' && (
+            <Badge variant="outline" className="capitalize">
+              {getGoalPeriodText(habit.goal_period)}
+            </Badge>
+          )}
         </div>
         <div className="space-y-2">
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Goal</span>
             <span className="font-medium">
-              {habit.goal ?? 0} {habit.unit}
+              {habit.tracking_type === 'binary' 
+                ? 'Completed/Not Completed'
+                : `${getEffectiveGoal(habit)} ${getDisplayUnit(habit)}`
+              }
+              {habit.goal_period && habit.goal_period !== 'per_day' && (
+                <span className="text-xs text-muted-foreground ml-1">
+                  ({getGoalPeriodText(habit.goal_period)})
+                </span>
+              )}
             </span>
           </div>
           {habitStats && (

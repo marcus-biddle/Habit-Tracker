@@ -14,8 +14,8 @@ import {
   type VisibilityState,
 } from "@tanstack/react-table"
 import { toast } from 'sonner'
-import { HabitGroupModal } from '../../components/Modals/Habits/HabitGroupModal'
-import { HabitEditModal } from '../../components/Modals/Habits/HabitEditModal'
+import { HabitGroupSheet } from '../../components/Modals/Habits/HabitGroupSheet'
+import { HabitEditSheet } from '../../components/Modals/Habits/HabitEditSheet'
 import type { DashboardHabit } from '../../features/overview/table'
 import {
   HabitsOverviewHeader,
@@ -43,7 +43,7 @@ export async function clientLoader() {
 
 const overview = ({ loaderData }: any) => {
     const { user } = useAuth();
-    const [open, isOpen] = useState(false);
+    const [, isOpen] = useState(false);
     const [groupModalOpen, setGroupModalOpen] = useState(false);
     const [habits, setHabits] = useState<Habit[]>(loaderData.habits ?? []);
     const [groups, setGroups] = useState<HabitGroup[]>(loaderData.groups ?? []);
@@ -163,31 +163,6 @@ const overview = ({ loaderData }: any) => {
         }
     }
 
-    const handleEditHabit = async (updatedHabit: Habit) => {
-        if (!user) return;
-
-        try {
-            await updateHabit(updatedHabit.id, {
-                name: updatedHabit.name,
-                description: updatedHabit.description,
-                status: updatedHabit.status,
-                unit: updatedHabit.unit,
-                frequency: updatedHabit.frequency,
-                goal: updatedHabit.goal,
-                reminder_time: updatedHabit.reminder_time,
-                is_archived: updatedHabit.is_archived,
-                group_id: updatedHabit.group_id || null,
-            });
-            setHabits((prevHabits: Habit[]) => 
-                prevHabits.map(h => h.id === updatedHabit.id ? updatedHabit : h)
-            );
-            setEditingHabit(null);
-            toast.success("Habit updated successfully");
-        } catch (error) {
-            toast.error("Failed to update habit");
-        }
-    }
-
     const getHabitStats = (habitId: string) => {
         return stats.find((s: DashboardHabit) => s.habit_id === habitId);
     }
@@ -202,6 +177,48 @@ const overview = ({ loaderData }: any) => {
             p_user_id: user.id 
         });
         setStats(newStats ?? []);
+    }
+
+    const handleEditHabit = async (updatedHabit: Habit) => {
+        if (!user) return;
+
+        try {
+            // Ensure group_id is properly handled (null, undefined, or valid UUID string)
+            const groupId = updatedHabit.group_id && typeof updatedHabit.group_id === 'string' && updatedHabit.group_id.trim() !== ''
+                ? updatedHabit.group_id.trim()
+                : null;
+
+            console.log('Updating habit with:', { 
+                habitId: updatedHabit.id, 
+                group_id: groupId,
+                original_group_id: updatedHabit.group_id 
+            });
+
+            await updateHabit(user.id, updatedHabit.id, {
+                name: updatedHabit.name,
+                description: updatedHabit.description,
+                status: updatedHabit.status,
+                unit: updatedHabit.unit,
+                frequency: updatedHabit.frequency,
+                goal: updatedHabit.goal,
+                reminder_time: updatedHabit.reminder_time,
+                is_archived: updatedHabit.is_archived,
+                group_id: groupId,
+                tracking_type: updatedHabit.tracking_type || null,
+                goal_period: updatedHabit.goal_period || null,
+                min_value: updatedHabit.min_value ?? null,
+                max_value: updatedHabit.max_value ?? null,
+                unit_display: updatedHabit.unit_display || null,
+            });
+            
+            // Refresh data to get the latest from the database
+            await refreshData();
+            setEditingHabit(null);
+            toast.success("Habit updated successfully");
+        } catch (error: any) {
+            console.error("Error updating habit:", error);
+            toast.error(error?.message || "Failed to update habit");
+        }
     }
 
     useEffect(() => {
@@ -270,7 +287,7 @@ const overview = ({ loaderData }: any) => {
 
       {/* Edit Modal */}
       {editingHabit && (
-        <HabitEditModal
+        <HabitEditSheet
           habit={editingHabit}
           open={!!editingHabit}
           onOpenChange={(open) => !open && setEditingHabit(null)}
@@ -279,7 +296,7 @@ const overview = ({ loaderData }: any) => {
       )}
 
       {/* Group Modal */}
-      <HabitGroupModal
+      <HabitGroupSheet
         open={groupModalOpen}
         onOpenChange={setGroupModalOpen}
         onSuccess={async () => {

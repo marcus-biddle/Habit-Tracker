@@ -210,63 +210,145 @@ export async function fetchHabitNameById(habitId: string){
   return data;
 }
 
-export async function updateHabit(habitId: string, updates: Partial<HabitInsert>) {
-  // Ensure group_id is either a valid UUID string or null (not empty string)
-  const updateData: Partial<HabitInsert> = {
-    ...updates,
-  };
-  
-  // Only set group_id if it's explicitly provided in updates
+export async function updateHabit(userId: string, habitId: string, updates: Partial<HabitInsert>): Promise<Habit> {
+  // Verify habit exists and belongs to user
+  const { data: existingHabit, error: checkError } = await supabase
+    .from("habits")
+    .select("id")
+    .eq("id", habitId)
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (checkError) {
+    throw new Error('Failed to verify habit');
+  }
+
+  if (!existingHabit) {
+    throw new Error('Habit not found or you do not have permission to update it');
+  }
+
+  // Prepare update data
+  const updateData: Partial<HabitInsert> = { ...updates };
+
+  // Validate and process group_id if provided
   if ('group_id' in updates) {
-    let groupId: string | null = updates.group_id && updates.group_id.trim() !== '' ? updates.group_id : null;
-    
-    // If a group_id is provided, verify it exists and belongs to the user
-    if (groupId) {
-      // First, get the habit to get the user_id
-      const { data: habit, error: habitError } = await supabase
-        .from("habits")
-        .select("user_id")
-        .eq("id", habitId)
-        .single();
+    console.log('Processing group_id:', { 
+      group_id: updates.group_id, 
+      type: typeof updates.group_id,
+      isString: typeof updates.group_id === 'string',
+      trimmed: typeof updates.group_id === 'string' ? updates.group_id.trim() : 'N/A'
+    });
+
+    if (updates.group_id && typeof updates.group_id === 'string' && updates.group_id.trim() !== '') {
+      const groupId = updates.group_id.trim();
       
-      if (habitError || !habit) {
-        throw new Error("Habit not found");
+      // Validate UUID format
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(groupId)) {
+        throw new Error('Invalid group ID format');
       }
-      
-      // Now verify the group exists and belongs to the user
+
+      // Verify group exists and belongs to user
       const { data: group, error: groupError } = await supabase
         .from("habit_groups")
         .select("id")
         .eq("id", groupId)
-        .eq("user_id", habit.user_id)
-        .single();
-      
-      if (groupError || !group) {
-        console.error("Group validation failed:", groupError?.message || "Group not found");
-        throw new Error(`The selected group no longer exists or doesn't belong to you. Please select a different group or leave it ungrouped.`);
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (groupError) {
+        console.error('Group verification error:', groupError);
+        throw new Error('Failed to verify group');
       }
+
+      if (!group) {
+        console.error('Group not found:', { groupId, userId });
+        throw new Error('The selected group does not exist or does not belong to you');
+      }
+
+      updateData.group_id = groupId;
+      console.log('Group validated, setting group_id to:', groupId);
+    } else {
+      // Explicitly set to null to remove group assignment
+      updateData.group_id = null;
+      console.log('Setting group_id to null (removing group assignment)');
     }
-    
-    updateData.group_id = groupId;
+  } else {
+    console.log('group_id not in updates object');
   }
 
-  const { data, error } = await supabase
+  console.log('Final updateData:', { ...updateData, group_id: updateData.group_id });
+
+  // Perform the update WITHOUT select first (to avoid RLS blocking the entire operation)
+  const { error: updateError } = await supabase
     .from("habits")
     .update(updateData)
     .eq("id", habitId)
-    .select();
+    .eq("user_id", userId);
 
-  if (error) {
-    console.error("Error updating habit:", error.message);
-    // Provide more context for foreign key errors
-    if (error.message.includes("foreign key constraint")) {
-      console.error("Group ID causing issue:", updateData.group_id);
-      throw new Error(`Invalid group selected. Please select a valid group or leave it ungrouped.`);
+  console.log('Update query (without select) result:', { 
+    error: updateError,
+    errorCode: updateError?.code,
+    errorMessage: updateError?.message
+  });
+
+  if (updateError) {
+    if (updateError.code === "23503" || updateError.message.includes("foreign key constraint")) {
+      throw new Error('Invalid group selected');
     }
-    throw error;
+    console.error('Update error:', updateError);
+    throw updateError;
   }
 
-  return data?.[0];
+  // Wait a moment for the update to complete
+  await new Promise(resolve => setTimeout(resolve, 200));
+  
+  // Now fetch the updated habit to verify and return it
+  const { data: updatedHabit, error: fetchError } = await supabase
+    .from("habits")
+    .select("*")
+    .eq("id", habitId)
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (fetchError) {
+    console.error('Error fetching updated habit:', fetchError);
+    throw new Error('Habit was updated but could not be retrieved');
+  }
+
+  if (!updatedHabit) {
+    throw new Error('Habit not found after update');
+  }
+
+  console.log('Fetched habit after update:', { 
+    habitId: updatedHabit.id, 
+    actualGroupId: updatedHabit.group_id,
+    expectedGroupId: updateData.group_id 
+  });
+
+  // Verify the update actually happened by comparing group_id
+  if ('group_id' in updateData) {
+    const actualGroupId = updatedHabit.group_id;
+    const expectedGroupId = updateData.group_id;
+    
+    // Compare group_ids (handle null/undefined)
+    const actual = actualGroupId === null || actualGroupId === undefined ? null : String(actualGroupId);
+    const expected = expectedGroupId === null || expectedGroupId === undefined ? null : String(expectedGroupId);
+    
+    if (actual !== expected) {
+      console.error('Update verification failed:', {
+        actual,
+        expected,
+        updateData,
+        habitBeforeUpdate: existingHabit
+      });
+      throw new Error(`Update failed: group_id was not updated. Expected: ${expected}, Got: ${actual}. This may be due to Row Level Security policies blocking the update.`);
+    }
+    
+    console.log('Update verified successfully - group_id matches');
+  }
+
+  return updatedHabit;
 }
 
 export async function getHabitsByUserIdWithGroups(user_id: string): Promise<Habit[]> {

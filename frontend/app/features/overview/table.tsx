@@ -42,6 +42,7 @@ export interface DashboardHabit {
   longest_streak: number;
   today_value: number | null;
   week_completion: number;
+  period_total: number | null;
   last_entry_date: string;
 }
 

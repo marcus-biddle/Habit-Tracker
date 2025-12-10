@@ -7,9 +7,16 @@ import { Input } from '../ui/input'
 import { Label } from '../ui/label'
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip'
-import { CheckCircle2, Forward, Plus, Minus, Edit2, Flame } from 'lucide-react'
+import { CheckCircle2, Forward, Plus, Minus, Edit2, Flame, Loader2 } from 'lucide-react'
 import type { Habit, HabitGroup } from '../Tables/Habits/columns'
 import type { DashboardHabit } from '../../features/overview/table'
+import { 
+  getDisplayUnit, 
+  getEffectiveGoal, 
+  getGoalPeriodText, 
+  formatValue,
+  isGoalMet 
+} from './utils/habitCalculations'
 
 interface HabitCardProps {
   habit: Habit
@@ -32,9 +39,17 @@ export function HabitCard({
 }: HabitCardProps) {
   const [editingHabit, setEditingHabit] = useState<string | null>(null)
   const [editValue, setEditValue] = useState<number>(0)
+  const [isUpdating, setIsUpdating] = useState(false)
   const isCompleted = progress >= 100
 
   const group = habit.group_id ? groups.find(g => g.id === habit.group_id) : null
+  
+  // Get display values
+  const displayUnit = getDisplayUnit(habit)
+  const effectiveGoal = getEffectiveGoal(habit)
+  const goalPeriod = getGoalPeriodText(habit.goal_period)
+  const trackingType = habit.tracking_type || 'count'
+  const isBinary = trackingType === 'binary'
 
   return (
     <motion.div
@@ -55,9 +70,16 @@ export function HabitCard({
                 />
               )}
               <div className="flex-1 min-w-0">
-                <CardTitle className="text-base font-semibold capitalize truncate leading-tight">
-                  {habit.name}
-                </CardTitle>
+                <div className="flex items-center gap-2">
+                  <CardTitle className="text-base font-semibold capitalize truncate leading-tight">
+                    {habit.name}
+                  </CardTitle>
+                  {habit.goal_period && habit.goal_period !== 'per_day' && (
+                    <span className="text-xs font-medium px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 shrink-0">
+                      {habit.goal_period === 'per_week' ? 'Weekly' : 'Monthly'}
+                    </span>
+                  )}
+                </div>
                 {habit.description && (
                   <CardDescription className="text-xs mt-1 line-clamp-2 leading-relaxed">
                     {habit.description}
@@ -81,20 +103,42 @@ export function HabitCard({
           {/* Progress Section */}
           <div className="space-y-3">
             <div className="flex items-baseline justify-between gap-2">
-              <div className="flex items-baseline gap-1.5">
-                <span className={`text-3xl font-bold ${
-                  isCompleted ? 'text-primary' : ''
-                }`}>
-                  {currentValue}
-                </span>
-                <span className="text-lg text-muted-foreground font-medium">
-                  / {habit.goal}
-                </span>
-                <span className="text-sm text-muted-foreground ml-1">
-                  {habit.unit}
-                </span>
+              <div className="flex items-baseline gap-1.5 flex-1 min-w-0">
+                {isBinary ? (
+                  <div className="flex items-center gap-2">
+                    <span className={`text-2xl font-bold ${
+                      isCompleted ? 'text-primary' : 'text-muted-foreground'
+                    }`}>
+                      {formatValue(habit, currentValue)}
+                    </span>
+                    {isCompleted && (
+                      <CheckCircle2 className="h-5 w-5 text-primary shrink-0" />
+                    )}
+                  </div>
+                ) : (
+                  <>
+                    <span className={`text-3xl font-bold ${
+                      isCompleted ? 'text-primary' : ''
+                    }`}>
+                      {currentValue}
+                    </span>
+                    <span className="text-lg text-muted-foreground font-medium">
+                      / {effectiveGoal}
+                    </span>
+                    {displayUnit && (
+                      <span className="text-sm text-muted-foreground ml-1">
+                        {displayUnit}
+                      </span>
+                    )}
+                    {habit.goal_period && habit.goal_period !== 'per_day' && (
+                      <span className="text-xs text-muted-foreground ml-1">
+                        ({goalPeriod})
+                      </span>
+                    )}
+                  </>
+                )}
               </div>
-              {isCompleted && (
+              {!isBinary && isCompleted && (
                 <CheckCircle2 className="h-5 w-5 text-primary shrink-0" />
               )}
             </div>
@@ -132,32 +176,59 @@ export function HabitCard({
           {/* Quick Update Controls */}
           <div className="pt-4 mt-auto border-t">
             <div className="flex items-center gap-2.5">
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="h-10 w-10 shrink-0 hover:bg-destructive/10 hover:border-destructive/50 transition-colors"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        onQuickUpdate(habit.id, -1)
-                      }}
-                    >
-                      <Minus className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Decrease by 1</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+              {!isBinary && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-10 w-10 shrink-0 hover:bg-destructive/10 hover:border-destructive/50 transition-colors"
+                        onClick={async (e) => {
+                          e.stopPropagation()
+                          if (isUpdating) return
+                          setIsUpdating(true)
+                          try {
+                            await onQuickUpdate(habit.id, -1)
+                          } catch (error) {
+                            console.error('Failed to update habit:', error)
+                          } finally {
+                            setIsUpdating(false)
+                          }
+                        }}
+                        disabled={currentValue <= 0 || isUpdating}
+                      >
+                        {isUpdating ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Minus className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Decrease by 1</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
 
               <div className="flex-1 flex items-center justify-center gap-1.5 min-w-0 px-2 py-1.5 rounded-md bg-secondary/30">
-                <span className="text-lg font-semibold tabular-nums">{currentValue}</span>
-                <span className="text-sm text-muted-foreground">/</span>
-                <span className="text-sm text-muted-foreground">{habit.goal}</span>
-                <span className="text-xs text-muted-foreground ml-1 truncate">{habit.unit}</span>
+                {isBinary ? (
+                  <span className={`text-base font-semibold ${
+                    isCompleted ? 'text-primary' : 'text-muted-foreground'
+                  }`}>
+                    {formatValue(habit, currentValue)}
+                  </span>
+                ) : (
+                  <>
+                    <span className="text-lg font-semibold tabular-nums">{currentValue}</span>
+                    <span className="text-sm text-muted-foreground">/</span>
+                    <span className="text-sm text-muted-foreground">{effectiveGoal}</span>
+                    {displayUnit && (
+                      <span className="text-xs text-muted-foreground ml-1 truncate">{displayUnit}</span>
+                    )}
+                  </>
+                )}
               </div>
 
               <TooltipProvider>
@@ -167,16 +238,34 @@ export function HabitCard({
                       variant="outline"
                       size="icon"
                       className="h-10 w-10 shrink-0 hover:bg-primary/10 hover:border-primary/50 transition-colors"
-                      onClick={(e) => {
+                      onClick={async (e) => {
                         e.stopPropagation()
-                        onQuickUpdate(habit.id, 1)
+                        if (isUpdating) return
+                        setIsUpdating(true)
+                        try {
+                          // For binary habits, toggle between 0 and 1
+                          if (isBinary) {
+                            await onQuickUpdate(habit.id, currentValue >= 1 ? -1 : 1)
+                          } else {
+                            await onQuickUpdate(habit.id, 1)
+                          }
+                        } catch (error) {
+                          console.error('Failed to update habit:', error)
+                        } finally {
+                          setIsUpdating(false)
+                        }
                       }}
+                      disabled={isUpdating}
                     >
-                      <Plus className="h-4 w-4" />
+                      {isUpdating ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Plus className="h-4 w-4" />
+                      )}
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>Increase by 1</p>
+                    <p>{isBinary ? (currentValue >= 1 ? 'Mark as not completed' : 'Mark as completed') : 'Increase by 1'}</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -211,27 +300,45 @@ export function HabitCard({
                       </p>
                     </div>
                     <div className="space-y-3">
-                      <div className="flex items-center gap-2">
-                        <Input
-                          id={`edit-${habit.id}`}
-                          type="number"
-                          min={0}
-                          value={editValue || ''}
-                          onChange={(e) => setEditValue(Number(e.target.value) || 0)}
-                          placeholder="Enter value"
-                          className="flex-1"
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              onManualUpdate(habit.id, editValue)
-                              setEditingHabit(null)
-                              setEditValue(0)
-                            }
-                          }}
-                        />
-                        <span className="text-sm text-muted-foreground font-medium min-w-12">
-                          {habit.unit}
-                        </span>
-                      </div>
+                      {isBinary ? (
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant={editValue >= 1 ? "default" : "outline"}
+                            className="flex-1"
+                            onClick={() => {
+                              setEditValue(editValue >= 1 ? 0 : 1)
+                            }}
+                          >
+                            {editValue >= 1 ? 'Completed' : 'Not Completed'}
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <Input
+                            id={`edit-${habit.id}`}
+                            type="number"
+                            min={habit.min_value ?? 0}
+                            max={habit.max_value ?? undefined}
+                            step={trackingType === 'duration' ? 1 : trackingType === 'weight' || trackingType === 'distance' ? 0.1 : 1}
+                            value={editValue || ''}
+                            onChange={(e) => setEditValue(Number(e.target.value) || 0)}
+                            placeholder="Enter value"
+                            className="flex-1"
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                onManualUpdate(habit.id, editValue)
+                                setEditingHabit(null)
+                                setEditValue(0)
+                              }
+                            }}
+                          />
+                          {displayUnit && (
+                            <span className="text-sm text-muted-foreground font-medium min-w-12">
+                              {displayUnit}
+                            </span>
+                          )}
+                        </div>
+                      )}
                       <div className="flex gap-2">
                         <Button
                           size="sm"

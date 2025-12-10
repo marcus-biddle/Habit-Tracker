@@ -3,7 +3,6 @@ import { getHabitsByUserIdWithGroups, getHabitGroupsByUserId } from '../../../ap
 import { supabase } from '../../../api/client/client'
 import { today } from '../utils'
 import type { Habit, HabitGroup } from '../../Tables/Habits/columns'
-import type { DashboardHabit } from '../../../../features/overview/table'
 
 export function useHomeData(userId: string | undefined, initialData: any) {
   const [data, setData] = useState<Habit[]>(initialData.habits ?? [])

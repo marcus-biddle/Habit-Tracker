@@ -1,5 +1,5 @@
 export { HomeHeader } from './HomeHeader'
-export { TodaysProgressCard, ActiveHabitsCard, StreakPerformanceCard } from './StatsCards'
+export { TodaysProgressCard, ActiveHabitsCard, StreakPerformanceCard, WeeklyMonthlyStatsCard } from './StatsCards'
 export { QuickActionsCard } from './QuickActionsCard'
 export { QuickEntryForm } from './QuickEntryForm'
 export { HabitGroupsSection } from './HabitGroupsSection'
