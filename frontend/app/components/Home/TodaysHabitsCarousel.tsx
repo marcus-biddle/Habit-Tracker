@@ -32,7 +32,15 @@ export function TodaysHabitsCarousel({
   const [presetGroupsOpen, setPresetGroupsOpen] = useState(false)
 
   if (activeHabits.length === 0) {
-    return <EmptyHabitState />
+    return (
+      <EmptyHabitState 
+        habits={allHabits}
+        onSuccess={() => {
+          // Refresh will be handled by parent component
+          window.location.reload()
+        }}
+      />
+    )
   }
 
   return (

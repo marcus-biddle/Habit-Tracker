@@ -7,4 +7,5 @@ export { HabitsGridView } from './HabitsGridView'
 export { HabitGridCard } from './HabitGridCard'
 export { useHabitsFiltering } from './hooks/useHabitsFiltering'
 export { useHabitsSummaryStats } from './hooks/useHabitsSummaryStats'
+export { HabitsOnboardingFlow } from './HabitsOnboardingFlow'
 

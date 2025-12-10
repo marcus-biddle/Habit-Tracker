@@ -25,7 +25,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../../components/ui
 import { DirectionProvider } from "@radix-ui/react-direction"
 import { toast } from 'sonner'
 import { presetGroups, type PresetGroup } from '../../../data/presetGroups'
-import { importPresetGroup, type HabitInsert } from '../../../api/supabase'
+import { importPresetGroup, getHabitGroupsByUserId, type HabitInsert } from '../../../api/supabase'
 import { Loader2, Plus, Sparkles, Upload, FileText, CircleAlert, CircleCheckBig, NotebookPenIcon, SquareCheck, SquareChevronRightIcon } from 'lucide-react'
 import Papa from 'papaparse'
 import { supabase } from '../../../api/client/client'
@@ -57,13 +57,27 @@ export function PresetGroupsSheet({ open, onOpenChange, onSuccess, habits = [] }
 
     setImportingGroupId(presetGroup.id);
     try {
+      // Check if group already exists to show appropriate message
+      const existingGroups = await getHabitGroupsByUserId(user.id);
+      const groupExists = existingGroups.some(g => g.name.toLowerCase() === presetGroup.name.toLowerCase());
+      
       await importPresetGroup(user.id, presetGroup);
-      toast.success(`Successfully imported "${presetGroup.name}" group!`);
+      
+      if (groupExists) {
+        toast.success(`Added habits to existing "${presetGroup.name}" group!`, {
+          duration: 4000,
+        });
+      } else {
+        toast.success(`Successfully imported "${presetGroup.name}" group!`);
+      }
+      
       onSuccess();
       onOpenChange(false);
     } catch (error: any) {
       console.error("Error importing preset group:", error);
-      toast.error(error?.message || `Failed to import "${presetGroup.name}"`);
+      
+      const errorMessage = error?.message || `Failed to import "${presetGroup.name}"`;
+      toast.error(errorMessage);
     } finally {
       setImportingGroupId(null);
     }

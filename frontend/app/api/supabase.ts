@@ -476,14 +476,50 @@ export async function getHabitsWithGroups(user_id: string): Promise<(Habit & { g
 // Preset Groups API Functions
 
 export async function importPresetGroup(userId: string, presetGroup: { name: string; description: string; color?: string; habits: Omit<HabitInsert, 'user_id' | 'group_id'>[] }): Promise<void> {
-  // First, create the group
-  const group = await addHabitGroup({
-    user_id: userId,
-    name: presetGroup.name,
-    description: presetGroup.description,
-    color: presetGroup.color || null,
-    display_order: 0,
-  });
+  // Check if a group with this name already exists
+  const existingGroups = await getHabitGroupsByUserId(userId);
+  let group: HabitGroup;
+  let isExistingGroup = false;
+  
+  const existingGroup = existingGroups.find(g => g.name.toLowerCase() === presetGroup.name.toLowerCase());
+  
+  if (existingGroup) {
+    // Use the existing group
+    group = existingGroup;
+    isExistingGroup = true;
+  } else {
+    // Try to create a new group with the exact name
+    // If that fails due to unique constraint, try with a number suffix
+    let groupName = presetGroup.name;
+    let attempts = 0;
+    let created = false;
+    
+    while (!created && attempts < 10) {
+      try {
+        group = await addHabitGroup({
+          user_id: userId,
+          name: groupName,
+          description: presetGroup.description,
+          color: presetGroup.color || null,
+          display_order: 0,
+        });
+        created = true;
+      } catch (error: any) {
+        // If it's a unique constraint error, try with a different name
+        if (error.code === '23505' && attempts < 10) {
+          attempts++;
+          groupName = `${presetGroup.name} (${attempts})`;
+        } else {
+          // Re-throw if it's not a unique constraint error or we've tried too many times
+          throw error;
+        }
+      }
+    }
+    
+    if (!created) {
+      throw new Error(`Unable to create group with name "${presetGroup.name}". Please try a different name.`);
+    }
+  }
 
   // Then, create all habits in the group
   const habitsToCreate = presetGroup.habits.map(habit => ({
@@ -499,11 +535,13 @@ export async function importPresetGroup(userId: string, presetGroup: { name: str
 
   if (error) {
     console.error("Error importing preset group habits:", error.message);
-    // Try to clean up the group if habit creation failed
-    try {
-      await deleteHabitGroup(group.id);
-    } catch (cleanupError) {
-      console.error("Failed to clean up group after error:", cleanupError);
+    // Only try to clean up if we created a new group (not if using existing)
+    if (!isExistingGroup) {
+      try {
+        await deleteHabitGroup(group.id);
+      } catch (cleanupError) {
+        console.error("Failed to clean up group after error:", cleanupError);
+      }
     }
     throw error;
   }

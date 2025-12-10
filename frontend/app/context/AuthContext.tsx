@@ -110,7 +110,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     !loading && 
     !user && 
     location.pathname !== '/login' && 
-    location.pathname !== '/register'
+    location.pathname !== '/register' &&
+    location.pathname !== '/'
   ) {
     navigate('/login');
   }

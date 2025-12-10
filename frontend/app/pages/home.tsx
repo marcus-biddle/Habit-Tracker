@@ -16,7 +16,8 @@ import {
   UngroupedHabitsSection,
   TodaysHabitsCarousel,
   useHomeData,
-  useHomeStats
+  useHomeStats,
+  OnboardingFlow
 } from '../components/Home'
 import { today } from '../components/Home/utils'
 import {
@@ -191,6 +192,22 @@ export default function home({ loaderData }: any) {
       console.error("Failed to update habit entry", err)
       toast.error("Failed to update habit. Please try again.")
     }
+  }
+
+  // Show onboarding flow for new users with no habits
+  if (activeHabits.length === 0) {
+    return (
+      <div className="relative h-full flex flex-1 flex-col gap-6 p-4 pt-0 overflow-x-hidden max-w-full">
+        <HomeHeader />
+        <OnboardingFlow 
+          habits={data}
+          onSuccess={async () => {
+            await fetchData()
+            await refreshStats()
+          }}
+        />
+      </div>
+    )
   }
 
   return (

@@ -8,4 +8,5 @@ export { TodaysHabitsCarousel } from './TodaysHabitsCarousel'
 export { HabitCard } from './HabitCard'
 export { useHomeData } from './hooks/useHomeData'
 export { useHomeStats } from './hooks/useHomeStats'
+export { OnboardingFlow } from './OnboardingFlow'
 

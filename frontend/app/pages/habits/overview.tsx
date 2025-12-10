@@ -26,7 +26,8 @@ import {
   HabitsTableView,
   HabitsGridView,
   useHabitsFiltering,
-  useHabitsSummaryStats
+  useHabitsSummaryStats,
+  HabitsOnboardingFlow
 } from '../../components/HabitsOverview'
 
 export async function clientLoader() {
@@ -229,6 +230,18 @@ const overview = ({ loaderData }: any) => {
         }
     }, [])
 
+    // Show onboarding flow for new users with no habits
+    const activeHabits = habits.filter(h => h.status === 'active' && !h.is_archived)
+    if (activeHabits.length === 0 && habits.length === 0) {
+        return (
+            <div className="w-full space-y-6">
+                <HabitsOnboardingFlow 
+                    habits={habits}
+                    onSuccess={refreshData}
+                />
+            </div>
+        )
+    }
 
   return (
     <div className="w-full space-y-6">
